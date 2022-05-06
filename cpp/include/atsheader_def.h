@@ -310,6 +310,11 @@ struct ats_header_json {
         return utime;
     }
 
+    std::string measdir() const {
+
+        return mtime::measdir_time(static_cast<int64_t>(this->atsh.start));
+    }
+
 
     std::unordered_map<std::string, uint8_t> LF_Filters;
     std::unordered_map<std::string, uint8_t> HF_Filters;

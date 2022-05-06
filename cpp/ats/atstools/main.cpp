@@ -177,11 +177,19 @@ for (const auto & file : directory_iterator(path))
             std::shared_mutex mtx;
             int i = 0;
             // now print out the action
+            std::cout << "start cat thread ";
             for (auto& ats : cat_ats) {
-                std::cout << "start cat thread " << i++ << std::endl;
+                std::cout << " " << i++;
                 threads.emplace_back(std::jthread (cat_ats_files, std::ref(ats), std::ref(outdir), std::ref(xmls_and_files), std::ref(xml_files), std::ref(mtx)));
                 //cat_ats_files(ats, outdir, xmls_and_files, xml_files, mtx);
             }
+            std::cout << std::endl << "wait please ... " << std::endl;
+        }
+
+        catch (const std::string &error) {
+            std::cerr << error << std::endl;
+            std::cerr << "could not concat ats files" << std::endl;
+            return EXIT_FAILURE;
         }
         catch(...) {
             std::cerr << "could not concat ats files" << std::endl;

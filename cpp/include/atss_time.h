@@ -64,6 +64,25 @@ std::string time_t_iso8601_utc(const time_t &ti, std::string &date, std::string 
   }
   return date + separator + time + sfracs + TZ;
 }
+
+std::string measdir_time(const time_t &ti) {
+    struct tm tt = {0};
+    std::string sfracs;
+    tt = *std::gmtime(&ti);
+    std::string date ("meas_");
+    std::string time ("_");
+    date += std::to_string(tt.tm_year + 1900) + "-";
+    date += mstr::zero_fill_field(tt.tm_mon + 1, 2) + "-";
+    date += mstr::zero_fill_field(tt.tm_mday, 2);
+    time += mstr::zero_fill_field(tt.tm_hour, 2) + "-";
+    time += mstr::zero_fill_field(tt.tm_min, 2) + "-";
+    time += mstr::zero_fill_field(tt.tm_sec, 2);
+
+    return date + time;
+
+
+}
+
 template <class T>
 time_t add_d_m_y(const time_t &ti, const T d, const T m, const T y) {
   struct tm tt = {0};
