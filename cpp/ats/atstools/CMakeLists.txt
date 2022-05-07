@@ -19,6 +19,10 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE read_cal
 )
 
+IF (WIN32)
+set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS -pthread LINK_FLAGS -lpthread)
+ENDIF()
+
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 

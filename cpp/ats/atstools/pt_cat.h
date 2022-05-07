@@ -20,7 +20,7 @@
 #include "cal_base.h"
 
 void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std::filesystem::path &outdir_base, std::multimap<std::string, std::filesystem::path> &xmls_and_files, std::vector<std::filesystem::path> &xml_files,
-                   std::shared_mutex &mtx) {
+                   std::mutex &mtx_dir, std::mutex &mtx_xml, std::mutex &mtx_xml_files) {
 
     if (!ats.size()) return;
     if (outdir_base.empty()) {
@@ -30,8 +30,14 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
         return;
     }
 
+    if (!std::filesystem::exists(outdir_base)) {
+        std::string err_str = __func__;
+        err_str += "::top outdir does not exists!, wnat to create outdir/meas_dir!";
+        throw err_str;
+        return;
+    }
 
-    std::unique_lock<std::shared_mutex> lck (mtx, std::defer_lock); // don't lock the mutex on construction
+    //std::unique_lock<std::mutex> lck (mtx, std::defer_lock); // don't lock the mutex on construction
     std::filesystem::path outdir(outdir_base);
 
     for (size_t i = 0; i < ats.size()-1; ++i) {
@@ -47,20 +53,26 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
             ats[0]->read();
             auto atsj = std::make_shared<ats_header_json>( ats[0]->header,  ats[0]->path());
             atsj->get_ats_header();
-            // fetch xml file from atsheader
-            lck.lock();
-            if(std::find(xml_files.begin(), xml_files.end(), atsj->xml_path()) == xml_files.end()) {                
-                xml_files.push_back(atsj->xml_path());                
-            }
             auto out = std::make_shared<atsheader>(ats.at(0));
-            if (!std::filesystem::exists(outdir)) {
-                std::filesystem::create_directory(outdir);
-            }
             outdir /= atsj->measdir();
-            if (!std::filesystem::exists(outdir)) {
-                std::filesystem::create_directory(outdir);
+            // fetch xml file from atsheader
+            try {
+                std::lock_guard<std::mutex> lck (mtx_dir);
+                if(std::find(xml_files.begin(), xml_files.end(), atsj->xml_path()) == xml_files.end()) {
+                    xml_files.push_back(atsj->xml_path());
+                }
+                if (!std::filesystem::exists(outdir)) {
+                    std::filesystem::create_directory(outdir);
+                    std::cout << "creating " << outdir << std::endl;
+                }
             }
-            lck.unlock();
+            catch (...) {
+                std::cerr << "execption cought in find::xml_files" << std::endl;
+                std::cerr << "std::filesystem::create_directory" << std::endl;
+                return;
+
+
+            }
             atsj.reset();
 
             out->change_dir(outdir);
@@ -78,11 +90,19 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
                     auto atsj = std::make_shared<ats_header_json>( ats[j]->header,  ats[j]->path());
                     atsj->get_ats_header();
                     // fetch xml file from atsheader
-                    lck.lock();
-                    if(std::find(xml_files.begin(), xml_files.end(), atsj->xml_path()) == xml_files.end()) {
-                        xml_files.push_back(atsj->xml_path());
+
+                    try {
+                        std::lock_guard<std::mutex> lck (mtx_xml);
+                        if(std::find(xml_files.begin(), xml_files.end(), atsj->xml_path()) == xml_files.end()) {
+                            xml_files.push_back(atsj->xml_path());
+                        }
                     }
-                    lck.unlock();
+                    catch (...) {
+                        std::cerr << "execption cought in find::xml_files" << std::endl;
+                        return;
+
+                    }
+
                     atsj.reset();
                     ints.resize(chunk_size);
                 }
@@ -113,9 +133,19 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
             // update header with new samples AND new xml file
             out->re_write();
             // pupolate a multimap with the NEW ats file and NEW XML file
-            lck.lock();
-            xmls_and_files.emplace(out->gen_xmlfilename(), out->path());
-            lck.unlock();
+
+
+            try {
+                std::lock_guard<std::mutex> lck (mtx_xml_files);
+                xmls_and_files.emplace(out->gen_xmlfilename(), out->path());
+
+            }
+            catch (...) {
+                std::cerr << "execption cought in xmls_and_files.emplace" << std::endl;
+                return;
+
+            }
+
             out.reset();
         }
         catch (const std::string &error) {

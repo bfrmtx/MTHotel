@@ -131,6 +131,11 @@ for (const auto & file : directory_iterator(path))
             return EXIT_FAILURE;
         }
 
+        if (!std::filesystem::exists(outdir)) {
+            std::filesystem::create_directory(outdir);
+            std::cout << outdir << " created" << std::endl;
+        }
+
         // e.g. a vector of Ex, a vector of Ey ... a vector of Hz
         std::vector<std::vector<std::shared_ptr<atsheader>>> cat_ats;
         do {
@@ -174,13 +179,16 @@ for (const auto & file : directory_iterator(path))
 
         try {
             std::vector<std::jthread> threads;
-            std::shared_mutex mtx;
+            std::mutex mtx_dir;
+            std::mutex mtx_xml;
+            std::mutex mtx_xml_files;
+
             int i = 0;
             // now print out the action
             std::cout << "start cat thread ";
             for (auto& ats : cat_ats) {
                 std::cout << " " << i++;
-                threads.emplace_back(std::jthread (cat_ats_files, std::ref(ats), std::ref(outdir), std::ref(xmls_and_files), std::ref(xml_files), std::ref(mtx)));
+                threads.emplace_back(std::jthread (cat_ats_files, std::ref(ats), std::ref(outdir), std::ref(xmls_and_files), std::ref(xml_files), std::ref(mtx_dir), std::ref(mtx_xml), std::ref(mtx_xml_files)));
                 //cat_ats_files(ats, outdir, xmls_and_files, xml_files, mtx);
             }
             std::cout << std::endl << "wait please ... " << std::endl;
