@@ -28,7 +28,7 @@ void xml_from_ats (std::multimap<std::string, fs::path> &xmls_and_files, const s
     std::vector<std::string> new_xml_files;
 
     for(const auto &x: xmls_and_files) {
-        std::cout<< x.first <<":"<< x.second << std::endl;
+        // std::cout<< x.first <<":"<< x.second << std::endl;
         if (!new_xml_files.size())  new_xml_files.push_back(x.first);
         else if (new_xml_files.back() != x.first) {
             new_xml_files.push_back(x.first);
