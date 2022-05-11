@@ -12,11 +12,12 @@ if(EXISTS "${LOC_PATH}")
     message(FATAL_ERROR "You cannot build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
 endif()
 
+message("compiler used / detected " ${CMAKE_CXX_COMPILER_ID})
 
 
 #
 # set CMAKE_BUILD_TYPE RELEASE for CLANG
-IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT WIN32 )
+IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT WIN32)
 # using regular Clang or AppleClang
     message ("UNIX LINUX Apple Clang build")
     # on Linux and MacOS we can build shared libs for all not explicitly marked as STATIC
@@ -33,6 +34,26 @@ IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT WIN32 )
 ENDIF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT WIN32)
 #
 #
+#
+# set CMAKE_BUILD_TYPE RELEASE for GCC
+IF(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND NOT WIN32)
+# using regular Clang or AppleClang
+    message ("UNIX LINUX GNU GCC build")
+    # on Linux and MacOS we can build shared libs for all not explicitly marked as STATIC
+    option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+    IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
+        message ("debug build ---------------------")
+        add_compile_options(-std=c++20 -pthread -ggdb3 -O0 -Wsign-compare -Wall -Wextra -Werror -pedantic)
+        set(CMAKE_VERBOSE_MAKEFILE ON)
+    ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
+    IF(CMAKE_BUILD_TYPE MATCHES RELEASE)
+        message ("release build ---------------------")
+        add_compile_options(-std=c++20 -pthread -Wno-unused-parameter -Wno-sign-compare)
+    ENDIF(CMAKE_BUILD_TYPE MATCHES RELEASE)
+ENDIF(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND NOT WIN32)
+#
+#
+
 # set CMAKE_BUILD_TYPE RELEASE for g++ on mingw WINDOWS
 IF(WIN32)
     message ( "WINDOWS build" )
@@ -57,7 +78,7 @@ IF (WIN32)
 ELSE()
 # add_definitions(-DQCUSTOMPLOT_USE_OPENGL)
 # set(QCUSTOMPLOT_USE_OPENGL TRUE)
-    message ("starting UNIX LINUX Apple Clang build")
+    message ("starting UNIX LINUX Apple Clang / GCC build")
 ENDIF()
 
 message ( "adding subdirs" )
