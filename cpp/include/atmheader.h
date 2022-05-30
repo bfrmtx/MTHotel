@@ -192,6 +192,8 @@ private:
             for (j = 0; j < this->sel.size() % charbits; j++) {
                 this->bs[j] = this->sel[charbits * i + j];
             }
+            // https://stackoverflow.com/questions/16944617/qbitarray-size-stays-zero-after-trying-to-fill-it-with-stream-operator
+
             // Qt does a rounding and read/write more bits
             // for the old standard it will be compatible
             // QBitArray consists of a 32bit smaples and following bits

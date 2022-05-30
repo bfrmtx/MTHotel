@@ -23,6 +23,12 @@ namespace fs = std::filesystem;
 #include "../xml/tinyxmlwriter/tinyxmlwriter.h"
 
 #include "pt_cat.h"
+#include "adu06_fname.h"
+
+// run tests
+// -outdir /tmp -cat /home/bfr/devel/ats_data/cat_ats_data/NGRI/meas_2019-11-20_06-52-49/*ats /home/bfr/devel/ats_data/cat_ats_data/NGRI/meas_2019-11-22_06-22-30/*ats
+// -outdir /tmp -chats /home/bfr/devel/ats_data/zero6/site0199/*ats
+
 
 /*
    string path = "/";
@@ -40,6 +46,7 @@ for (const auto & file : directory_iterator(path))
     bool cat = false;                       //!< concatunate ats files, try read xml from atsheader & calibration from XML
     int run = -1;                           //!< run number, greater equal 0
     double lsbval = 0;                      //!< lsb
+    bool chats = false;                     //!< convert ADU-06 files to ADU-08e files
     fs::path outdir;
 
 
@@ -56,6 +63,9 @@ for (const auto & file : directory_iterator(path))
         std::string marg(argv[l]);
         if (marg.compare("-cat") == 0) {
             cat = true;
+        }
+        if (marg.compare("-chats") == 0) {
+            chats = true;
         }
         //        else if (marg.compare("-lsbval") == 0) {
         //            lsbval = atof(argv[++l]);
@@ -86,7 +96,7 @@ for (const auto & file : directory_iterator(path))
 
     if (!atsheaders.size()) {
         std::cout << "no ats files found" << std::endl;
-        exit(0);
+        return EXIT_FAILURE;
     }
 
     for (const auto& ats : atsheaders ) {
@@ -123,7 +133,7 @@ for (const auto & file : directory_iterator(path))
 
     if (cat) {
         if (!sizeof(outdir)) {
-            std::cout << "please supply -outdir" << std::endl;
+            std::cout << "please supply -outdir name" << std::endl;
             return EXIT_FAILURE;
         }
         if (atsheaders.size() < 2) {
@@ -133,6 +143,10 @@ for (const auto & file : directory_iterator(path))
 
         if (!std::filesystem::exists(outdir)) {
             std::filesystem::create_directory(outdir);
+            if(!std::filesystem::exists(outdir)) {
+                std::cout << "can not create outdir" << std::endl;
+                return EXIT_FAILURE;
+            }
             std::cout << outdir << " created" << std::endl;
         }
 
@@ -216,7 +230,42 @@ for (const auto & file : directory_iterator(path))
         remove_cal_duplicates(calibs);
 
         // this function will sort the ats channel files in order to get C00 ... C99
-        xml_from_ats(xmls_and_files, calibs, outdir);
+        xml_from_ats(xmls_and_files, calibs);
+
+    }
+
+    if (chats) {
+        if (!sizeof(outdir)) {
+            std::cout << "please supply -outdir name" << std::endl;
+            return EXIT_FAILURE;
+        }
+        if (!atsheaders.size()) {
+            std::cout << "cat you need one file(s) or more" << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        if (!std::filesystem::exists(outdir)) {
+            std::filesystem::create_directory(outdir);
+            if(!std::filesystem::exists(outdir)) {
+                std::cout << "can not create outdir" << std::endl;
+                return EXIT_FAILURE;
+            }
+            std::cout << outdir << " created" << std::endl;
+        }
+
+        for (const auto &atsh : atsheaders) {
+
+            auto adu06 = std::make_shared<adu06_fname>(atsh->path());
+            auto atsj = std::make_shared<ats_header_json>( atsh->header,  atsh->path());
+            atsj->get_ats_header();
+            // the old software does not reliably set the chopper in the ats header - must guess!
+            if (atsj->header["sample_rate"] < 513) atsj->header["chopper"] = 1;
+            std::cout << adu06->channel_type << " " <<  atsj->header["sample_rate"] << " chopper: " << atsj->header["chopper"] << std::endl;
+            std::cout <<  atsj->header["x1"] << " " << atsj->header["y1"] << std::endl;
+
+
+        }
+
 
     }
 

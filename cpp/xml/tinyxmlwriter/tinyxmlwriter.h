@@ -202,7 +202,7 @@ public:
         this->file.open(this->filename, std::ios::out | std::ios::trunc);
         if (!this->file.is_open()) {
             std::string err_str = __func__;
-            err_str += ":: can not open ascii for writing " + this->filename.string();
+            err_str += ":: can not open XML for writing " + this->filename.string();
             throw err_str;
             return false;
         }

@@ -7,7 +7,8 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/rpath.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/out_of_tree_build.cmake)
 include_directories(${CMAKE_INSTALL_PREFIX}/include ${CMAKE_SOURCE_DIR}/include)
 
-set(PROJECT_SOURCES main.cpp pt_cat.h)
+
+set(PROJECT_SOURCES main.cpp pt_cat.h adu06_fname.h)
 
 
 add_executable(${PROJECT_NAME}

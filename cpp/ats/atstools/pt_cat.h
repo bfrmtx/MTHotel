@@ -64,6 +64,9 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
                 if (!std::filesystem::exists(outdir)) {
                     std::filesystem::create_directory(outdir);
                     std::cout << "creating " << outdir << std::endl;
+                    if (!std::filesystem::exists(outdir)) {
+                        std::cout << "creating " << outdir << " " << "failed!" <<  std::endl;
+                    }
                 }
             }
             catch (...) {

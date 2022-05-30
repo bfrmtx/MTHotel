@@ -20,18 +20,25 @@
 // std::vector<std::shared_ptr<calibration>> calibs;       //!< all JSON style calibrations
 // std::multimap<std::string, fs::path> xmls_and_files;    //!< create a multimap which ats files belong to the same XML
 
-void xml_from_ats (std::multimap<std::string, fs::path> &xmls_and_files, const std::vector<std::shared_ptr<calibration>> &calibs, fs::path outdir) {
+void xml_from_ats (std::multimap<std::string, fs::path> &xmls_and_files, const std::vector<std::shared_ptr<calibration>> &calibs) {
     std::cout << "try to generate new XML files" << std::endl;
 
     sort_xml_and_files(xmls_and_files);
 
     std::vector<std::string> new_xml_files;
+    std::vector<fs::path> new_xml_paths;
 
     for(const auto &x: xmls_and_files) {
         // std::cout<< x.first <<":"<< x.second << std::endl;
-        if (!new_xml_files.size())  new_xml_files.push_back(x.first);
+        if (!new_xml_files.size()) {
+
+            new_xml_files.push_back(x.first);
+            new_xml_paths.push_back(x.second);
+        }
         else if (new_xml_files.back() != x.first) {
             new_xml_files.push_back(x.first);
+            new_xml_paths.push_back(x.second);
+
         }
     }
 
@@ -55,7 +62,7 @@ void xml_from_ats (std::multimap<std::string, fs::path> &xmls_and_files, const s
             std::cout << std::endl;
 
 
-            fs::path outxmlfile(outdir);
+            fs::path outxmlfile(new_xml_paths.at(i).parent_path());
             outxmlfile += "/";
             outxmlfile += new_xml_files.at(i);
 
