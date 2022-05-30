@@ -251,6 +251,22 @@ inline const char* BoolToString(const bool b)
     return b ? "true" : "false";
 }
 
+inline const char* IntToString(const int64_t b)
+{
+    return b ? "true" : "false";
+}
+
+inline const char* BoolToChopper(const bool b)
+{
+    return b ? "on" : "off";
+}
+
+inline const char* IntToChopper(const int64_t b)
+{
+    return b ? "on" : "off";
+}
+
+
 std::vector<std::string> split(const std::string &s, char delim) {
     std::vector<std::string> elems;
     std::stringstream ss(s);
