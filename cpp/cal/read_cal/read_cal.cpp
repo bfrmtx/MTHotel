@@ -4,20 +4,32 @@ read_cal::read_cal()
 {
 
     auto dbfile = working_dir("data", "info.sql3");
-    if (!dbfile.size()) {
 
-        return;
+    try {
+        if (!std::filesystem::exists(dbfile)) {
+            dbfile = getenv("HOME");
+            dbfile /= "devel/github_mthotel/MTHotel/cpp/data/info.sql3";
+
+            if (!std::filesystem::exists(dbfile)) {
+                std::string err_str = __func__;
+                err_str += ":: read_cal() ";
+                err_str += dbfile.string();
+                throw err_str;
+                return;
+            }
+        }
     }
-    else {
-        this->dbloaded = true;
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
     }
+    this->dbloaded = true;
     // that is a two column db
     this->sqldb.sqlite_select(dbfile, "SELECT * FROM sensor_aliases");
     for (auto &row : this->sqldb.table) {
-        //        for (auto &col : row) {
-        //            std::cout << col << " ";
-        //        }
-        //        std::cout << std::endl;
+        //                for (auto &col : row) {
+        //                    std::cout << col << " ";
+        //                }
+        //                std::cout << std::endl;
 
         if (row.size() == 2) this->sensor_aliases.emplace_back(std::make_pair(row.at(0), row.at(1)));
     }
@@ -38,7 +50,7 @@ read_cal::~read_cal()
 
 std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename, const ChopperStatus &chopper)
 {
-
+    this->clear();
     auto cal = std::make_shared<calibration>();
     if (!this->dbloaded) {
         std::string err_str = __func__;
@@ -61,14 +73,22 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
 
 
     for (const auto &pairs : this->sensor_aliases) {
+        bool ok = false;
+        //std::cout << pairs.first << "  " <<  pairs.second << std::endl;
         if (mstr::begins_with(calfilename, pairs.first)) {
+
+            std::string xcal(calfilename);
             this->fmagtype = pairs.second;
             // remove substring
-            calfilename.erase(0, pairs.first.size());
-            for (size_t i = 0; i < calfilename.size(); i++) {
-                if (std::isdigit(calfilename[i])) this->fmagser += calfilename[i];
+            xcal.erase(0, pairs.first.size());
+            if (std::isdigit(xcal[0])) ok = true;  // we have a number and not an e
+            if (std::isalpha(xcal[0])) ok = false;  // we have a number and not an e
+            if (ok) {
+                for (size_t i = 0; i < xcal.size(); i++) {
+                    if (std::isdigit(calfilename[i])) this->fmagser += xcal[i];
+                }
+                break;
             }
-            break;
         }
     }
 
@@ -91,6 +111,7 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
     std::string str;
     std::string line;
     bool header = true;
+    bool stop = false;
     while (std::getline(file, str)) {
         std::transform(str.begin(), str.end(), str.begin(), ::tolower);
         line = mstr::simplify(str); // remove leading, trailing white spaces and double whites
@@ -113,59 +134,33 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
 
             }
 
-            found = line.find("magnetometer");
+            found = line.find("date");
             if (found != std::string::npos) {
-                found = line.find("date");
-                bool tryme = false;
-                if (found != std::string::npos) tryme = true;
-                auto items = mstr::split(line, ' ');
-                if (tryme && (items.size() > 3) ) {
-                    if (mstr::contains(items.at(0), "magnetometer", false) && !mstr::contains(items.at(1), "date", false) ) {
-                        std::string res = items.at(1);
-                        if (mstr::contains(res, "#")) {
-                            auto items2 = mstr::split(res, '#');
-                            if (items2.size() == 2) {
-                                this->magtype = mstr::trim(items2.at(0));
-                                this->magser = mstr::trim(items2.at(1));
-
-                                for (const auto &pairs : this->sensor_aliases) {
-                                    if (pairs.first == this->magtype) {
-                                        this->magtype = pairs.second;
-                                        break;
-                                    }
-                                }
-
-                            }
-                        }
+                auto tokens(mstr::split(line, "date"));
+                if (tokens.size() == 2) {
+                    auto tokens_dt(mstr::split(tokens.at(1), "time"));
+                    if (tokens_dt.size() == 2) {
+                        this->magtime = mstr::trim(tokens_dt.at(1));
+                        if (this->magtime.at(0) == ':') this->magtime = this->magtime.substr(1);
+                        this->magdate = mstr::trim(tokens_dt.at(0));
+                        this->magdate.erase(remove(this->magdate.begin(), this->magdate.end(), ':'), this->magdate.end());
                     }
-
-                    if (mstr::contains(items.at(2), "date", false) && !mstr::contains(items.at(4), "/", false) ) {
-                        this->magdate = mstr::trim(items.at(3));
-                    }
-
                 }
             }
+
 
             found = line.find("chopper");
             if (found != std::string::npos) {
 
-                header = false;
-                if (this->magser != this->fmagser) {
-                    std::cerr << "serial from file differs from file content, takeing from file name!" << std::endl;
-                }
-                cal->serial = std::stoi(this->fmagser);
-                if (this->magtype != this->fmagtype) {
-                    std::cerr << "mag type from file differs from file content, takeing from file name!" << std::endl;
-                }
-                cal->sensor = this->fmagtype;
-                cal->date = this->magdate;
                 found = line.find("chopper on");
                 if (found != std::string::npos) {
                     this->chopper = ChopperStatus::on;
+                    if (this->chopper == chopper) header = false;
                 }
                 found = line.find("chopper off");
                 if (found != std::string::npos) {
                     this->chopper = ChopperStatus::off;
+                    if (this->chopper == chopper) header = false;
                 }
 
             }
@@ -173,38 +168,35 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
 
         }
         else {
-            if (this->chopper == chopper) {
+            if ((this->chopper == chopper) && !stop) {
                 auto values = mstr::split(line, ' ');
-
-
+                // we may have an empty line
                 if (values.size() == 3) {
-                    this->f.emplace_back(std::stod(values[0]));
-                    this->a.emplace_back(std::stod(values[1]));
-                    this->p.emplace_back(std::stod(values[2]));
-                }
-            }
-
-            else {
-                found = line.find("chopper on");
-                if (found != std::string::npos) {
-                    this->chopper = ChopperStatus::on;
-                }
-                found = line.find("chopper off");
-                if (found != std::string::npos) {
-                    this->chopper = ChopperStatus::off;
+                    // data line never starts with ABC.. and also frequencies are not negative -
+                    // if the number is +123 ... I don't know where it is coming from - change the files
+                    if (std::isalpha(values[0].at(0)) ||  std::ispunct(values[0].at(0))) {
+                        stop = true;
+                    }
+                    else {
+                        this->f.emplace_back(std::stod(values[0]));
+                        this->a.emplace_back(std::stod(values[1]));
+                        this->p.emplace_back(std::stod(values[2]));
+                    }
                 }
             }
         }
 
-        std::cout << line << '\n';
+   //     std::cout << line << '\n';
     }
     file.close();
 
     if (!failed) {
         this->guess_date(this->magdate);
         cal->date = this->magdate;
-        cal->serial = std::stoi(this->magser);
-        cal->sensor = this->magtype;
+        cal->time = this->magtime;
+        cal->serial = std::stoi(this->fmagser);
+        cal->sensor = this->fmagtype;
+        cal->chopper = this->chopper;
 
         if ((f.size() == this->p.size()) && (f.size() == a.size())) {
             cal->f = this->f;
@@ -239,10 +231,11 @@ void read_cal::clear()
     this->a.reserve(200);
     this->p.reserve(200);
 
-    this->magser.clear();
-    this->magtype.clear();
+    this->fmagser.clear();
+    this->fmagtype.clear();
     this->magdate.clear();
     this->date_hint.clear();
+    this->chopper = ChopperStatus::off;
 }
 
 
@@ -256,14 +249,13 @@ std::string read_cal::get_units_mtx_old() const
 
 }
 
-void read_cal::guess_date(const std::string &datestr)
+void read_cal::guess_date(std::string &datestr)
 {
 
     auto ymd = mstr::split(this->magdate, '/');
     int y = 0, m = 0, d = 0;
-    bool b_iso = false;
     if (ymd.size() == 3) {
-        if (date_hint == "DD/mm/YY") {
+        if (date_hint == "DD/mm/YY") {  // old solartron
             y = std::stoi(ymd.at(2)) + 2000;
             m = std::stoi(ymd.at(1));
             d = std::stoi(ymd.at(0));
@@ -281,61 +273,11 @@ void read_cal::guess_date(const std::string &datestr)
             y = std::stoi(ymd.at(0));
             m = std::stoi(ymd.at(1));
             d = std::stoi(ymd.at(2));
-            b_iso = true;
         }
     }
 
     if (ymd.size() == 0) return;
 
-    int min_year = 0, max_year = 0;
-    if (this->magtype == "MFS-07") {
-        min_year = 2003;
-        max_year = 2012;
-    }
-
-    if (this->magtype == "MFS-07e") {
-        min_year = 2009;
-        max_year = 2030;
-    }
-    if (this->magtype == "MFS-06") {
-        min_year = 2000;
-        max_year = 2010;
-    }
-
-    if (this->magtype == "MFS-06e") {
-        min_year = 2009;
-        max_year = 2030;
-    }
-
-    if (this->magtype == "MFS-08") {
-        min_year = 2002;
-        max_year = 2010;
-    }
-
-    if (this->magtype == "MFS-10e") {
-        min_year = 2014;
-        max_year = 2030;
-    }
-
-    if (this->magtype == "SHFT-02") {
-        min_year = 2000;
-        max_year = 2010;
-    }
-
-    if (this->magtype == "SHFT-02e") {
-        min_year = 2009;
-        max_year = 2030;
-    }
-
-    if (!b_iso) {
-        if ( (y < min_year) || (y > max_year) ) {
-            std::swap(y, d);
-            if ( (y < min_year) || (y > max_year) ) {
-                return;
-            }
-
-        }
-    }
 
     this->cal_date = time_from_ints(y, m, d);
     this->magdate = tm_to_str_date(this->cal_date);
@@ -343,7 +285,7 @@ void read_cal::guess_date(const std::string &datestr)
 
 
 
- std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path &filename)
+std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path &filename)
 {
     auto tir = std::make_shared<tinyxml2::XMLDocument>();
     std::vector<std::shared_ptr<calibration>> cal_entries;

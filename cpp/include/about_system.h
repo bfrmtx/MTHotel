@@ -92,36 +92,34 @@ std::shared_ptr<tm> time_from_ints(const int YYYY = 0, const int MM = 0, const i
  * \param filename append a file in case
  * \return either the current working dir of procmt, with subfolder and file in case, if file check existance
  */
-std::string working_dir(const std::string subdir, const std::string filename) {
-    std::vector<std::string> pth = mstr::split(std::filesystem::current_path().string(), '/');
-    std::string exec_dir;
-    for (const auto &str : pth) {
-        if (!mstr::contains(str, "procmt")) {
-            exec_dir += str;
-            exec_dir += '/';
-        } else if (mstr::contains(str, "procmt")) {
-            exec_dir += str;
-            exec_dir += '/';
-            break;
-        }
+std::filesystem::path working_dir(const std::string subdir, const std::string filename) {
+    auto cup = std::filesystem::current_path();
+    auto upp = cup.parent_path();
+    std::filesystem::path exec_dir;
+    // procmt we have procmt/bin procmt/data and so on - want maybe data info.sql3 or cal MFS.txt
+    if (mstr::ends_with(cup.string(), "bin")) {
+        exec_dir = cup;
     }
-    auto dir = std::filesystem::path(exec_dir);
+    else {
+        exec_dir = upp;
+    }
     if (!std::filesystem::is_directory(exec_dir)) {
         exec_dir.clear();
-        return std::string();
-    }
-    if (subdir.size())
-        exec_dir += subdir + '/';
-    if (!std::filesystem::is_directory(exec_dir)) {
-        exec_dir.clear();
-        return std::string();
     }
 
-    if (filename.size())
-        exec_dir += filename;
-    if (!std::filesystem::exists(exec_dir)) {
-        exec_dir.clear();
-        return std::string();
+    if (subdir.size()) {
+        exec_dir /= subdir;
+        if (!std::filesystem::is_directory(exec_dir)) {
+            exec_dir.clear();
+
+        }
+    }
+
+    if (filename.size()) {
+        exec_dir /= filename;
+        if (!std::filesystem::exists(exec_dir)) {
+            exec_dir.clear();
+        }
     }
 
     return exec_dir;
@@ -138,7 +136,7 @@ void sort_xml_and_files(std::multimap<std::string, std::filesystem::path> &xmls_
 
     // get all unique keys
     for(const auto &x: xmls_and_files) {
-       // std::cout<< x.first <<":"<< x.second << std::endl;
+        // std::cout<< x.first <<":"<< x.second << std::endl;
         if (!xml_files.size())  xml_files.push_back(x.first);  // init
         else if (xml_files.back() != x.first) {
             xml_files.push_back(x.first);

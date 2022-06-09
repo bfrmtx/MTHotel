@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <filesystem>
 
 #include <sqlite3.h>
 
@@ -15,7 +16,7 @@ class sqlite_handler
 public:
     sqlite_handler();
 
-    size_t sqlite_select(const std::string db_name, const std::string query);
+    size_t sqlite_select(const std::filesystem::path &db_name, const std::string query);
 
     std::vector<std::string> header;
     std::vector<std::vector<std::string>> table;

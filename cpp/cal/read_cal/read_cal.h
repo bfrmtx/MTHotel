@@ -46,16 +46,16 @@ private:
     ChopperStatus chopper = ChopperStatus::off;
     sqlite_handler sqldb;
 
-    std::string magser;
-    std::string magtype;
+    // use for a guess
     std::string magdate;
+    std::string magtime;
 
     // from file name
     std::string fmagser;
     std::string fmagtype;
 
 
-    void guess_date(const std::string &datestr);
+    void guess_date(std::string &datestr);
 
     bool dbloaded = false;
     std::vector<std::pair<std::string, std::string>> sensor_aliases;

@@ -277,6 +277,24 @@ std::vector<std::string> split(const std::string &s, char delim) {
     return elems;
 }
 
+std::vector<std::string> split(const std::string &s, const std::string delim) {
+
+    std::vector<std::string> elems;
+
+    size_t pos_start = 0, pos_end, delim_len = delim.size();
+    std::string token;
+
+    while ((pos_end = s.find (delim, pos_start)) != std::string::npos) {
+        token = s.substr (pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        elems.push_back (token);
+    }
+
+    elems.push_back (s.substr (pos_start));
+
+    return elems;
+}
+
 
 /*!
  * \brief sample_rate_to_str converts 256 to 256 and Hz, 0.25 to 4 and s; if numbers results in to fractions and round_f_or_s is true return value is != 0
@@ -393,6 +411,7 @@ std::string time_t_iso8601_utc(const time_t &ti, std::string &date, std::string 
     return date + separator + time + sfracs + TZ;
 
 }
+
 
 /*
 time_t parseiso8601utc(const char *date) {

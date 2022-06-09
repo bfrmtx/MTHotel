@@ -302,7 +302,7 @@ struct calibration
 
     }
 
-    void add_to_xml_1_of_3(std::shared_ptr<tinyxmlwriter> &tix) const {
+    void add_to_xml_1_of_3(std::shared_ptr<tinyxmlwriter> &tix, const std::string identifier = "") const {
         tix->push("calibration");
 
         tix->element("cal_version", "1.0");
@@ -310,8 +310,22 @@ struct calibration
         tix->element("user", "metronix");
 
         tix->push("calibrated_item");
-
-        tix->element("ci", this->sensor);
+        if (identifier.size()) {
+            tix->element_attr("ci", "identifier", identifier, this->sensor);
+        }
+        else if (mstr::begins_with(this->sensor, "MFS")) {
+            tix->element_attr("ci", "identifier", "coil", this->sensor);
+        }
+        else if (mstr::begins_with(this->sensor, "SHFT")) {
+            tix->element_attr("ci", "identifier", "coil", this->sensor);
+        }
+        else if (mstr::begins_with(this->sensor, "FGS")) {
+            tix->element_attr("ci", "identifier", "fluxgate", this->sensor);
+        }
+        else if (mstr::begins_with(this->sensor, "ADB")) {
+            tix->element_attr("ci", "identifier", "board", this->sensor);
+        }
+        else tix->element("ci", this->sensor);
         tix->element("ci_serial_number", this->serial);
         tix->element_empty("ci_revision");
         tix->element("ci_date", this->date);
@@ -359,10 +373,11 @@ struct calibration
 
 bool operator == (const std::shared_ptr<calibration>& lhs, const std::shared_ptr<calibration>& rhs) {
 
-    //
+    // do I want to include the serial ... or check if just the data is the same?
 
 
     if (lhs->sensor != rhs->sensor) return false;
+    if (lhs->serial != rhs->serial) return false;
     if (lhs->chopper != rhs->chopper) return false;
     if (lhs->units_amplitude != rhs->units_amplitude) return false;
     if (lhs->units_frequency != rhs->units_frequency) return false;
@@ -378,5 +393,18 @@ bool operator == (const std::shared_ptr<calibration>& lhs, const std::shared_ptr
 
     return true;
 }
+
+/*!
+   compare a sensor - ignore the chopper
+*/
+auto compare_same_senor = [](const std::shared_ptr<calibration> &lhs, const std::shared_ptr<calibration> &rhs) -> bool {
+    if (lhs->sensor != rhs->sensor) return false;
+    if (lhs->units_amplitude != rhs->units_amplitude) return false;
+    if (lhs->units_frequency != rhs->units_frequency) return false;
+    if (lhs->units_phase != rhs->units_phase) return false;
+    if (lhs->serial != rhs->serial) return false;
+
+    return true;
+};
 
 #endif

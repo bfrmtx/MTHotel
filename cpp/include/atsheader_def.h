@@ -11,6 +11,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <cstring>
+#include <iterator>
 #include <unordered_map>
 #include <filesystem>
 #include "strings_etc.h"
@@ -39,13 +41,13 @@ namespace fs = std::filesystem;
    start of CEA data is 400h + 3FFh * 20h = 83E0h<br>
                         1024 + 1023 * 23  = 33760<br>
 
-   assuming 3 slices of 4096 iSamples will be 12,288 samples in the header,
-   followed by 3 slice headers with 4096 iSamples each
-   and 1019 empty slice headers<br>
+assuming 3 slices of 4096 iSamples will be 12,288 samples in the header,
+    followed by 3 slice headers with 4096 iSamples each
+        and 1019 empty slice headers<br>
 
- */
+                        */
 
-struct ATSSliceHeader_1080
+                struct ATSSliceHeader_1080
 {
     std::uint32_t uiSamples;                    //!< 000h  number of samples for this slice
     std::uint32_t uiStartDateTime;              //!< 004h  startdate/time as UNIX timestamp (UTC)
@@ -64,13 +66,13 @@ struct ATSSliceHeader_1080
 
 */
 
-/*!
+    /*!
    \brief The ATSComments_80 struct for ats header 80,81 and 90 <br>
    Some software will automatically convert to higher version<br>
    Some fields are external - the user has to set then; examples:<br>
    northing, easting, UTM Zone : these can be used for high density grids<br>
  */
-struct ATSComments_80 {
+    struct ATSComments_80 {
     char          Client           [16];        //!< 000h  UTF-8 storage, used in EDI
     char          Contractor       [16];        //!< 010h  UTF-8 storage, used in EDI
     char          Area             [16];        //!< 020h  UTF-8 storage, used in EDI
@@ -208,37 +210,39 @@ struct ATSHeader_80 {
  * \brief The ats_sys_names
  */
 std::unordered_map<std::string, std::string> ats_sys_names = {
-        {"adu06", "ADU-06"},
-        {"adu07", "ADU-07e"},
-        {"adu08", "ADU-08e"},
-        {"adu09", "ADU-09u"},
-        {"adu10", "ADU-10e"},
-        {"adu11", "ADU-11e"}
-    };
+    {"adu06", "ADU-06"},
+    {"adu07", "ADU-07e"},
+    {"adu08", "ADU-08e"},
+    {"adu09", "ADU-09u"},
+    {"adu10", "ADU-10e"},
+    {"adu11", "ADU-11e"},
+    {"adu12", "ADU-12e"}
+};
 
 /*!
  * \brief The ats_sys_types
  */
 std::unordered_map<std::string, int> ats_sys_types = {
-        {"ADU-06", 0},
-        {"ADU-07e", 0},
-        {"ADU-08e", 1},
-        {"ADU-09u", 4},
-        {"ADU-10e", 4},
-        {"ADU-11e", 5}
-    };
+    {"ADU-06", 0},
+    {"ADU-07e", 0},
+    {"ADU-08e", 1},
+    {"ADU-09u", 4},
+    {"ADU-10e", 4},
+    {"ADU-11e", 5},
+    {"ADU-12e", 6}
+};
 
 /*!
  * \brief The ats_sys_family
  */
 std::unordered_map<std::string, int> ats_sys_family = {
-        {"ADU-06", 6},
-        {"ADU-07e", 7},
-        {"ADU-08e", 8},
-        {"ADU-09u", 9},
-        {"ADU-10e", 10},
-        {"ADU-11e", 11}
-    };
+    {"ADU-06", 6},
+    {"ADU-07e", 7},
+    {"ADU-08e", 8},
+    {"ADU-09u", 9},
+    {"ADU-10e", 10},
+    {"ADU-11e", 11}
+};
 
 
 
@@ -292,7 +296,7 @@ struct ats_header_json {
     }
 
     std::string start_time() const {
-    std::string udate, utime;
+        std::string udate, utime;
         double f = 0.0;
         long int utc = static_cast<int64_t>(this->atsh.start);
         auto result = mtime::time_t_iso8601_utc(utc, udate, utime, f);
@@ -320,22 +324,23 @@ struct ats_header_json {
     std::unordered_map<std::string, uint8_t> HF_Filters;
 
     std::vector<uint8_t> LFFilter_to_ints() const {
-    std::vector<uint8_t> filters(8,0);
-    size_t i = 0;
-    for (i = 0; i < sizeof(this->atsh.LF_filters); ++i) {
-        filters[i] = static_cast<int8_t>(this->atsh.LF_filters[i]);
+        std::vector<uint8_t> filters(8,0);
+        size_t i = 0;
+        for (i = 0; i < sizeof(this->atsh.LF_filters); ++i) {
+            filters[i] = static_cast<int8_t>(this->atsh.LF_filters[i]);
+        }
+        return filters;
     }
-    return filters;
-  }
 
     std::vector<uint8_t> HFFilter_to_ints() const {
-    std::vector<uint8_t> filters(8,0);
-    size_t i = 0;
-    for (i = 0; i < sizeof(this->atsh.HF_filters); ++i) {
-        filters[i] = static_cast<int8_t>(this->atsh.HF_filters[i]);
+        std::vector<uint8_t> filters(8,0);
+        size_t i = 0;
+        for (i = 0; i < sizeof(this->atsh.HF_filters); ++i) {
+            filters[i] = static_cast<int8_t>(this->atsh.HF_filters[i]);
+        }
+        return filters;
     }
-    return filters;
-  }
+
 
 
     /*!
@@ -345,24 +350,29 @@ struct ats_header_json {
      * @return size_t successfully created filters
      */
 
-    size_t set_filter_bank(const std::string &ADU) {
+    size_t set_filter_bank(const std::string &ADUin) {
+        std::string ADU(ADUin);
+        if (ADUin == "ADU-06") ADU = "ADU-07e";
+        if (ADUin == "ADU-07") ADU = "ADU-07e";
+        this->LF_Filters.clear();
+        this->HF_Filters.clear();
 
-        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   LF_Filters["LF-RF-1"] =     1;  //! 0x01 ADU07/8_LF-RF-1 filter on LF board with capacitor 22pF
-        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   LF_Filters["LF-RF-2"] =     2;  //! 0x02 ADU07/8_LF-RF-2 filter on LF board with capacitor 122pF
-        if ((ADU == "ADU-07e"))                         LF_Filters["LF-RF-3"] =     4;  //! 0x04 ADU07_LF-RF-3 filter on LF board with capacitor 242pF
-        if ((ADU == "ADU-07e"))                         LF_Filters["LF-RF-4"] =     8;  //! 0x08 ADU07_LF-RF-4 filter on LF board with capacitor 342pF
-        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   LF_Filters["LF_LP_4HZ"] =   16; //! 0x10 ADU07/8_LF_LP_4HZ filter on LF board with 4 Hz Lowpass characteristic
+        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF-RF-1"] =     1;  //! 0x01 ADU07/8_LF-RF-1 filter on LF board with capacitor 22pF
+        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF-RF-2"] =     2;  //! 0x02 ADU07/8_LF-RF-2 filter on LF board with capacitor 122pF
+        if ((ADU == "ADU-07e"))                         this->LF_Filters["LF-RF-3"] =     4;  //! 0x04 ADU07_LF-RF-3 filter on LF board with capacitor 242pF
+        if ((ADU == "ADU-07e"))                         this->LF_Filters["LF-RF-4"] =     8;  //! 0x08 ADU07_LF-RF-4 filter on LF board with capacitor 342pF
+        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF_LP_4HZ"] =   16; //! 0x10 ADU07/8_LF_LP_4HZ filter on LF board with 4 Hz Lowpass characteristic
 
-        if ((ADU == "ADU-07e"))                         LF_Filters["MF-RF-1"] =     32; //! 0x40 ADU07_MF_RF_1 filter on MF board with capacitor 470nF
-        if ((ADU == "ADU-07e"))                         LF_Filters["MF-RF-2"] =     64; //! 0x20 ADU07_MF_RF_2 filter on MF board with capacitor 4.7nF
+        if ((ADU == "ADU-07e"))                         this->LF_Filters["MF-RF-1"] =     32; //! 0x40 ADU07_MF_RF_1 filter on MF board with capacitor 470nF
+        if ((ADU == "ADU-07e"))                         this->LF_Filters["MF-RF-2"] =     64; //! 0x20 ADU07_MF_RF_2 filter on MF board with capacitor 4.7nF
 
         // HF Path
         // 1 Hz has been dropped for 08
-        if ((ADU == "ADU-07e"))                         HF_Filters["HF-HP-1Hz"] =   1;  //! 0x01 ADU07_HF-HP-1Hz 1Hz filter enable for HF board
+        if ((ADU == "ADU-07e"))                         this->HF_Filters["HF-HP-1Hz"] =   1;  //! 0x01 ADU07_HF-HP-1Hz 1Hz filter enable for HF board
         // 500Hz is the HP for 08
-        if ((ADU == "ADU-08e"))                         HF_Filters["HF-HP-500Hz"] = 2;  //! 0x02 ADU08_HF-HP-500Hz 500Hz filter enable for HF board
+        if ((ADU == "ADU-08e"))                         this->HF_Filters["HF-HP-500Hz"] = 2;  //! 0x02 ADU08_HF-HP-500Hz 500Hz filter enable for HF board
 
-        return LF_Filters.size() + HF_Filters.size();
+        return this->LF_Filters.size() + this->HF_Filters.size();
 
     }
 
@@ -370,25 +380,17 @@ struct ats_header_json {
         std::string sfilter;
         std::vector<uint8_t> filters(this->LFFilter_to_ints());
 
-        if (filters[0] >= 64) {
-            sfilter += "MF-RF-1";
-            sfilter[0] -= 64;
+        // the header uses only the FIRST int
+        std::map<uint8_t, std::string> rfilters;
+        for (const auto &it : this->LF_Filters) {
+            rfilters[it.second] = it.first;
         }
-        if (filters[0] >= 32) {
-            sfilter += "MF-RF-2";
-            sfilter[0] -= 32;
-        }
-        if (filters[0] >= 16) {
-            sfilter += "LF_LP_4HZ";
-            sfilter[0] -= 16;
-        }
-        for (auto const ival : filters) {
-            for ( auto it = LF_Filters.cbegin(); it != LF_Filters.cend(); ++it ) {
-                // std::cout << " " << it->first << ":" << it->second;
-                if (it->second == ival) {
-                    if (sfilter.size()) sfilter += ", ";
-                    sfilter += it->first;
-                }
+
+        for (auto it = rfilters.crbegin(); it != rfilters.crend(); ++it) {
+            if (filters[0] >= it->first) {
+                if (sfilter.size()) sfilter += ",";
+                sfilter += it->second;
+                filters[0] -= it->first;
             }
         }
 
@@ -399,17 +401,51 @@ struct ats_header_json {
         std::string sfilter;
         std::vector<uint8_t> filters(this->HFFilter_to_ints());
 
-        for (auto const ival : filters) {
-            for ( auto it = HF_Filters.cbegin(); it != HF_Filters.cend(); ++it ) {
-                // std::cout << " " << it->first << ":" << it->second;
-                if (it->second == ival) {
-                    if (sfilter.size()) sfilter += ", ";
-                    sfilter += it->first;
-                }
+        // the header uses only the FIRST int
+        std::map<uint8_t, std::string> rfilters;
+        for (const auto &it : this->HF_Filters) {
+            rfilters[it.second] = it.first;
+        }
+
+        for (auto it = rfilters.crbegin(); it != rfilters.crend(); ++it) {
+            if (filters[0] >= it->first) {
+                if (sfilter.size()) sfilter += ",";
+                sfilter += it->second;
+                filters[0] -= it->first;
             }
         }
 
         return sfilter;
+    }
+
+    /*!
+     * \brief set_hf_filter_int
+     * \param cs_string comma separated list of filters
+     */
+    void set_hf_filter_int(const std::string &cs_string) {
+        std::vector<uint8_t> filters(8, 0);
+
+        for (const auto &it : this->HF_Filters) {
+            if (mstr::contains(cs_string, it.first)) filters[0] += it.second;
+        }
+
+        for (size_t i = 0; i < sizeof(this->atsh.HF_filters); ++i) {
+            this->atsh.HF_filters[i] = static_cast<char>(filters[i]);
+        }
+
+    }
+
+    void set_lf_filter_int(const std::string &cs_string) {
+        std::vector<uint8_t> filters(8, 0);
+
+        for (const auto &it : this->LF_Filters) {
+            if (mstr::contains(cs_string, it.first)) filters[0] += it.second;
+        }
+
+        for (size_t i = 0; i < sizeof(this->atsh.LF_filters); ++i) {
+            this->atsh.LF_filters[i] = static_cast<char>(filters[i]);
+        }
+
     }
 
     void get_ats_header() {
@@ -459,7 +495,7 @@ struct ats_header_json {
         header["gps_clock_status"] =              std::string(1, this->atsh.gps_clock_status);
         header["GPS_accuracy"] =                  std::string(1, this->atsh.GPS_accuracy);
         header["offset_UTC"] =                    static_cast<int64_t>(this->atsh.offset_UTC);
-   
+
         int TypeNo = 0;
         int GMSno = 0;
         std::string Name("unknown");
@@ -468,9 +504,9 @@ struct ats_header_json {
         std::transform(str1.begin(), str1.end(), str1.begin(), ::tolower);
 
         try {
-          Name = ats_sys_names.at(str1);
+            Name = ats_sys_names.at(str1);
         } catch (...) {
-        Name = "unkown";
+            Name = "unkown";
         }
         try {
             TypeNo = ats_sys_types.at(Name);
@@ -489,7 +525,7 @@ struct ats_header_json {
         header["TypeNo"] =                        TypeNo;
         header["ats_data_file"] =                 this->filename.filename();
         //
-        set_filter_bank(ats_sys_names[Name]);
+        set_filter_bank(Name);
 
         // Data from XML-Job specification
         header["survey_header_filename"] =        mstr::clean_bc_str(this->atsh.survey_header_filename, 12);
@@ -539,6 +575,131 @@ struct ats_header_json {
 
     }
 
+
+    void set_ats_header() {
+
+        // make a clean & empty struct
+        memset(&this->atsh, 0, sizeof(this->atsh));
+
+
+
+        this->atsh.header_length        = static_cast<uint16_t>(header["header_length"]);
+        this->atsh.header_version       = static_cast<int16_t>(header["header_version"]);
+
+        this->atsh.samples              = static_cast<uint32_t>(header["samples"]);
+        this->atsh.sample_rate          = static_cast<float>(header["sample_rate"]);
+        this->atsh.start                = static_cast<uint32_t>(header["start"]);
+        this->atsh.lsbval               = static_cast<double>(header["lsbval"]);
+        this->atsh.GMToffset            = static_cast<int32_t>(header["GMToffset"]);
+        this->atsh.orig_sample_rate     = static_cast<float>(header["orig_sample_rate"]);
+
+        this->atsh.serial_number        = static_cast<uint16_t>(header["serial_number"]);
+        this->atsh.serial_number_ADC_board = static_cast<uint8_t>(header["serial_number_ADC_board"]);
+        this->atsh.channel_number       = static_cast<uint8_t>(header["channel_number"]);
+        this->atsh.chopper              = static_cast<uint8_t>(header["chopper"]);
+        strncpy(this->atsh.channel_type, header["channel_type"].get<std::string>().c_str(), sizeof(this->atsh.channel_type));
+        strncpy(this->atsh.sensor_type, header["sensor_type"].get<std::string>().c_str(), sizeof(this->atsh.sensor_type));
+        this->atsh.sensor_serial_number = static_cast<int16_t>(header["sensor_serial_number"]);
+
+        this->atsh.x1                   = static_cast<float>(header["x1"]);
+        this->atsh.y1                   = static_cast<float>(header["y1"]);
+        this->atsh.z1                   = static_cast<float>(header["z1"]);
+        this->atsh.x2                   = static_cast<float>(header["x2"]);
+        this->atsh.y2                   = static_cast<float>(header["y2"]);
+        this->atsh.z2                   = static_cast<float>(header["z2"]);
+
+        this->atsh.rho_probe_ohm        = static_cast<float>(header["rho_probe_ohm"]);
+        this->atsh.DC_offset_voltage_mV = static_cast<float>(header["DC_offset_voltage_mV"]);
+        this->atsh.gain_stage1          = static_cast<float>(header["gain_stage1"]);
+        this->atsh.gain_stage2          = static_cast<float>(header["gain_stage2"]);
+
+        this->atsh.iLat_ms              = static_cast<int32_t>(header["iLat_ms"]);
+        this->atsh.iLong_ms             = static_cast<int32_t>(header["iLong_ms"]);
+        this->atsh.iElev_cm             = static_cast<int32_t>(header["iElev_cm"]);
+
+        this->atsh.Lat_Long_TYPE        = header["Lat_Long_TYPE"].get<std::string>().at(0);
+        this->atsh.coordinate_type      = header["coordinate_type"].get<std::string>().at(0);
+
+        this->atsh.ref_meridian         = static_cast<int16_t>(header["ref_meridian"]);
+
+        this->atsh.Northing             = static_cast<double>(header["Northing"]);
+        this->atsh.Easting              = static_cast<double>(header["Easting"]);
+        this->atsh.gps_clock_status     = header["gps_clock_status"].get<std::string>().at(0);
+        this->atsh.GPS_accuracy         = header["GPS_accuracy"].get<std::string>().at(0);
+        this->atsh.offset_UTC           = static_cast<int16_t>(header["offset_UTC"]);
+
+        std::string official_name = header["SystemType"].get<std::string>(); //like ADU-08e
+        std::string header_name;
+        for (const auto &name : ats_sys_names) {
+            if (name.second == official_name) {
+                header_name = name.first;
+            }
+        }
+        for (auto & c: header_name) c = toupper(c);
+        bool conv_from_06 = false;
+        if (header_name == "ADU06") {
+            conv_from_06 = true;
+            header_name = "ADU07";
+        }
+
+        // make filters, where ADU-07 and ADU-06 use ADU-07e filters
+        this->set_filter_bank(header["SystemType"]);
+        strncpy(this->atsh.SystemType, header_name.c_str(), sizeof(this->atsh.SystemType));
+
+        strncpy(this->atsh.survey_header_filename, header["survey_header_filename"].get<std::string>().c_str(), sizeof(this->atsh.survey_header_filename));
+        strncpy(this->atsh.type_of_meas, header["type_of_meas"].get<std::string>().c_str(), sizeof(this->atsh.type_of_meas));
+        this->atsh.DCOffsetCorrValue    = static_cast<double>(header["DCOffsetCorrValue"]);
+        this->atsh.DCOffsetCorrOn       = static_cast<int8_t>(header["DCOffsetCorrOn"]);
+        this->atsh.InputDivOn           = static_cast<int8_t>(header["InputDivOn"]);
+        this->atsh.bit_indicator        = static_cast<int16_t>(header["bit_indicator"]);
+        strncpy(this->atsh.result_selftest, header["result_selftest"].get<std::string>().c_str(), sizeof(this->atsh.result_selftest));
+        this->atsh.numslices            = static_cast<uint16_t>(header["numslices"]);
+        this->atsh.cal_freqs            = static_cast<int16_t>(header["cal_freqs"]);
+        this->atsh.cal_entry_length     = static_cast<int16_t>(header["cal_entry_length"]);
+        this->atsh.cal_version          = static_cast<int16_t>(header["cal_version"]);
+        this->atsh.cal_start_address    = static_cast<int16_t>(header["cal_start_address"]);
+
+
+        this->set_lf_filter_int(header["LF_filters"]);
+
+
+        strncpy(this->atsh.UTMZone, header["UTMZone"].get<std::string>().c_str(), sizeof(this->atsh.UTMZone));
+        this->atsh.system_cal_datetime  = static_cast<uint32_t>(header["system_cal_datetime"]);
+        strncpy(this->atsh.sensor_cal_filename, header["sensor_cal_filename"].get<std::string>().c_str(), sizeof(this->atsh.sensor_cal_filename));
+
+        this->atsh.sensor_cal_datetime  = static_cast<uint32_t>(header["sensor_cal_datetime"]);
+        this->atsh.powerline1           = static_cast<float>(header["powerline1"]);
+        this->atsh.powerline2           = static_cast<float>(header["powerline2"]);
+
+        this->set_hf_filter_int(header["HF_filters"]);
+
+        this->atsh.external_gain  =        static_cast<float>(header["external_gain"]);
+        strncpy(this->atsh.ADB_board_type, header["ADB_board_type"].get<std::string>().c_str(), sizeof(this->atsh.ADB_board_type));
+
+
+        if (conv_from_06) {
+            std::string s = header["Comments"];
+            header["Comments"] = "converted from ADU-06";
+            if (s.size()) {
+                header["Comments"] += "; " + s;
+            }
+        }
+
+        strncpy(this->atsh.comments.Client, header["Client"].get<std::string>().c_str(), sizeof(this->atsh.comments.Client));
+        strncpy(this->atsh.comments.Contractor, header["Contractor"].get<std::string>().c_str(), sizeof(this->atsh.comments.Contractor));
+        strncpy(this->atsh.comments.Area, header["Area"].get<std::string>().c_str(), sizeof(this->atsh.comments.Area));
+        strncpy(this->atsh.comments.SurveyID, header["SurveyID"].get<std::string>().c_str(), sizeof(this->atsh.comments.SurveyID));
+        strncpy(this->atsh.comments.Operator, header["Operator"].get<std::string>().c_str(), sizeof(this->atsh.comments.Operator));
+        strncpy(this->atsh.comments.SiteName, header["SiteName"].get<std::string>().c_str(), sizeof(this->atsh.comments.SiteName));
+        strncpy(this->atsh.comments.XmlHeader, header["XmlHeader"].get<std::string>().c_str(), sizeof(this->atsh.comments.XmlHeader));
+        strncpy(this->atsh.comments.Comments, header["Comments"].get<std::string>().c_str(), sizeof(this->atsh.comments.Comments));
+        strncpy(this->atsh.comments.SiteNameRR, header["SiteNameRR"].get<std::string>().c_str(), sizeof(this->atsh.comments.SiteNameRR));
+        strncpy(this->atsh.comments.SiteNameEMAP, header["SiteNameEMAP"].get<std::string>().c_str(), sizeof(this->atsh.comments.SiteNameEMAP));
+
+
+
+
+    }
 
 
 };

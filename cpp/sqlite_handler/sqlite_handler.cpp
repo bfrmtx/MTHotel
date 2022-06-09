@@ -25,11 +25,11 @@ sqlite_handler::sqlite_handler()
 
 }
 
-size_t sqlite_handler::sqlite_select(const std::string db_name, const std::string query)
+size_t sqlite_handler::sqlite_select(const std::filesystem::path &db_name, const std::string query)
 {
     sqlite3* DB;
     int exit = 0;
-    exit = sqlite3_open(db_name.c_str(), &DB);
+    exit = sqlite3_open(db_name.string().c_str(), &DB);
     if (exit) {
         std::cerr << "Error open DB " << db_name << " " << sqlite3_errmsg(DB) << std::endl;
         return 0;
@@ -45,10 +45,7 @@ size_t sqlite_handler::sqlite_select(const std::string db_name, const std::strin
 
     for (const auto &row : stable) {
 
-        if (!i) this->header = row;
-        else this->table.push_back(row);
-
-        ++i;
+     this->table.push_back(row);
     }
 
     return this->table.size();
