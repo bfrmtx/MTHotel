@@ -34,7 +34,16 @@ public:
         return this->dbloaded;
     }
     std::shared_ptr<calibration> read_std_mtx_txt(const fs::path &filename, const ChopperStatus &chopper);
+    /*!
+     * \brief read_std_xml reads calibration from a measdoc
+     * \param filename e.g. a measdoc.xml with multiple channels
+     * \return
+     */
     std::vector<std::shared_ptr<calibration>> read_std_xml(const fs::path &filename);
+
+    std::vector<std::shared_ptr<calibration>> read_std_xml_single(const fs::path &filename);
+
+
     void clear();
 
     std::shared_ptr<tm> cal_date;

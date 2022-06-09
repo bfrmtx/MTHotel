@@ -12,11 +12,21 @@ int main(int argc, char **argv)
     bool tojson = false;
     bool toxml = false;
     bool tomtx = false;
+    bool ampl_div_f = false;
+    bool ampl_mul_f = false;
+    bool ampl_mul_by_1000 = false;
+    bool old_to_new = false;
+    bool new_to_old = false;
+    bool force_measdoc = false;
+    bool force_single = false;
+
+
     fs::path outdir;
 
     unsigned l = 1;
     while (argc > 1 && (l < unsigned(argc)) && *argv[l] == '-') {
         std::string marg(argv[l]);
+
         if (marg.compare("-tojson") == 0) {
             tojson = true;
         }
@@ -26,7 +36,32 @@ int main(int argc, char **argv)
         if (marg.compare("-tomtx") == 0) {
             tomtx = true;
         }
-        else if (marg.compare("-outdir") == 0) {
+        if (marg.compare("-ampl_div_f") == 0) {
+            ampl_div_f = true;
+        }
+        if (marg.compare("-ampl_mul_f") == 0) {
+            ampl_mul_f = true;
+        }
+        if (marg.compare("-ampl_mul_by_1000") == 0) {
+            ampl_mul_by_1000 = true;
+        }
+        if (marg.compare("-old_to_new") == 0) {
+            old_to_new = true;
+        }
+        if (marg.compare("-new_to_old") == 0) {
+            new_to_old = true;
+        }
+        if (marg.compare("-force_measdoc") == 0) {
+            force_measdoc = true;
+        }
+        if (marg.compare("-force_single") == 0) {
+            force_single = true;
+        }
+
+
+
+
+        if (marg.compare("-outdir") == 0) {
             outdir = std::string(argv[++l]);
         }
         if ((marg.compare("-help") == 0) || (marg.compare("--help") == 0)) {
@@ -90,8 +125,16 @@ int main(int argc, char **argv)
         if ( (marg.compare(marg.size()-4, 4, ".xml") == 0) || (marg.compare(marg.size()-4, 4, ".XML") == 0) ) {
             std::shared_ptr<read_cal> mtx_cal_file = std::make_shared<read_cal>();
             try {
-                auto cals = mtx_cal_file->read_std_xml(marg);
-                cals.insert(cals.end(), cals.begin(), cals.end());
+                std::vector<std::shared_ptr<calibration>> xcals;
+                if ((isdigit(marg.at(0)) || force_measdoc) && !force_single)  xcals = mtx_cal_file->read_std_xml(marg);
+                else xcals = mtx_cal_file->read_std_xml_single(marg);
+
+                for (auto &xcal : xcals) {
+                    if (!xcal->is_empty()) {
+                        cals.push_back(xcal);
+                    }
+                }
+
             }
             catch (const std::string &error) {
 
@@ -105,7 +148,32 @@ int main(int argc, char **argv)
 
         }
 
+        if ( (marg.compare(marg.size()-5, 5, ".json") == 0) || (marg.compare(marg.size()-5, 5, ".JSON") == 0) ) {
+            try {
+                auto cal = std::make_shared<calibration>();
+                cal->read_file(marg, true);
+                cals.emplace_back(cal);
+            }
+            catch (const std::string &error) {
+
+                std::cerr << error << std::endl;
+                cals.clear();
+
+            }
+
+        }
         ++l;
+    }
+
+    if( !cals.size() ) {
+        std::cout << "no calibrations found / loaded" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+
+    // in case operations are forced - do it here
+    for (auto &cal : cals) {
+        cal->tasks_todo(ampl_div_f, ampl_mul_f, ampl_mul_by_1000, old_to_new, new_to_old);
     }
 
     if (toxml) {

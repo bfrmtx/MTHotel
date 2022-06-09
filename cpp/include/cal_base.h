@@ -62,35 +62,106 @@ struct calibration
     void clear() {
         this->sensor.clear();
         this->serial = 0;
-        this->units_amplitude.clear();
-        this->units_frequency.clear();
-        this->units_frequency.clear();
         this->date.clear();
         this->time.clear();
         this->Operator.clear();
         this->chopper = ChopperStatus::off;
+        this->units_amplitude = "unknown";
+        this->units_frequency = "unknown";
+        this->units_phase = "unknown";
+        this->ct = CalibrationType::nn;
     }
 
-    void set_format(const CalibrationType ct) {
+    void set_format(const CalibrationType ct, bool skip_date_time = true) {
         if (ct == CalibrationType::mtx_old) {
             this->units_amplitude = "V/(nT*Hz)";
             this->units_frequency = "Hz";
             this->units_phase = "degrees";
-            this->date = "1970-01-01";
-            this->time = "00:00:00";
+            if (!skip_date_time) {
+                this->date = "1970-01-01";
+                this->time = "00:00:00";
+            }
             this->Operator = "mtx";
-            this->ct = CalibrationType::mtx;
+            this->ct = CalibrationType::mtx_old;
         }
         else if (ct == CalibrationType::mtx) {
             this->units_amplitude = "mV/nT";
             this->units_frequency = "Hz";
             this->units_phase = "degrees";
-            this->date = "1970-01-01";
-            this->time = "00:00:00";
+            if (!skip_date_time) {
+                this->date = "1970-01-01";
+                this->time = "00:00:00";
+            }
             this->Operator = "mtx";
             this->ct = CalibrationType::mtx;
 
         }
+        else if (ct == CalibrationType::nn) {
+            this->units_amplitude = "unknown";
+            this->units_frequency = "unknown";
+            this->units_phase = "unknown";
+            if (!skip_date_time) {
+                this->date = "1970-01-01";
+                this->time = "00:00:00";
+            }
+            this->Operator = "nn";
+            this->ct = CalibrationType::nn;
+
+        }
+
+    }
+
+    size_t tasks_todo(const bool ampl_div_f = false, const bool ampl_mul_f = false, const bool ampl_mul_by_1000 = false,
+                      const bool old_to_new = false, const bool new_to_old = false) {
+
+        if (!this->f.size()) {
+            std::string err_str = __func__;
+            err_str += ":: no data! ->";
+            throw err_str;
+            return 0;
+        }
+
+        if ((this->f.size() != this->a.size()) || (this->f.size() != this->p.size())) {
+            std::string err_str = __func__;
+            err_str += ":: no data corrupted ->";
+            throw err_str;
+            return 0;
+        }
+
+        if (ampl_div_f) {
+            for (size_t i = 0; i < f.size(); ++i) {
+                this->a[i] /= this->f[i];
+            }
+        }
+
+        if (ampl_mul_f) {
+            for (size_t i = 0; i < f.size(); ++i) {
+                this->a[i] *= this->f[i];
+            }
+        }
+        if (ampl_mul_by_1000) {
+            for (size_t i = 0; i < f.size(); ++i) {
+                this->a[i] *= 1000.;
+            }
+        }
+
+        if (old_to_new) {
+            for (size_t i = 0; i < f.size(); ++i) {
+                this->a[i] *= (1000. * this->f[i]);
+            }
+            this->set_format(CalibrationType::mtx);
+
+        }
+
+        if (new_to_old) {
+            for (size_t i = 0; i < f.size(); ++i) {
+                this->a[i] /= (1000. * this->f[i]);
+            }
+            this->set_format(CalibrationType::mtx_old);
+        }
+
+        return f.size();
+
     }
 
     bool is_empty() const {
@@ -295,6 +366,7 @@ struct calibration
                 for (auto &v : this->a) {
                     v *= 1000.0 * *fi++;
                 }
+                this->set_format(CalibrationType::mtx, true);
             }
         }
 
