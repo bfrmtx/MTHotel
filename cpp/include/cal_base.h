@@ -41,6 +41,7 @@ struct calibration
         this->clear();
     }
 
+
     calibration(const std::shared_ptr<calibration> &rhs) {
 
         this->sensor = rhs->sensor;
@@ -214,7 +215,7 @@ struct calibration
 
         std::filesystem::path filepath(path_only);
         std::string fname(this->sensor);
-        fname += "_" + std::to_string(this->serial);
+        fname += "_" + mstr::zero_fill_field(this->serial, 4);
         if (this->chopper == ChopperStatus::on) fname += "_chopper_on.json";
         else if (this->chopper == ChopperStatus::off) fname += "_chopper_off.json";
         else fname += ".json";
@@ -437,6 +438,87 @@ struct calibration
     void add_to_xml_3_of_3(std::shared_ptr<tinyxmlwriter> &tix) const {
 
         tix->pop("calibration");
+    }
+
+    std::filesystem::path mtx_cal_head(const std::filesystem::path &path_only, bool create_filepath_only) const {
+
+        if (this->ct == CalibrationType::nn) {
+            std::string err_str = __func__;
+            err_str += ":: calibration type is CalibrationType::nn  -> no idea what to do";
+            throw err_str;
+            return std::filesystem::path();
+        }
+
+        std::filesystem::path filepath(path_only);
+        std::string fname(this->sensor);
+        fname += "_" + (mstr::zero_fill_field(this->serial, 4) + ".txt");
+        filepath /= fname;
+
+        if (create_filepath_only) {
+            return filepath;
+        }
+
+        std::ofstream file;
+
+        file.open (filepath, std::fstream::out | std::fstream::trunc);
+
+        if (!file.is_open()) {
+            std::string err_str = __func__;
+            err_str += ":: can not open ->";
+            err_str += std::filesystem::absolute(filepath).string();
+            throw err_str;
+            return std::filesystem::path();
+        }
+
+        // ISO is a date hint for YY/mm/DD
+        file << "Calibration measurement with ISO" << std::endl;
+
+
+        file << "Magnetometer: " << this->sensor <<  " #" << std::to_string(this->serial);
+        file << " Date: " << this->date  << " Time: " << this->time << std::endl << std::endl;
+
+        file.close();
+
+        return filepath;
+
+
+
+    }
+
+    void mtx_cal_body(const std::filesystem::path &full_path_filename) const {
+
+        std::ofstream file;
+        file.open (full_path_filename, std::fstream::out | std::fstream::app);
+
+        if (!file.is_open()) {
+            std::string err_str = __func__;
+            err_str += ":: can not open ->";
+            err_str += std::filesystem::absolute(full_path_filename).string();
+            throw err_str;
+            return;
+        }
+
+        file << "FREQUENCY    MAGNITUDE    PHASE" << std::endl;
+        file <<   "Hz           V/(nT*Hz)    deg" << std::endl;
+        if (this->chopper == ChopperStatus::off) {
+            file << "Chopper off" << std::endl;
+        }
+        if (this->chopper == ChopperStatus::on) {
+            file << "Chopper on" << std::endl;
+        }
+
+        file.setf(std::ios::scientific, std::ios::floatfield);
+        file.precision(8);
+
+        for (size_t i = 0; i < this->f.size(); ++i) {
+            file << this->f.at(i) << "  ";
+            if (this->ct == CalibrationType::mtx_old) file << this->a.at(i) << "  ";
+            if (this->ct == CalibrationType::mtx) file << (this->a.at(i) / (1000. * this->f[i])) << "  ";
+            file << this->p.at(i) << std::endl;
+
+        }
+        file << std::endl;
+        file.close();
     }
 
 

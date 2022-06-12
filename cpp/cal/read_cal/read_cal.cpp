@@ -133,6 +133,11 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
                 this->date_hint = "YY/mm/DD";
 
             }
+            found = line.find("iso");
+            if (found != std::string::npos) {
+                this->date_hint = "YYYY-mm-DD";
+
+            }
 
             found = line.find("date");
             if (found != std::string::npos) {
@@ -168,13 +173,13 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
 
         }
         else {
-            if ((this->chopper == chopper) && !stop) {
+            if ((this->chopper == chopper) && !stop && !header) {
                 auto values = mstr::split(line, ' ');
                 // we may have an empty line
                 if (values.size() == 3) {
                     // data line never starts with ABC.. and also frequencies are not negative -
                     // if the number is +123 ... I don't know where it is coming from - change the files
-                    if (std::isalpha(values[0].at(0)) ||  std::ispunct(values[0].at(0))) {
+                    if (!mstr::isdigit_first_char(values[0])) {
                         stop = true;
                     }
                     else {
@@ -191,7 +196,7 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
     file.close();
 
     if (!failed) {
-        this->guess_date(this->magdate);
+        this->guess_date();
         cal->date = this->magdate;
         cal->time = this->magtime;
         cal->serial = std::stoi(this->fmagser);
@@ -202,6 +207,11 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
             cal->f = this->f;
             cal->a = this->a;
             cal->p = this->p;
+        }
+        else {
+            failed = true;
+            this->clear();
+
         }
 
 
@@ -249,35 +259,42 @@ std::string read_cal::get_units_mtx_old() const
 
 }
 
-void read_cal::guess_date(std::string &datestr)
+void read_cal::guess_date()
 {
-
-    auto ymd = mstr::split(this->magdate, '/');
     int y = 0, m = 0, d = 0;
-    if (ymd.size() == 3) {
-        if (date_hint == "DD/mm/YY") {  // old solartron
-            y = std::stoi(ymd.at(2)) + 2000;
-            m = std::stoi(ymd.at(1));
-            d = std::stoi(ymd.at(0));
-        }
-        if (date_hint == "YY/mm/DD") {
-            y = std::stoi(ymd.at(0)) + 2000;
-            m = std::stoi(ymd.at(1));
-            d = std::stoi(ymd.at(2));
-        }
+    if (date_hint == "YYYY-mm-DD") {
+        auto ymd = mstr::split(this->magdate, '-');
+        if (ymd.size() == 0) return;
+        y = std::stoi(ymd.at(0));
+        m = std::stoi(ymd.at(1));
+        d = std::stoi(ymd.at(2));
     }
-    // try iso date
-    if (ymd.size() == 0) {
-        ymd = mstr::split(this->magdate, '-');
+    else {
+        auto ymd = mstr::split(this->magdate, '/');
+
         if (ymd.size() == 3) {
-            y = std::stoi(ymd.at(0));
-            m = std::stoi(ymd.at(1));
-            d = std::stoi(ymd.at(2));
+            if (date_hint == "DD/mm/YY") {  // old solartron
+                y = std::stoi(ymd.at(2)) + 2000;
+                m = std::stoi(ymd.at(1));
+                d = std::stoi(ymd.at(0));
+            }
+            if (date_hint == "YY/mm/DD") {
+                y = std::stoi(ymd.at(0)) + 2000;
+                m = std::stoi(ymd.at(1));
+                d = std::stoi(ymd.at(2));
+            }
         }
+        // try iso date
+        if (ymd.size() == 0) {
+            ymd = mstr::split(this->magdate, '-');
+            if (ymd.size() == 3) {
+                y = std::stoi(ymd.at(0));
+                m = std::stoi(ymd.at(1));
+                d = std::stoi(ymd.at(2));
+            }
+        }
+        if (ymd.size() == 0) return;
     }
-
-    if (ymd.size() == 0) return;
-
 
     this->cal_date = time_from_ints(y, m, d);
     this->magdate = tm_to_str_date(this->cal_date);

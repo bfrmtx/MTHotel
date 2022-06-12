@@ -64,7 +64,7 @@ private:
     std::string fmagtype;
 
 
-    void guess_date(std::string &datestr);
+    void guess_date();
 
     bool dbloaded = false;
     std::vector<std::pair<std::string, std::string>> sensor_aliases;

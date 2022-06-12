@@ -49,7 +49,8 @@ void tm_to_num_time(const std::tm *date, int &hour, int &min, int &sec) {
  * \return
  */
 std::string tm_to_str_date(const std::shared_ptr<tm> &date) {
-    return std::to_string(date->tm_year + 1900) + "-" + std::to_string(date->tm_mon + 1) + "-" + std::to_string(date->tm_mday);
+    return std::to_string(date->tm_year + 1900) + "-" + mstr::zero_fill_field(date->tm_mon + 1, 2) + "-" + mstr::zero_fill_field(date->tm_mday, 2);
+
 }
 
 /*!
@@ -58,7 +59,7 @@ std::string tm_to_str_date(const std::shared_ptr<tm> &date) {
  * \return
  */
 std::string tm_to_str_time(const std::tm *date) {
-    return std::to_string(date->tm_hour) + ":" + std::to_string(date->tm_min + 1) + ":" + std::to_string(date->tm_sec);
+    return mstr::zero_fill_field(date->tm_hour, 2) + ":" + mstr::zero_fill_field(date->tm_min + 1, 2) + ":" + mstr::zero_fill_field(date->tm_sec, 2);
 }
 
 /*!

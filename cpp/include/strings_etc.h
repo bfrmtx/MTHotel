@@ -412,6 +412,11 @@ std::string time_t_iso8601_utc(const time_t &ti, std::string &date, std::string 
 
 }
 
+bool isdigit_first_char(const std::string &str)
+{
+    return (str.at(0) == '-' || std::isdigit(str.at(0)) || str.at(0) == '+');
+}
+
 
 /*
 time_t parseiso8601utc(const char *date) {

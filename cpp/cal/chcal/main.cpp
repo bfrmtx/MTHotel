@@ -19,6 +19,7 @@ int main(int argc, char **argv)
     bool new_to_old = false;
     bool force_measdoc = false;
     bool force_single = false;
+    bool keep_name = false;
 
 
     fs::path outdir;
@@ -58,6 +59,9 @@ int main(int argc, char **argv)
             force_single = true;
         }
 
+        if (marg.compare("-keep_name") == 0) {
+            keep_name = true;
+        }
 
 
 
@@ -65,8 +69,15 @@ int main(int argc, char **argv)
             outdir = std::string(argv[++l]);
         }
         if ((marg.compare("-help") == 0) || (marg.compare("--help") == 0)) {
+            std::cout << "Sensor and Serial are derived from filename ONLY!" << std::endl;
             std::cout << "-toxml file.txt" << std::endl;
             std::cout << "-toxml *.txt "<< std::endl;
+            std::cout << "-tojson file.txt" << std::endl;
+            std::cout << "-tojson *.txt "<< std::endl;
+            std::cout << " use -outdir /targetdir [options] *txt in order to place the results at a different place" << std::endl;
+            std::cout << "-keep_name should be active for txt -> xml when using script files ancient style" << std::endl;
+            std::cout << "otherwise file name would be " << std::endl;
+
 
             return EXIT_FAILURE;
         }
@@ -96,42 +107,38 @@ int main(int argc, char **argv)
         std::string marg(argv[l]);
         if ( (marg.compare(marg.size()-4, 4, ".txt") == 0) || (marg.compare(marg.size()-4, 4, ".TXT") == 0) ) {
 
-            std::shared_ptr<read_cal> mtx_cal_file = std::make_shared<read_cal>();
-
             try {
+                std::shared_ptr<read_cal> mtx_cal_file_on = std::make_shared<read_cal>();
+                std::shared_ptr<read_cal> mtx_cal_file_off = std::make_shared<read_cal>();
 
-                cals.emplace_back(mtx_cal_file->read_std_mtx_txt(marg, ChopperStatus::off));
-                if (!cals.back()->f.size()) cals.pop_back();
-                else if (cals.size()) mtxfiles_and_cals.emplace(fs::path(marg),cals.size()-1);
-                cals.emplace_back(mtx_cal_file->read_std_mtx_txt(marg, ChopperStatus::on));
-                if (!cals.back()->f.size()) cals.pop_back();
-                else if (cals.size()) mtxfiles_and_cals.emplace(fs::path(marg),cals.size()-1);
-
+                cals.emplace_back(mtx_cal_file_off->read_std_mtx_txt(marg, ChopperStatus::off));
+                if (cals.back()->is_empty()) cals.pop_back();
+                else if (cals.size()) mtxfiles_and_cals.emplace(fs::path(marg), cals.size()-1);
+                cals.emplace_back(mtx_cal_file_on->read_std_mtx_txt(marg, ChopperStatus::on));
+                if (cals.back()->is_empty()) cals.pop_back();
+                else if (cals.size()) mtxfiles_and_cals.emplace(fs::path(marg), cals.size()-1);
 
             }
             catch (const std::string &error) {
 
                 std::cerr << error << std::endl;
                 cals.clear();
-
-                // we could also reset mtx_cal_file.reset()
-                // depending on what we want to do
-                // in a loop of many files we keep mtx_cal_file alive
             }
 
         }
 
 
         if ( (marg.compare(marg.size()-4, 4, ".xml") == 0) || (marg.compare(marg.size()-4, 4, ".XML") == 0) ) {
-            std::shared_ptr<read_cal> mtx_cal_file = std::make_shared<read_cal>();
             try {
+
+                std::shared_ptr<read_cal> mtx_cal_file = std::make_shared<read_cal>();
                 std::vector<std::shared_ptr<calibration>> xcals;
                 if ((isdigit(marg.at(0)) || force_measdoc) && !force_single)  xcals = mtx_cal_file->read_std_xml(marg);
                 else xcals = mtx_cal_file->read_std_xml_single(marg);
 
                 for (auto &xcal : xcals) {
                     if (!xcal->is_empty()) {
-                        cals.push_back(xcal);
+                        cals.emplace_back(xcal);
                     }
                 }
 
@@ -140,10 +147,6 @@ int main(int argc, char **argv)
 
                 std::cerr << error << std::endl;
                 cals.clear();
-
-                // we could also reset mtx_cal_file.reset()
-                // depending on what we want to do
-                // in a loop of many files we keep mtx_cal_file alive
             }
 
         }
@@ -152,7 +155,7 @@ int main(int argc, char **argv)
             try {
                 auto cal = std::make_shared<calibration>();
                 cal->read_file(marg, true);
-                cals.emplace_back(cal);
+                if (!cal->is_empty()) cals.emplace_back(cal);
             }
             catch (const std::string &error) {
 
@@ -174,6 +177,15 @@ int main(int argc, char **argv)
     // in case operations are forced - do it here
     for (auto &cal : cals) {
         cal->tasks_todo(ampl_div_f, ampl_mul_f, ampl_mul_by_1000, old_to_new, new_to_old);
+    }
+
+    l = 0;
+    // keep name should be active for txt -> xml when using script files ancient style
+    if ( !keep_name  || (cals.size() != mtxfiles_and_cals.size())) {
+        mtxfiles_and_cals.clear();
+        for (auto &cal : cals) {
+            mtxfiles_and_cals.emplace(cal->mtx_cal_head(outdir, true), l++);
+        }
     }
 
     if (toxml) {
@@ -232,30 +244,48 @@ int main(int argc, char **argv)
             y = x.first;
         }
 
-        //        for (const auto &cal : cals ) {
-        //            fs::path outxmlfile("/home/bfr/xxx.xml");
-        //            auto tix = std::make_shared<tinyxmlwriter>(true, outxmlfile);
-        //            cal->add_to_xml_1_of_3(tix);
-        //            cal->add_to_xml_2_of_3(tix);
-        //            cal->add_to_xml_3_of_3(tix);
-
-        //            if (compare_same_senor(cal, cal)) {
-        //                std::cout << "same" << std::endl;
-        //                cal->add_to_xml_2_of_3(tix);
-        //            }
-
-        //            tix->write_file();
-
-        //        }
     }
 
     if (tojson) {
-        //        if (cal != nullptr) {
-        //            cal->write_file("/home/bfr");
-        //        }
+        for (auto &cal : cals) {
+            cal->write_file(outdir);
+        }
     }
 
     if (tomtx) {
+
+        fs::path y;
+        for(const auto &x: mtxfiles_and_cals) {
+
+            if (y != x.first) {
+                std::pair <std::multimap<fs::path, size_t>::iterator, std::multimap<fs::path, size_t>::iterator> ret;
+
+                ret = mtxfiles_and_cals.equal_range(x.first);
+                std::cout << x.first <<  " =>";
+                int segments = 0;
+                std::filesystem::path full_name;
+                for (std::multimap<fs::path, size_t>::iterator it=ret.first; it!=ret.second; ++it) {
+                    if (!segments) {
+                        if (it->second < cals.size()) {
+                            full_name = cals.at(it->second)->mtx_cal_head(outdir, false);
+                            cals.at(it->second)->mtx_cal_body(full_name);
+
+                        }
+                    }
+                    else {
+                        if (it->second < cals.size()) {
+                            cals.at(it->second)->mtx_cal_body(full_name);
+                        }
+                    }
+                    ++segments;
+                    std::cout << ' ' << it->second;
+                }
+
+                std::cout << '\n';
+            }
+            y = x.first;
+        }
+
 
     }
 
