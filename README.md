@@ -155,8 +155,11 @@ WINDOWS
 # Build on Linux
 
 * you can skip the SQLite - it is part of your distribution
-* cd 
+* cd `$HOME'/devel/github_mthotel/MTHotel`
+* for the first tools, cd `cpp`
+* bash or `zsh clang_build_release_bfr.sh` or `zsh gcc_build_release_bfr.sh`
 
+*example:* `/usr/local/mthotel/bin/chcal -keep_name -toxml MFS06E0005.txt` creates MFS06E0005.xml (and for plotting MFS06E0005_plot.xml)
 
 # Build on Windows
 
