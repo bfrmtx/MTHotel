@@ -115,3 +115,59 @@ PATH
 * C:\Qt\Tools\Ninja;
 
 Both above are set on Linux automatically and cmake finds them. Similar on MacOS.
+
+# Settings for Build and Install
+
+If you **don't** want to edit script files, locate the **source code** here:
+
+* Linux/Mac `$HOME'/devel/github_mthotel/MTHotel/cpp/'`
+* Windows `Z:\github_mthotel\MTHotel\cpp"` 
+* or copy the later mentioned scripts and edit the drive letters
+
+In my case I do `mkdir -p $HOME'/devel/github_mthotel`
+
+cd  $HOME'/devel/github_mthotel
+
+and `git clone https://github.com/bfrmtx/MTHotel.git`
+
+The **output build directories** are outside the source code and located by default
+
+* Linux/Mac `$HOME'/build/'$PROJ'_cpp/build'`
+* Windows `%HOMEDRIVE%%HOMEPATH%\build\%PROJ%_cpp` 
+
+The **install directories** are 
+
+* Linux/Mac `/usr/local/mthotel`
+* Windows `%HOMEDRIVE%%HOMEPATH%\install\%PROJ%` 
+
+on Linux/Mac create this directory with your permissions like
+
+* `sudo mkdir -p /usr/local/mthotel`
+* `sudo chown -R $USER:$USER /usr/local/mthotel`
+
+In order to run, set your **PATH** environment
+
+WINDOWS
+
+* `%HOMEDRIVE%%HOMEPATH%\install\MTHotel\bin` , in my case C:\Users\bfr\install\MTHotel\bin
+* `%HOMEDRIVE%%HOMEPATH%\install\MTHotel\lib` , in my case C:\Users\bfr\install\MTHotel\lib
+
+# Build on Linux
+
+* you can skip the SQLite - it is part of your distribution
+* cd 
+
+
+# Build on Windows
+
+On Windows we need to build *SQLite* first.
+
+* `cd oss\sqlite`
+* `win_build_release_prj_bfr.bat`
+
+then build the code
+
+* `cd cpp`
+* `win_build_release_prj_bfr.bat`
+
+
