@@ -15,4 +15,12 @@ target_link_libraries (${PROJECT_NAME}
     PRIVATE tinyxml2
 )
 
+IF(MINGW)
+    message ( "WINDOWS CONSOLE MINGW" )
+    target_link_options(${PROJECT_NAME} PRIVATE
+    -mconsole
+    -mwindows
+)
+ENDIF(MINGW)
+
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

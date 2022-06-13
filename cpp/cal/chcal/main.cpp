@@ -104,66 +104,63 @@ int main(int argc, char **argv)
 
     l = 1;
     while (argc > 1 && (l < unsigned(argc))) {
-        std::string marg(argv[l]);
-        if ( (marg.compare(marg.size()-4, 4, ".txt") == 0) || (marg.compare(marg.size()-4, 4, ".TXT") == 0) ) {
 
-            try {
-                std::shared_ptr<read_cal> mtx_cal_file_on = std::make_shared<read_cal>();
-                std::shared_ptr<read_cal> mtx_cal_file_off = std::make_shared<read_cal>();
+        fs::path check_ext(argv[l]);
+        if (check_ext.has_extension()) {
+            if ((check_ext.extension() == ".txt") ||  (check_ext.extension() == ".TXT")) {
+                try {
+                    std::shared_ptr<read_cal> mtx_cal_file_on = std::make_shared<read_cal>();
+                    std::shared_ptr<read_cal> mtx_cal_file_off = std::make_shared<read_cal>();
+                    cals.emplace_back(mtx_cal_file_off->read_std_mtx_txt(check_ext, ChopperStatus::off));
+                    if (cals.back()->is_empty()) cals.pop_back();
+                    else if (cals.size()) mtxfiles_and_cals.emplace(fs::path(check_ext), cals.size()-1);
+                    cals.emplace_back(mtx_cal_file_on->read_std_mtx_txt(check_ext, ChopperStatus::on));
+                    if (cals.back()->is_empty()) cals.pop_back();
+                    else if (cals.size()) mtxfiles_and_cals.emplace(fs::path(check_ext), cals.size()-1);
 
-                cals.emplace_back(mtx_cal_file_off->read_std_mtx_txt(marg, ChopperStatus::off));
-                if (cals.back()->is_empty()) cals.pop_back();
-                else if (cals.size()) mtxfiles_and_cals.emplace(fs::path(marg), cals.size()-1);
-                cals.emplace_back(mtx_cal_file_on->read_std_mtx_txt(marg, ChopperStatus::on));
-                if (cals.back()->is_empty()) cals.pop_back();
-                else if (cals.size()) mtxfiles_and_cals.emplace(fs::path(marg), cals.size()-1);
-
+                }
+                catch (const std::string &error) {
+                    std::cerr << error << std::endl;
+                    cals.clear();
+                }
             }
-            catch (const std::string &error) {
 
-                std::cerr << error << std::endl;
-                cals.clear();
-            }
+            if ((check_ext.extension() == ".xml") ||  (check_ext.extension() == ".XML")) {
+                try {
 
-        }
+                    std::shared_ptr<read_cal> mtx_cal_file = std::make_shared<read_cal>();
+                    std::vector<std::shared_ptr<calibration>> xcals;
+                    std::string fdig(check_ext.stem().string());
+                    if ((isdigit(fdig.at(0)) || force_measdoc) && !force_single)  xcals = mtx_cal_file->read_std_xml(check_ext);
+                    else xcals = mtx_cal_file->read_std_xml_single(check_ext);
 
-
-        if ( (marg.compare(marg.size()-4, 4, ".xml") == 0) || (marg.compare(marg.size()-4, 4, ".XML") == 0) ) {
-            try {
-
-                std::shared_ptr<read_cal> mtx_cal_file = std::make_shared<read_cal>();
-                std::vector<std::shared_ptr<calibration>> xcals;
-                if ((isdigit(marg.at(0)) || force_measdoc) && !force_single)  xcals = mtx_cal_file->read_std_xml(marg);
-                else xcals = mtx_cal_file->read_std_xml_single(marg);
-
-                for (auto &xcal : xcals) {
-                    if (!xcal->is_empty()) {
-                        cals.emplace_back(xcal);
+                    for (auto &xcal : xcals) {
+                        if (!xcal->is_empty()) {
+                            cals.emplace_back(xcal);
+                        }
                     }
+
+                }
+                catch (const std::string &error) {
+                    std::cerr << error << std::endl;
+                    cals.clear();
                 }
 
             }
-            catch (const std::string &error) {
+            if ((check_ext.extension() == ".json") ||  (check_ext.extension() == ".JSON")) {
 
-                std::cerr << error << std::endl;
-                cals.clear();
-            }
+                try {
+                    auto cal = std::make_shared<calibration>();
+                    cal->read_file(check_ext, true);
+                    if (!cal->is_empty()) cals.emplace_back(cal);
+                }
+                catch (const std::string &error) {
+                    std::cerr << error << std::endl;
+                    cals.clear();
 
-        }
-
-        if ( (marg.compare(marg.size()-5, 5, ".json") == 0) || (marg.compare(marg.size()-5, 5, ".JSON") == 0) ) {
-            try {
-                auto cal = std::make_shared<calibration>();
-                cal->read_file(marg, true);
-                if (!cal->is_empty()) cals.emplace_back(cal);
-            }
-            catch (const std::string &error) {
-
-                std::cerr << error << std::endl;
-                cals.clear();
+                }
 
             }
-
         }
         ++l;
     }
@@ -269,7 +266,6 @@ int main(int argc, char **argv)
                         if (it->second < cals.size()) {
                             full_name = cals.at(it->second)->mtx_cal_head(outdir, false);
                             cals.at(it->second)->mtx_cal_body(full_name);
-
                         }
                     }
                     else {
@@ -280,7 +276,6 @@ int main(int argc, char **argv)
                     ++segments;
                     std::cout << ' ' << it->second;
                 }
-
                 std::cout << '\n';
             }
             y = x.first;
@@ -296,5 +291,5 @@ int main(int argc, char **argv)
 
 
 
-    return 0;
+    return EXIT_SUCCESS;
 }

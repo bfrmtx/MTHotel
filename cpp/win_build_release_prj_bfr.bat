@@ -14,3 +14,7 @@ md %targ%
 cmake -S %in% -B %out% -GNinja -DCMAKE_CXX_COMPILER=g++ -DCMAKE_INSTALL_PREFIX=%targ% -DCMAKE_VERBOSE_MAKEFILE=OFF -DCMAKE_BUILD_TYPE=RELEASE
 cmake --build %out%
 cmake --install %out%
+
+rem your path sould contain
+rem C:\Users\bfr\install\MTHotel\bin
+rem C:\Users\bfr\install\MTHotel\lib
