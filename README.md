@@ -16,7 +16,7 @@ For today's applications two features are missing:
 *(Actually the old ats can include the calibration but the ADU-06 at that time with the MSDOS operating system was not able to do this. Later the correct decision was to keep the header as it was with 1024 bytes length. With all E-series coils and fluxgates the calibration is today available during recording)*
 
 
-The ADU-08e and ADU-07e got a **WebDAV server** implemented.
+The ADU-08e, ADU-10e and ADU-07e got a **WebDAV server** implemented.
 The web service will be used for data streaming, and is accessed by https://192.168.0.203/data for example.
 
 
@@ -30,9 +30,8 @@ The streaming format has bee broken down into two trivial files:
 * a simple JSON header which is created on start and does not need an update
 * the samples are calculated from file size (/4 for int, /8 for double)
 
-*(note for "freaks": XML can do everything. JSON is much more easy when you only store key value pairs ... header data for example )*
 
-For **permanent stations** (observatories) this allows a rsync daemon.
+For **permanent stations** (observatories) this allows a **rsync** daemon.
 The data streaming can be simplified that way, that the rsync *appends* the data at **the end only**.
 In other words: you don't copy the data when the recording is finished, you transfer the data continuously *while* recording.
 
@@ -61,7 +60,7 @@ Example:
 
 Creating this kind of files is easy. That can be up-sampled IMU data from airborne surveys, temperature from the fluxgate (FGS-03e and FGS-04e support temperature reading) ... or seismic data.
 
-That reminds me that I may find a person helping me to create miniseed data.
+That reminds me that I may find a person helping me to create *miniseed* data.
 
 ....HDF5 is possible but in this case all of your tools would work out of the box ... havn't seen this desire yet.
 
