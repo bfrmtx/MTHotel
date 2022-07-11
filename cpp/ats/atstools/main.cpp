@@ -23,6 +23,7 @@ namespace fs = std::filesystem;
 #include "../xml/tinyxmlwriter/tinyxmlwriter.h"
 
 #include "pt_cat.h"
+#include "pt_tojson.h"
 #include "adu06_fname.h"
 
 // run tests
@@ -47,6 +48,7 @@ for (const auto & file : directory_iterator(path))
     int run = -1;                           //!< run number, greater equal 0
     double lsbval = 0;                      //!< lsb
     bool chats = false;                     //!< convert ADU-06 files to ADU-08e files
+    bool tojson = false;                    //!< convert to JSON and binary - the new format
     fs::path outdir;
 
 
@@ -67,6 +69,10 @@ for (const auto & file : directory_iterator(path))
         if (marg.compare("-chats") == 0) {
             chats = true;
         }
+        if (marg.compare("-tojson") == 0) {
+            tojson = true;
+        }
+
         //        else if (marg.compare("-lsbval") == 0) {
         //            lsbval = atof(argv[++l]);
         //        }
@@ -266,6 +272,32 @@ for (const auto & file : directory_iterator(path))
 
         }
 
+
+    }
+
+    if (tojson) {
+        if (!sizeof(outdir)) {
+            std::cout << "please supply -outdir name" << std::endl;
+            return EXIT_FAILURE;
+        }
+        if (!atsheaders.size()) {
+            std::cout << "cat you need one file(s) or more" << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        if (!std::filesystem::exists(outdir)) {
+            std::filesystem::create_directory(outdir);
+            if(!std::filesystem::exists(outdir)) {
+                std::cout << "can not create outdir" << std::endl;
+                return EXIT_FAILURE;
+            }
+            std::cout << outdir << " created" << std::endl;
+        }
+
+        for (auto &atsh : atsheaders) {
+            ats2json(atsh, outdir);
+
+        }
 
     }
 

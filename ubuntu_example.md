@@ -8,7 +8,7 @@ as sudo or root (sudo su) install
 
 `apt update`
 
-`apt install clang cmake libboost-dev sqlite3 sqlite3-tools libsqlite3-dev git`
+`apt install clang cmake libboost-dev sqlite3 sqlite3-tools libsqlite3-dev git zsh`
 
 (takes a few minutes, no reboot required, software git maybe already installed)
 

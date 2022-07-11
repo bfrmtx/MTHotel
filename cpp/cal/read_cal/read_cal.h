@@ -41,10 +41,17 @@ public:
      */
     std::vector<std::shared_ptr<calibration>> read_std_xml(const fs::path &filename);
 
+    /*!
+     * \brief read_std_xml_single same as above - but for a XML calibration conating no channels - but calibration only
+     * \param filename
+     * \return
+     */
     std::vector<std::shared_ptr<calibration>> read_std_xml_single(const fs::path &filename);
 
 
     void clear();
+
+    std::string get_sensor_name(const std::string name) const;
 
     std::shared_ptr<tm> cal_date;
 

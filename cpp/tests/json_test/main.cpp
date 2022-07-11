@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     std::string wh = head["calibration_sensor"]["sensor"];
     std::cout << "mit Gänsefüsschen?  :" << wh << " <" << std::endl;
 
-    double gx = head["calibration_sensor"]["frequency"];
+    //double gx = head["calibration_sensor"]["frequency"];
 
 std::cout << std::setw(8) << head << std::endl;
 

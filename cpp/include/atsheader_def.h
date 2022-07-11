@@ -18,6 +18,7 @@
 #include "strings_etc.h"
 #include "atss_time.h"
 #include "json.h"
+#include "mt_base.h"
 
 namespace fs = std::filesystem;
 
@@ -314,11 +315,133 @@ struct ats_header_json {
         return utime;
     }
 
+    double get_lat() const {
+        return (this->atsh.iLat_ms / 1000.) / 3600.;
+    }
+
+    double get_lon() const {
+        return (this->atsh.iLong_ms / 1000.) / 3600.;
+    }
+
+    double get_elev() const {
+        return (this->atsh.iElev_cm / 100.);
+    }
+
+    double pos2length() const {
+        double tx, ty, tz;
+        tx = double(this->atsh.x2 - this->atsh.x1);
+        ty = double(this->atsh.y2 - this->atsh.y1);
+        tz = double(this->atsh.z2 - this->atsh.z1);
+
+        double diplength = sqrt(tx * tx  + ty * ty + tz * tz);
+        if (diplength < 0.001) diplength = 0;                   // avoid rounding errors
+        return diplength;
+    }
+
+    double pos2angle() const {
+
+        if (!this->header.contains("channel_type") ) {
+            std::string err_str = __func__;
+            err_str += "::header not existing; read file and use get_ats_header() ";
+            throw err_str;
+        }
+        double tx, ty;
+        tx = double(this->atsh.x2 - this->atsh.x1);
+        ty = double(this->atsh.y2 - this->atsh.y1);
+
+        double diplength = this->pos2length();
+
+        // avoid calculation noise
+        if (fabs(tx) < 0.001) tx = 0.0;
+        if (fabs(ty) < 0.001) ty = 0.0;
+
+        // many user do not set coordiantes for the coils
+        // Hx
+        if ((diplength == 0) &&  (this->header["channel_type"].get<std::string>() == "Hx")) {
+            return 0.;                                                  // NORTH
+        }
+        // Hy
+        if ((diplength == 0) && (this->header["channel_type"].get<std::string>() == "Hy")) {
+            return 90.;                                                 // EAST
+        }
+        // Hz
+        if ((diplength == 0) && (this->header["channel_type"].get<std::string>() == "Hz")) {
+            return  0.;
+        }
+
+        if ((tx == 0) && (ty == 0)) return 0;
+
+        // hmm hmm possible but you normally set the system N S E W
+        double ang = atan2(ty,tx) * 180.0 / M_PI;
+
+        // let angle from position snap
+        if ( (ang < 90.01) && (ang > 89.99 )) return 90.;
+        if ( (ang < 0.01) && (ang > 359.99 )) return 0.;
+        if ( (ang < 180.01) && (ang > 179.99 )) return 180.;
+        if ( (ang < 270.01) && (ang > 269.99 )) return 270.;
+
+        return ang;
+
+    }
+
+    double pos2dip() const {
+
+        double tz = double(this->atsh.z2 - this->atsh.z1);
+
+
+        double diplength = this->pos2length();
+        // no coordiantes given for Hz
+        if ((diplength == 0) && (this->header["channel_type"].get<std::string>() == "Hz")) {
+            return  90.0;
+        }
+
+        if (diplength == 0) return 0.0; // horizontal - no length
+        if (tz < 0.001) return 0.0;       // no z component
+
+        //! @todo that is maybe wrong
+        double ang = 90.0 - acos(tz/diplength) * 180.0 / M_PI;
+        if ( (ang < 0.01) && (ang > 359.99 )) return 0.;
+        if ( (ang < 90.01) && (ang > 89.99 )) return 90.;
+
+        return ang;
+
+
+    }
+
     std::string measdir() const {
 
         return mtime::measdir_time(static_cast<int64_t>(this->atsh.start));
     }
 
+
+    ChopperStatus get_chopper() const {
+        if (!this->header.size()) return ChopperStatus::off;
+        if (this->header["chopper"] == 1) return ChopperStatus::on;
+        return ChopperStatus::off;
+    }
+
+    int64_t get_run() const {
+        if (!this->filename.string().size()) return 0;
+        std::string base = this->filename.stem().string();
+
+        int64_t irun = 0;
+        auto tokens = mstr::split(base, '_');
+        for (auto &token : tokens) {
+            if (token.starts_with('R') || token.starts_with('r')) {
+                try{
+                    auto rstr = token.substr(1);
+                    irun = std::stoi(rstr);
+                }
+                catch  (...) {
+                    irun = 0;
+                }
+            }
+        }
+
+        return irun;
+
+
+    }
 
     std::unordered_map<std::string, uint8_t> LF_Filters;
     std::unordered_map<std::string, uint8_t> HF_Filters;
@@ -448,6 +571,9 @@ struct ats_header_json {
 
     }
 
+    /*!
+     * \brief get_ats_header gets the binary ats header into the JSON
+     */
     void get_ats_header() {
         header["header_length"] =                 static_cast<int64_t>(this->atsh.header_length);
         header["header_version"] =                static_cast<int64_t>(this->atsh.header_version);
@@ -464,7 +590,10 @@ struct ats_header_json {
         header["channel_number"] =                static_cast<int64_t>(this->atsh.channel_number);
         header["chopper"] =                       static_cast<int64_t>(this->atsh.chopper);
 
-        header["channel_type"] =                  mstr::clean_bc_str(this->atsh.channel_type, 2);
+        std::string tch =                         mstr::clean_bc_str(this->atsh.channel_type, 2);
+        std::transform(tch.begin(), tch.begin()+1, tch.begin(), ::toupper);
+        std::transform(tch.begin()+1, tch.end(), tch.begin()+1, ::tolower);
+        header["channel_type"] =                  tch;
         header["sensor_type"] =                   mstr::clean_bc_str(this->atsh.sensor_type, 6);
         header["sensor_serial_number"] =          static_cast<int64_t>(this->atsh.sensor_serial_number);
 

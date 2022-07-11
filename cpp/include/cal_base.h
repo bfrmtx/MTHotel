@@ -292,6 +292,39 @@ struct calibration
         return 1;
     }
 
+    size_t old_to_newformat() {
+        bool go_mtx_f = false;
+        bool go_mtx_p = false;
+        if (this->units_frequency == "Hz" ) go_mtx_f = true;
+        if (this->units_phase == "degrees" ) go_mtx_p = true;
+
+
+        if ( (this->units_amplitude == "V/(nT*Hz)") && go_mtx_f && go_mtx_p ) {
+
+            this->ct = CalibrationType::mtx_old;
+        }
+
+        if ( (this->units_amplitude == "mV/nT") && go_mtx_f && go_mtx_p ) {
+
+            this->ct = CalibrationType::mtx;
+            return this->f.size();
+        }
+
+        if (this->ct == CalibrationType::mtx_old) {
+            auto fi = this->f.cbegin();
+            for (auto &v : this->a) {
+                v *= 1000.0 * *fi++;
+            }
+            this->set_format(CalibrationType::mtx, true);
+            return this->f.size();
+        }
+
+        return 0;
+
+
+
+    }
+
     /*!
      * \brief read_file JSON format
      * \param filepath from the extracted filename we generate type sensor serial chopper
@@ -551,7 +584,7 @@ bool operator == (const std::shared_ptr<calibration>& lhs, const std::shared_ptr
 /*!
    compare a sensor - ignore the chopper
 */
-auto compare_same_senor = [](const std::shared_ptr<calibration> &lhs, const std::shared_ptr<calibration> &rhs) -> bool {
+auto compare_same_sensor = [](const std::shared_ptr<calibration> &lhs, const std::shared_ptr<calibration> &rhs) -> bool {
     if (lhs->sensor != rhs->sensor) return false;
     if (lhs->units_amplitude != rhs->units_amplitude) return false;
     if (lhs->units_frequency != rhs->units_frequency) return false;
@@ -560,5 +593,13 @@ auto compare_same_senor = [](const std::shared_ptr<calibration> &lhs, const std:
 
     return true;
 };
+
+auto compare_sensor_and_chopper = [](const std::shared_ptr<calibration> &lhs, const std::shared_ptr<calibration> &rhs) -> bool {
+    if (lhs->sensor != rhs->sensor) return false;
+    if (lhs->serial != rhs->serial) return false;
+    if (lhs->chopper != rhs->chopper) return false;
+    return true;
+};
+
 
 #endif

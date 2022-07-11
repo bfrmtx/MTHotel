@@ -95,10 +95,9 @@ def atss_header():
         'latitude': 0.0,        # decimal degree such as 52.2443
         'longitude': 0.0,       # decimal degree such as 10.5594
         'elevation': 0.0,       # elevation in meter
-        'dipole_length': 0.0,   # length of dipole in meter
         'angle': 0.0,           # orientaion from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
         'dip': 0.0,             # angle positive down - in case it had been measured
-        'units': "",            # for ADUs it will be mV (E or H) or scaled E mV/km
+        'units': "",            # for ADUs it will be mV H or oher -  or scaled E mV/km
         'source': "",           # empty or indicate as, ns, ca, cp, tx or what ever
         'site': "",             # only use when you need it in your file name! leave empty!
     }
@@ -249,7 +248,6 @@ def channel_form_oldheader(oldheader):
     chan['elevation'] = oldheader['iElev_cm'] / 100.
     # since 15 years we do use pos
     p = pos_to_dip(oldheader['x1'], oldheader['x2'], oldheader['y1'], oldheader['y2'], oldheader['z1'], oldheader['z2'])
-    chan['dipole_length'] = p[0]
     chan['angle'] = p[1]
     chan['dip'] = p[2]
     # ADU uses mV without mentioning it

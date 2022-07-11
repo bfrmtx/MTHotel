@@ -6,11 +6,17 @@
 #include <string>
 #include <cstddef>
 #include <cstdlib>
+#include <fstream>
 #include "json.h"
 #include "strings_etc.h"
+#include <filesystem>
+
 
 using jsn = nlohmann::ordered_json;
 
+/*!
+ * \brief The atss_file class is the FILENAME part of the atss format consisting of binary .atss, JSON .json
+ */
 class atss_file {
 
 public:
@@ -25,7 +31,7 @@ public:
     }
 
     template <typename T> void set_base_file(const std::string& system = "", const T& ser = 0,
-                                             const T& channel_no = 0, const T& run = 0) {
+                       const T& channel_no = 0, const T& run = 0) {
         this->set_system(system);
         this->set_serial(ser);
         this->set_channel_no(channel_no);
@@ -110,15 +116,16 @@ public:
 
     atss_header(const std::string &date = "1970-01-01", const std::string &time = "00:00:00", const double& fracs = 0.0) {
         this->set_date_time(date, time, fracs);
+
     }
 
     void set_date_time(const std::string &date = "1970-01-01", const std::string &time = "00:00:00", const double& fracs = 0.0) {
         std::string iso_date = mstr::iso_8601_str_str(date, time, fracs);
-        std::cout << iso_date << std::endl;
+        // std::cout << iso_date << std::endl;
         //std::time_t tcmp = mstr::string_iso8601_time_t(iso_date, this->fracs);
         std::string tdate, ttime;
         std::string scmp = mstr::time_t_iso8601_utc(mstr::string_iso8601_time_t(iso_date, this->fracs), tdate, ttime, this->fracs);
-        std::cout << scmp << std::endl;
+        // std::cout << scmp << std::endl;
 
         if (date.compare(tdate) || time.compare(ttime)) {
             this->fracs = 0.0;
@@ -141,7 +148,13 @@ public:
         return mstr::iso_8601_str_str(this->date, this->time, this->fracs);
     }
 
-private:
+    void set_lat_lon_elev(const double &lat, const double &lon, const double elev = 0.) {
+        this->latitude = lat;
+        this->longitude = lon;
+        this->elevation = elev;
+    }
+
+
     // 2007-12-24T18:21:00.01234Z is NOT supported by C/C++/Python/PHP and others COMPLETELY
     std::string date =  "1970-01-01";   //!< ISO 8601 date 2021-05-19 UTC
     std::string time =  "00:00:00";     //!< ISO 8601 time in UTC
@@ -149,12 +162,10 @@ private:
     double latitude =  0.0;             //!< decimal degree such as 52.2443
     double longitude =  0.0;            //!< decimal degree such as 10.5594
     double elevation =  0.0;            //!< elevation in meter
-    double dipole_length =  0.0;        //!< length of dipole in meter
     double angle =  0.0;                //!< orientaion from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
     double dip =  0.0;                  //!< angle positive down - in case it had been measured
-    std::string units =  "";            //!< for ADUs it will be mV (E or H) or scaled E mV/km
+    std::string units =  "mV";          //!< for ADUs it will be mV H or whatever or scaled E mV/km
     std::string source =  "";           //!< empty or indicate as, ns, ca, cp, tx or what ever
-    std::string site =  "";             //!< only use when you need it in your file name! leave empty!
 
 };
 
@@ -168,11 +179,64 @@ public:
         : atss_file(channel_type, sample_rate), atss_header(date, time, frac) {
 
     }
-    std::vector<T> d;   // share my data
 
-    size_t size() const {
-        return d.size();
+    /*!
+     * \brief write_header
+     * \param path_only full path including the measdir
+     * \param jsn_cal the calibration part
+     */
+    std::filesystem::path write_header(const std::filesystem::path &path_only, const jsn &jsn_cal) const {
+        jsn head;
+        head["date"] = this->date;
+        head["time"] = this->time;
+        head["fracs"] =  this->fracs;
+        head["latitude"] =  this->latitude;
+        head["longitude"] =  this->longitude;
+        head["elevation"] =  this->elevation;
+        head["angle"] = this->angle;
+        head["dip"] =  this->dip;
+        head["units"] = this->units;
+        head["source"] = this->source;
+        head.update(jsn_cal);
+
+
+
+
+        std::filesystem::path filepath(path_only);
+        filepath /= this->filename("json");
+        std::ofstream file;
+        file.open (filepath, std::fstream::out | std::fstream::trunc);
+
+        if (!file.is_open()) {
+            file.close();
+            std::string err_str = __func__;
+            err_str += "::can not write header, file not open ";
+            err_str += filepath.string();
+            throw err_str;
+            return std::filesystem::path("");
+        }
+
+        file << std::setw(2) << head << std::endl;
+        file.close();
+
+        return filepath;
+
+        //std::cout << std::setw(2) << head << std::endl;
     }
+
+
+    std::vector<T> d;   // share my data public
+    std::vector<double> f;
+    std::vector<double> a;
+    std::vector<double> p;
+
+    size_t samples() const {
+        size_t s = 0;
+        std::filesystem::path filepath(this->filename("atss"));
+        return s;
+    }
+
+
 
 
 };

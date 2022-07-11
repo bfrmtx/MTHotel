@@ -103,6 +103,7 @@ add_subdirectory(tests/atss_example)
 add_subdirectory(tests/tinyxmlwriter_test)
 add_subdirectory(tests/xmlcal_test)
 add_subdirectory(tests/sqltest)
+add_subdirectory(tests/lambdas)
 add_subdirectory(ats/atstools)
 add_subdirectory(tests/read_cal_test)
 

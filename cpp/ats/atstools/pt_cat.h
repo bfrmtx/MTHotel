@@ -25,14 +25,14 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
     if (!ats.size()) return;
     if (outdir_base.empty()) {
         std::string err_str = __func__;
-        err_str += "::no -outdir sullpied or";
+        err_str += "::no -outdir supplied or";
         throw err_str;
         return;
     }
 
     if (!std::filesystem::exists(outdir_base)) {
         std::string err_str = __func__;
-        err_str += "::top outdir does not exists!, wnat to create outdir/meas_dir!";
+        err_str += "::top outdir does not exists!, want to create outdir/meas_dir!";
         throw err_str;
         return;
     }

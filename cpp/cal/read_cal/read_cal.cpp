@@ -248,6 +248,22 @@ void read_cal::clear()
     this->chopper = ChopperStatus::off;
 }
 
+std::string read_cal::get_sensor_name(const std::string name) const
+{
+    std::string myname(name);
+    // transfor need space reserved
+    std::transform(name.cbegin(), name.cend(), myname.begin(), ::tolower);
+
+    for (const auto &pairs : this->sensor_aliases) {
+        if ((myname == pairs.first)) {
+            return pairs.second;
+        }
+    }
+
+    return std::string("");
+}
+
+
 
 std::string read_cal::get_units_mtx_old() const
 {
@@ -343,8 +359,8 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
                 auto pca = open_node(pchan, "calibration");
                 auto pci = open_node(pca, "calibrated_item");
                 std::string sensor(xml_svalue(pci, "ci"));
-                std::cout << sensor << " detected" << std::endl;
                 int64_t serial = xml_ivalue(pci, "ci_serial_number");
+                std::cout << sensor << " " << serial << " detected" << std::endl;
                 std::string cal_date(xml_svalue(pci, "ci_date"));
                 std::string cal_time(xml_svalue(pci, "ci_time"));
                 std::vector<double> f_on, f_off, a_on, a_off, p_on, p_off;
