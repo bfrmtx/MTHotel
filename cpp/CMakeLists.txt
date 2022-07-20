@@ -106,5 +106,7 @@ add_subdirectory(tests/sqltest)
 add_subdirectory(tests/lambdas)
 add_subdirectory(ats/atstools)
 add_subdirectory(tests/read_cal_test)
+add_subdirectory(tests/thread_pool)
+add_subdirectory(tests/execpts)
 
 
