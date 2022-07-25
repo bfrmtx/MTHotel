@@ -86,5 +86,26 @@ int main()
     }
     std::cout << std::endl;
 
+
+    size_t chunk_size = 5;
+    std::vector<std::int32_t> ints(chunk_size);
+    std::vector<double> dbls;
+    double lsb = 2.2;
+    for (int32_t i = 0; i < ints.size(); ++i) {
+        ints[i] = i + 1;
+    }
+
+
+    dbls.resize(ints.size());
+    std::transform(ints.begin(), ints.end(), dbls.begin(),
+                   [lsb](double v) {
+                       return (lsb * v);
+                   }
+                   );
+
+
+
+    for (auto v: dbls) std::cout << v << std::endl;
+    std::cout << std::endl;
     return 0;
 }
