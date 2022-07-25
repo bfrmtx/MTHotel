@@ -327,7 +327,7 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
         return cal_entries;
     }
 
-    try {
+    //try {
 
         bool loaded = tir->LoadFile(filename.string().c_str());
         if (loaded) {
@@ -354,13 +354,15 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
             int old_id = id;
             pchan->QueryIntAttribute("id", &id);
             if (old_id != id) {
-                std::cout << "sensor for channel: " << id << std::endl;
+                std::stringstream message; // this inside a thread, try bundle output
+                message << "sensor for channel: " << id << " -> ";
                 old_id = id;
                 auto pca = open_node(pchan, "calibration");
                 auto pci = open_node(pca, "calibrated_item");
                 std::string sensor(xml_svalue(pci, "ci"));
                 int64_t serial = xml_ivalue(pci, "ci_serial_number");
-                std::cout << sensor << " " << serial << " detected" << std::endl;
+                if (serial != INT64_MAX) message << sensor << " " << serial << " detected";
+                else message << sensor << " with no serial no detected";
                 std::string cal_date(xml_svalue(pci, "ci_date"));
                 std::string cal_time(xml_svalue(pci, "ci_time"));
                 std::vector<double> f_on, f_off, a_on, a_off, p_on, p_off;
@@ -395,7 +397,7 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
                     cd = cd->NextSiblingElement("caldata");
                 }
                 if (f_on.size()) {
-                    std::cout << "on  size " << f_on.size() << std::endl;
+                    message << ", chopper on  size " << f_on.size();
                     cal_entries.emplace_back(std::make_shared<calibration>());
                     if ((*a_unit.get() == "V/(nT*Hz)") && (*f_unit.get() == "Hz") && (*p_unit.get() == "deg")) {
                         cal_entries.back()->set_format(CalibrationType::mtx_old);
@@ -414,7 +416,7 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
                     }
                 }
                 if (f_off.size()) {
-                    std::cout << "off size " << f_off.size() << std::endl;
+                    message << ", chopper off size " << f_off.size();
                     if ((*a_unit.get() == "V/(nT*Hz)") && (*f_unit.get() == "Hz") && (*p_unit.get() == "deg")) {
                         cal_entries.emplace_back(std::make_shared<calibration>());
                         cal_entries.back()->set_format(CalibrationType::mtx_old);
@@ -445,13 +447,14 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
                         cal_entries.back()->time = cal_time;
                     // cal_entries.back()->write_file("/tmp");
                 }
+                std::cout << message.str() << std::endl;
             }
             pchan = pchan->NextSiblingElement("channel");
         }
 
-    } catch (const std::string &error) {
-        std::cerr << error << std::endl;
-    }
+//    } catch (const std::string &error) {
+//        std::cerr << error << std::endl;
+//    }
 
 
     return cal_entries;

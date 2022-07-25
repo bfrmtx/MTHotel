@@ -82,7 +82,7 @@ struct calibration
                 this->date = "1970-01-01";
                 this->time = "00:00:00";
             }
-            this->Operator = "mtx";
+            this->Operator = "";
             this->ct = CalibrationType::mtx_old;
         }
         else if (ct == CalibrationType::mtx) {
@@ -93,7 +93,7 @@ struct calibration
                 this->date = "1970-01-01";
                 this->time = "00:00:00";
             }
-            this->Operator = "mtx";
+            this->Operator = "";
             this->ct = CalibrationType::mtx;
 
         }
@@ -105,7 +105,7 @@ struct calibration
                 this->date = "1970-01-01";
                 this->time = "00:00:00";
             }
-            this->Operator = "nn";
+            this->Operator = "";
             this->ct = CalibrationType::nn;
 
         }
