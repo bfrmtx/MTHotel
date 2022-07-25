@@ -4,7 +4,10 @@ import math
 import sqlite3
 from os.path import exists
 from os.path import getsize
+from os.path import basename
 import json
+import copy
+from numpy import array
 
 
 # ##################################################################################################################
@@ -38,6 +41,9 @@ def get_cal_from_db(dbname, sensor, serial, chopper):
         dbname = 'master_calibration.sql3'
         serial = 1
     conn = None
+    f = [0.0] * 0
+    a = [0.0] * 0
+    p = [0.0] * 0
     try:
         conn = sqlite3.connect(dbname)
         cur = conn.cursor()
@@ -99,7 +105,6 @@ def atss_header():
         'dip': 0.0,             # angle positive down - in case it had been measured
         'units': "",            # for ADUs it will be mV H or oher -  or scaled E mV/km
         'source': "",           # empty or indicate as, ns, ca, cp, tx or what ever
-        'site': "",             # only use when you need it in your file name! leave empty!
     }
     return header
 
@@ -110,7 +115,7 @@ def channel():
     # filename and json data are one entity - it is joined here
     f = atss_file()
     h = atss_header()
-    chan = f | h                                  # uniion (merge) dicts
+    chan = f | h                                  # union (merge) dicts
     chan['sensor_calibration'] = calibration()    # needed at least for the sensor name and serial
     h['samples'] = 0                              # the magic volatile samples
     return chan
@@ -138,7 +143,7 @@ def atss_filename(channel):
         for key, value in channel.items():
             if tag == key:
                 if tag == "sample_rate":
-                    filename = filename + fill + sample_rate_to_filestring(channel['sample_rate'])
+                    filename = filename + fill + sample_rate_to_string(channel['sample_rate'])
                 elif tag == "channel_no":
                     filename = filename + fill + "C" + f"{channel['channel_no']:03}"
                 elif tag == "channel_type":
@@ -153,9 +158,9 @@ def atss_filename(channel):
 
 
 def cea_atss_filename(channel):
-    sname = sample_rate_to_filestring(channel['sample_rate'])
+    sname = sample_rate_to_string(channel['sample_rate'])
     date_cea = channel['date'].replace('-', '')
-    filename = channel['site'] + "_" + date_cea + "_" + channel['source'] + "_" + sname + "_" + channel['channel_type']
+    filename = "cea_site" + "_" + date_cea + "_" + channel['source'] + "_" + sname + "_" + channel['channel_type']
     # slices are not supported - create a run/slice instead
     filename = filename + "_R" + f"{channel['run']:03}"
 
@@ -168,7 +173,10 @@ def cea_atss_filename(channel):
 def read_atssheader(filename):
     chan = channel()               # create a dictionary with keys from filename and header
     headername = filename
-    tags = filename.split("_")
+    tagname = basename(filename)
+    tags = tagname.split("_")
+
+
     chan["serial"] = int(tags[0])
     chan["system"] = tags[1]
     tags.pop(0)
@@ -189,8 +197,8 @@ def read_atssheader(filename):
             fl = float(tag)
             chan["sample_rate"] = 1.0/fl
 
-        if tag.endswith('H') and tag[0].isdigit():
-            tag = tag[:-1]
+        if tag.endswith('Hz') and tag[0].isdigit():
+            tag = tag[:-2]
             chan["sample_rate"] = float(tag)
 
     # try the binnary atss file with doubles
@@ -213,11 +221,13 @@ def read_atssheader(filename):
 def write_atssheader(channel):
     filename = atss_filename(channel)
     fileitems = atss_file()
+
+    tchannel = copy.deepcopy(channel)
     for item in fileitems:
-        channel.pop(item)                           # remove the header items and write json
+        tchannel.pop(item)                           # remove the header items and write json
 
     with open(filename + ".json", 'w') as f:
-        f.write(json.dumps(channel, indent=2, sort_keys=False, ensure_ascii=False))
+        f.write(json.dumps(tchannel, indent=2, sort_keys=False, ensure_ascii=False))
         f.close()
 
 
@@ -248,6 +258,7 @@ def channel_form_oldheader(oldheader):
     chan['elevation'] = oldheader['iElev_cm'] / 100.
     # since 15 years we do use pos
     p = pos_to_dip(oldheader['x1'], oldheader['x2'], oldheader['y1'], oldheader['y2'], oldheader['z1'], oldheader['z2'])
+    chan['dipole_length'] = p[0]
     chan['angle'] = p[1]
     chan['dip'] = p[2]
     # ADU uses mV without mentioning it
@@ -283,27 +294,15 @@ def channel_form_oldheader(oldheader):
     return chan
 
 
-def sample_rate_to_filestring(sample_rate):
+def sample_rate_to_string(sample_rate):
     sname = "failed"
     if sample_rate > 0.99:
         i = int(round(sample_rate, 0))
-        sname = str(i) + "H"
+        sname = str(i) + "Hz"
     else:
         d = 1.0 / sample_rate
         i = int(round(d, 0))
         sname = str(i) + "s"
-    return sname
-
-
-def sample_rate_to_display(sample_rate):
-    sname = "failed"
-    if sample_rate > 0.99:
-        i = int(round(sample_rate, 0))
-        sname = str(i) + " Hz"
-    else:
-        d = 1.0 / sample_rate
-        i = int(round(d, 0))
-        sname = str(i) + " s"
     return sname
 
 
@@ -362,7 +361,7 @@ def pos_to_dip(x1, x2, y1, y2, z1, z2):
         length = 0.0
     else:
         angle = 180. / math.pi * math.atan2(ty, tx)
-        dip = 180. / math.pi * math.acos(tz/length)
+        dip = 180. / math.pi * (90 - math.acos(tz/length))
 
     dip = [length, angle, dip]
     return dip
