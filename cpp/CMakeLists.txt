@@ -108,5 +108,6 @@ add_subdirectory(ats/atstools)
 add_subdirectory(tests/read_cal_test)
 add_subdirectory(tests/thread_pool)
 add_subdirectory(tests/execpts)
+add_subdirectory(tests/times)
 
 
