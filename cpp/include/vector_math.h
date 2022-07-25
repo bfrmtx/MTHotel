@@ -49,26 +49,26 @@ std::vector<T> vector_from_indices(const std::vector<size_t>& idx, const std::ve
 }
 
 
-/*!
- * \brief indices_wo_duplicates_sorted scans a sorted vector
- * \param v vector to scan
- * \return index vector of v referring to entries with no duplcate
- */
-template <typename T>
-std::vector<size_t> indices_wo_duplicates_sorted(const std::vector<T> &v) {
+///*!
+// * \brief indices_wo_duplicates_sorted scans a sorted vector
+// * \param v vector to scan
+// * \return index vector of v referring to entries with no duplcate
+// */
+//template <typename T>
+//std::vector<size_t> indices_wo_duplicates_sorted(const std::vector<T> &v) {
 
-        std::vector<size_t> idx;
-        if (!v.size()) return idx;
-        idx.reserve(v.size());
-        idx.emplace_back(0);
-        for (size_t i = 1; i < v.size(); ++i) {
-            if (v[i - j] != v[i] ) {
-                idx.emplace_back(i);
-            }
-        }
+//        std::vector<size_t> idx;
+//        if (!v.size()) return idx;
+//        idx.reserve(v.size());
+//        idx.emplace_back(0);
+//        for (size_t i = 1; i < v.size(); ++i) {
+//            if (v[i - j] != v[i] ) {
+//                idx.emplace_back(i);
+//            }
+//        }
 
-        return idx;
-}
+//        return idx;
+//}
 
 
 #endif
