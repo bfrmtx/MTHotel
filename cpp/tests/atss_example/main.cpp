@@ -4,8 +4,7 @@
 #include <string>
 #include <../../include/json.h>
 #include <../../include/atss.h>
-
-#include "../../include/atss_time.h"
+#include "strings_etc.h"
 
 #include <chrono>
 
@@ -17,7 +16,7 @@ int main()
 
     std::shared_ptr<channel<double>> channel_hx = std::make_shared<channel<double>>(" H_x "); // empty spaces and "_" will be removed
 
-    channel_hx->d.resize(12);
+    std::vector<double> d(12);
     channel_hx->set_serial(124);
     channel_hx->set_system("ADU-08e");
     channel_hx->set_run(99);
@@ -49,7 +48,7 @@ int main()
 
     while(force_date_valid){
         try {
-            channel_hx->set_date_time(sdate, stime, fracs);
+            channel_hx->set_date_time(sdate, fracs);
             cout << "this line will be executed ONLY if the date is valid" << endl;
             force_date_valid = false;
         }
@@ -60,51 +59,33 @@ int main()
             std::cerr << endl << "in this demo I correct the start time" << std::endl;
             sdate = "2022-01-18";
             stime = "17:30:00";
-            channel_hx->set_date_time(sdate, stime, fracs);
+            channel_hx->set_date_time((sdate + "T" + stime), fracs);
             force_date_valid = true;
         }
     }
-    std::cout << "start date time " << channel_hx->get_date_time_str() << std::endl;
-    std::cout << "Full ISO string " << channel_hx->get_date_time_str_iso() << std::endl;
+    std::cout << "start date time " << mstr::get_date_from_iso8601(channel_hx->datetime) << " " << mstr::get_time_fracs_from_iso8601(channel_hx->datetime) << std::endl;
+    std::cout << "Full ISO string " << channel_hx->datetime << std::endl;
 
     std::cout << "add 6 days" << std::endl;
-
-    std::time_t tm = mstr::string_iso8601_time_t("2022-01-30T17:30:00", 0.0);
+    double tfracs = 0.0;
+    std::time_t tm = mstr::time_t_iso_8601_str("2022-01-30T17:30:00");
     struct tm* ptm = std::gmtime(&tm);
     ptm->tm_mday += 6;
     tm = std::mktime(ptm) - timezone;
     std::string a, b;
-    double f;
-    std::string result = mstr::time_t_iso8601_utc(tm,a,b,f);
+    double f = 0.0;
+    std::string result = mstr::iso8601_time_t(tm);
     cout << result << std::endl;
 
     std::cout << "atss time examples" << std::endl;
 
     f = 0.0;
-    std::time_t utc = mtime::string_iso8601_time_t("1970-01-01T00:00:00", f);
+    std::time_t utc = mstr::time_t_iso_8601_str("1970-01-01T00:00:00");
     std::string udate, utime;
-    std::cout << "atss time starts at second " << utc << " for: " << mtime::time_t_iso8601_utc(utc, udate, utime, f) << std::endl;
+    std::cout << "atss time starts at second " << utc << " for: " << mstr::iso8601_time_t(utc) << std::endl;
     std::cout << "atss time fractions are zero: "<< f << std::endl;
-
-    long tst = 1250774545; // 2009-08-20T13:22:25
-    utc = (long)tst;       // use long
-    std::cout << "atss time from utc time stamp: " << tst << " should be 2009-08-20T13:22:25" << std::endl;
-    cout << "ats time: " << mtime::time_t_iso8601_utc(utc, udate, utime, f) << endl;
-    std::cout << "atss time add a second " << endl;
-    ++utc;
-    cout << "ats time added second: " << mtime::time_t_iso8601_utc(utc, udate, utime, f) << endl;
-    utc += 86400;
-    cout << "ats time added day:    " << mtime::time_t_iso8601_utc(utc, udate, utime, f) << endl;
-    utc = mtime::add_d_m_y(utc, 0, 1, 0);
-    cout << "ats time added month:  " << mtime::time_t_iso8601_utc(utc, udate, utime, f) << endl;
-    cout << "ats test again" << endl;
-    utc = mtime::string_iso8601_time_t("2021-12-31T14:30:00");
-    cout << "ats time: " << mtime::time_t_iso8601_utc(utc, udate, utime, f) << endl;
-    utc = mtime::add_d_m_y(utc, 1, 0, 0);
-    cout << "ats time added day:    " << mtime::time_t_iso8601_utc(utc, udate, utime, f) << endl;
-    cout << "end..." << endl;
-    return 0;
 }
+
 
 
 /*
