@@ -21,6 +21,8 @@ namespace fs = std::filesystem;
 #include "cal_base.h"
 #include "../cal/read_cal/read_cal.h"
 #include "../xml/tinyxmlwriter/tinyxmlwriter.h"
+#include "bthread.h"
+#include "mt_base.h"
 
 #include "pt_cat.h"
 #include "pt_tojson.h"
@@ -49,6 +51,9 @@ for (const auto & file : directory_iterator(path))
     double lsbval = 0;                      //!< lsb
     bool chats = false;                     //!< convert ADU-06 files to ADU-08e files
     bool tojson = false;                    //!< convert to JSON and binary - the new format
+    bool create_measdir = false;
+    bool create_sitedir = false;
+    bool clone = false;
     fs::path outdir;
 
 
@@ -57,7 +62,7 @@ for (const auto & file : directory_iterator(path))
     std::vector<fs::path> indirs;
     std::vector<fs::path> xml_files;                        //!< all xml files - either direct read or from ats/atss generated
     std::vector<std::shared_ptr<calibration>> calibs;       //!< all JSON style calibrations
-
+    fs::path clone_dir;                                     //!> directory to clone into JSON
     std::multimap<std::string, fs::path> xmls_and_files;    //!< create a multimap which ats files belong to the same XML
 
     unsigned l = 1;
@@ -69,8 +74,19 @@ for (const auto & file : directory_iterator(path))
         if (marg.compare("-chats") == 0) {
             chats = true;
         }
+        if (marg.compare("-create_measdir") == 0) {
+            create_measdir = true;
+        }
+        if (marg.compare("-create_sitedir") == 0) {
+            create_sitedir = true;
+        }
         if (marg.compare("-tojson") == 0) {
             tojson = true;
+        }
+        if (marg.compare("-clone") == 0) {
+            clone = true;
+            create_sitedir = true;
+            create_measdir = true;
         }
 
         //        else if (marg.compare("-lsbval") == 0) {
@@ -81,6 +97,7 @@ for (const auto & file : directory_iterator(path))
         }
         else if (marg.compare("-outdir") == 0) {
             outdir = std::string(argv[++l]);
+            outdir = fs::canonical(outdir);
         }
 
         else if (marg.compare("-") == 0) {
@@ -90,15 +107,44 @@ for (const auto & file : directory_iterator(path))
         ++l;
     }
 
-    l = 1;
-    while (argc > 1 && (l < unsigned(argc))) {
-        std::string marg(argv[l]);
-        if ( (marg.compare(marg.size()-4, 4, ".ats") == 0) || (marg.compare(marg.size()-4, 4, ".ATS") == 0) ) {
 
-            atsheaders.emplace_back(std::make_shared<atsheader>(fs::path(marg)));
+    if (!clone) {
+        l = 1;
+        while (argc > 1 && (l < unsigned(argc))) {
+            std::string marg(argv[l]);
+            if ( (marg.compare(marg.size()-4, 4, ".ats") == 0) || (marg.compare(marg.size()-4, 4, ".ATS") == 0) ) {
+
+                atsheaders.emplace_back(std::make_shared<atsheader>(fs::path(marg)));
+            }
+            ++l;
         }
-        ++l;
     }
+    else {
+        clone_dir = std::string(argv[argc-1]);
+        clone_dir = fs::canonical(clone_dir);
+        if (clone_dir.empty()) {
+            std::cerr << "clone needs a survey directoy as last argument" << std::endl;
+            return EXIT_FAILURE;
+        }
+        if (!fs::is_directory(clone_dir)) {
+            std::cerr << "clone needs a survey directoy as last argument" << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        std::string extension_lower = ".ats";
+        std::string extension_upper = ".ATS";
+        for (auto const& dir_entry : fs::recursive_directory_iterator(clone_dir))
+        {
+
+            // std::cout << dir_entry << '\n';
+            if( dir_entry.is_regular_file() && ((dir_entry.path().extension() == extension_lower) || (dir_entry.path().extension() == extension_upper)) ) {
+                // file_names.push_back( entry.path().string() ) ;
+                atsheaders.emplace_back(std::make_shared<atsheader>(dir_entry.path()));
+            }
+
+        }
+    }
+
 
     if (!atsheaders.size()) {
         std::cout << "no ats files found" << std::endl;
@@ -109,36 +155,24 @@ for (const auto & file : directory_iterator(path))
         std::cout <<  ats->path() <<  std::endl;
     }
 
-    // first we order by start time
-    std::sort(atsheaders.begin(), atsheaders.end(), compare_ats_start);
-    // secondly we sort by channel type
-    ats_channel_sort(atsheaders);
+    if (cat|| chats) {
+        // first we order by start time
+        std::sort(atsheaders.begin(), atsheaders.end(), compare_ats_start);
+        // secondly we sort by channel type
+        ats_channel_sort(atsheaders);
+    }
 
 
+    // example functions
     //    std::find_if(atsheaders.begin(), atsheaders.end(), Greater(5, "lsb"));
     //    auto result = *std::find_if(atsheaders.begin()+1, atsheaders.end(), comp_if_equal<double>(atsheaders.front(), "lsbval"));
 
-    //    std::cout << "test comp" << std::endl;
-    //    std::cout << atsheaders.front()->path() << std::endl;
-    //    std::cout << result->path() << std::endl;
-
-    //    std::cout << "test comp end" << std::endl;
-
-    //    for (const auto& ats : atsheaders ) {
-    //        std::cout <<  ats->path().filename() << " x" <<  std::endl;
-    //    }
-
-
-
-    //        for (const auto& ats : atsheaders ) {
-    //        std::cout <<  ats->path().filename() <<  " -> "  << ats->header.start <<  std::endl;
-    //    }
 
 
     // ************************************************************************ C A T *******************************************************************************************
 
     if (cat) {
-        if (!sizeof(outdir)) {
+        if (outdir.empty()) {
             std::cout << "please supply -outdir name" << std::endl;
             return EXIT_FAILURE;
         }
@@ -240,6 +274,9 @@ for (const auto & file : directory_iterator(path))
 
     }
 
+    // ************************************************************************ C H A T S *******************************************************************************************
+
+
     if (chats) {
         if (!sizeof(outdir)) {
             std::cout << "please supply -outdir name" << std::endl;
@@ -272,11 +309,14 @@ for (const auto & file : directory_iterator(path))
 
         }
 
-
     }
 
-    if (tojson) {
-        if (!sizeof(outdir)) {
+    // ************************************************************************ T O J S O N || C L O N E *******************************************************************
+
+
+    if (tojson || clone) {
+
+        if (outdir.empty()) {
             std::cout << "please supply -outdir name" << std::endl;
             return EXIT_FAILURE;
         }
@@ -285,19 +325,60 @@ for (const auto & file : directory_iterator(path))
             return EXIT_FAILURE;
         }
 
-        if (!std::filesystem::exists(outdir)) {
-            std::filesystem::create_directory(outdir);
-            if(!std::filesystem::exists(outdir)) {
-                std::cout << "can not create outdir" << std::endl;
+        if (clone) {
+            if (clone_dir.empty()) {
+                std::cout << "please supply last argument as directory to clone" << std::endl;
                 return EXIT_FAILURE;
             }
-            std::cout << outdir << " created" << std::endl;
+            std::cout << clone_dir.parent_path().filename() << std::endl;
+           // << fuck das geht nich
+            try {
+                //std::filesystem::create_directory(outdir);
+                outdir /= clone_dir.filename();
+                std::filesystem::create_directory(outdir);
+                create_survey_dirs(outdir, survey_dirs());
+                outdir /= "ts"; // put the data in the time series directory
+
+            }
+            catch (std::error_code& ec) {
+                std::string err_str = std::string("atstools->") + __func__;
+                std::cerr << ec.message();
+                std::cerr << err_str << " " << outdir << std::endl;
+            }
+
+
         }
 
-        for (auto &atsh : atsheaders) {
-            ats2json(atsh, outdir);
+        // ask HW and split threads
+        std::vector<size_t> execs = mk_mini_threads(0, atsheaders.size());
 
+        size_t thread_index = 0;
+        std::mutex dirlock;
+
+        //
+        // serialized test
+        //        for (auto &atsh : atsheaders) {
+        //            std::cout << atsh->path() << std::endl;
+        //            ats2json(atsh, outdir, dirlock, create_measdir, create_sitedir);
+        //        }
+        //
+
+        for (const auto &ex : execs) {
+            try {
+                std::vector<std::jthread> threads;
+                std::cout << "starting: " << ex << std::endl;
+                for (size_t j = 0; j < ex; ++j) {
+                    threads.emplace_back(std::jthread (ats2json, std::ref(atsheaders.at(thread_index++)), std::ref(outdir),
+                                                      std::ref(dirlock), std::ref(create_measdir), std::ref(create_sitedir)));
+                }
+
+            }
+            catch (...) {
+                std::cerr << "could not execute all threads" << std::endl;
+                return EXIT_FAILURE;
+            }
         }
+
 
     }
 
