@@ -16,7 +16,6 @@
 #include <unordered_map>
 #include <filesystem>
 #include "strings_etc.h"
-#include "atss_time.h"
 #include "json.h"
 #include "mt_base.h"
 
@@ -249,7 +248,7 @@ std::unordered_map<std::string, int> ats_sys_family = {
 
 
 /*!
- * \brief The ats_header_json struct
+ * \brief The ats_header_json struct for interacting with json; the class makes use of atsheader
  */
 struct ats_header_json {
     nlohmann::ordered_json header;
@@ -269,20 +268,44 @@ struct ats_header_json {
     ~ats_header_json() {
     }
 
+    ats_header_json(std::shared_ptr<ats_header_json> &rhs) {
+        this->filename = rhs->filename;
+        this->header = rhs->header;
+    }
+
+    std::filesystem::path write_meta(const std::filesystem::path &path_only, const std::string filename) {
+        std::filesystem::path filepath(path_only);
+        filepath /= filename;
+
+        std::ofstream file;
+        file.open (filepath, std::fstream::out | std::fstream::trunc);
+
+        if (!file.is_open()) {
+            file.close();
+            std::string err_str = __func__;
+            err_str += "::can not write header, file not open ";
+            err_str += filepath.string();
+            throw err_str;
+            return std::filesystem::path("");
+        }
+
+        file << std::setw(2) << this->header << std::endl;
+        file.close();
+
+        return filepath;
+    }
+
     std::filesystem::path xml_path() const {
         std::filesystem::path xp(this->filename.parent_path());
         xp += "/";
-        xp += header["XmlHeader"].get<std::string>();
+        xp += this->header["XmlHeader"].get<std::string>();
         return xp;
     }
 
 
     std::string start_date() const {
-        std::string udate, utime;
-        double f = 0.0;
         long int utc = static_cast<int64_t>(this->atsh.start);
-        auto result = mtime::time_t_iso8601_utc(utc, udate, utime, f);
-        return udate;        
+        return mstr::iso8601_time_t(utc);
     }
 
     std::string stop_date() const {
@@ -291,18 +314,20 @@ struct ats_header_json {
         double f = 0.0, intpart;
         f = modf(sf_lhs, &intpart);
         int64_t utc = static_cast<int64_t>(intpart);
-        std::string udate, utime;
-        auto result = mtime::time_t_iso8601_utc(utc, udate, utime, f);
-        return udate;
+        return mstr::iso8601_time_t(utc, 1);
     }
 
     std::string start_time() const {
-        std::string udate, utime;
-        double f = 0.0;
-        long int utc = static_cast<int64_t>(this->atsh.start);
-        auto result = mtime::time_t_iso8601_utc(utc, udate, utime, f);
-        return utime;
+        int64_t utc = static_cast<int64_t>(this->atsh.start);
+        return mstr::iso8601_time_t(utc, 2);
     }
+
+    std::string start_datetime() const {
+        std::string udate, utime;
+        int64_t utc = static_cast<int64_t>(this->atsh.start);
+        return mstr::iso8601_time_t(utc);
+    }
+
 
     std::string stop_time() const {
         long double sf_lhs = static_cast<long double>(this->atsh.samples) / static_cast<long double>(this->atsh.sample_rate);
@@ -310,9 +335,7 @@ struct ats_header_json {
         double f = 0.0, intpart;
         f = modf(sf_lhs, &intpart);
         int64_t utc = static_cast<int64_t>(intpart);
-        std::string udate, utime;
-        auto result = mtime::time_t_iso8601_utc(utc, udate, utime, f);
-        return utime;
+        return mstr::iso8601_time_t(utc, 2, f);
     }
 
     double get_lat() const {
@@ -383,7 +406,33 @@ struct ats_header_json {
         return ang;
 
     }
+    bool can_and_want_scale() const {
 
+        if (!this->header.contains("channel_type") ) {
+            std::string err_str = __func__;
+            err_str += "::header not existing; read file and use get_ats_header() ";
+            throw err_str;
+        }
+        if (this->pos2length() == 0.0) return false;
+        std::vector<std::string> types;
+        types.emplace_back("Ex");
+        types.emplace_back("Ey");
+        types.emplace_back("Ez");
+
+        std::string mytpe = this->header["channel_type"];
+        for (const auto &type : types) {
+            if (type == mytpe) return true;
+        }
+
+        return false;
+
+    }
+
+
+    /*!
+     * \brief pos2dip
+     * \return dip angle; 90 = positive downwards, 0 = horizontal
+     */
     double pos2dip() const {
 
         double tz = double(this->atsh.z2 - this->atsh.z1);
@@ -410,7 +459,7 @@ struct ats_header_json {
 
     std::string measdir() const {
 
-        return mtime::measdir_time(static_cast<int64_t>(this->atsh.start));
+        return mstr::measdir_time(static_cast<int64_t>(this->atsh.start));
     }
 
 
@@ -520,6 +569,7 @@ struct ats_header_json {
         return sfilter;
     }
 
+
     std::string get_hf_filter_strings() const {
         std::string sfilter;
         std::vector<uint8_t> filters(this->HFFilter_to_ints());
@@ -575,55 +625,60 @@ struct ats_header_json {
      * \brief get_ats_header gets the binary ats header into the JSON
      */
     void get_ats_header() {
-        header["header_length"] =                 static_cast<int64_t>(this->atsh.header_length);
-        header["header_version"] =                static_cast<int64_t>(this->atsh.header_version);
+        this->header["header_length"] =                 static_cast<int64_t>(this->atsh.header_length);
+        this->header["header_version"] =                static_cast<int64_t>(this->atsh.header_version);
 
-        header["samples"] =                       static_cast<int64_t>(this->atsh.samples);
-        header["sample_rate"] =                   static_cast<double>(this->atsh.sample_rate);
-        header["start"] =                         static_cast<int64_t>(this->atsh.start);
-        header["lsbval"] =                        static_cast<double>(this->atsh.lsbval);
-        header["GMToffset"] =                     static_cast<int64_t>(this->atsh.GMToffset);
-        header["orig_sample_rate"] =              static_cast<double>(this->atsh.orig_sample_rate);
+        this->header["samples"] =                       static_cast<int64_t>(this->atsh.samples);
+        this->header["sample_rate"] =                   static_cast<double>(this->atsh.sample_rate);
+        this->header["start"] =                         static_cast<int64_t>(this->atsh.start);
+        this->header["lsbval"] =                        static_cast<double>(this->atsh.lsbval);
+        this->header["GMToffset"] =                     static_cast<int64_t>(this->atsh.GMToffset);
+        this->header["orig_sample_rate"] =              static_cast<double>(this->atsh.orig_sample_rate);
 
-        header["serial_number"] =                 static_cast<int64_t>(this->atsh.serial_number);
-        header["serial_number_ADC_board"] =       static_cast<int64_t>(this->atsh.serial_number_ADC_board);
-        header["channel_number"] =                static_cast<int64_t>(this->atsh.channel_number);
-        header["chopper"] =                       static_cast<int64_t>(this->atsh.chopper);
+        this->header["serial_number"] =                 static_cast<int64_t>(this->atsh.serial_number);
+        this->header["serial_number_ADC_board"] =       static_cast<int64_t>(this->atsh.serial_number_ADC_board);
+        this->header["channel_number"] =                static_cast<int64_t>(this->atsh.channel_number);
+        this->header["chopper"] =                       static_cast<int64_t>(this->atsh.chopper);
 
+        // make sure that we have Ex .. Hy in camel case
         std::string tch =                         mstr::clean_bc_str(this->atsh.channel_type, 2);
-        std::transform(tch.begin(), tch.begin()+1, tch.begin(), ::toupper);
-        std::transform(tch.begin()+1, tch.end(), tch.begin()+1, ::tolower);
-        header["channel_type"] =                  tch;
-        header["sensor_type"] =                   mstr::clean_bc_str(this->atsh.sensor_type, 6);
-        header["sensor_serial_number"] =          static_cast<int64_t>(this->atsh.sensor_serial_number);
+        // x,y,z,T,t
+        if (tch.size() == 1) this->header["channel_type"] =                  tch;
+        else {
+            std::transform(tch.begin(), tch.begin()+1, tch.begin(), ::toupper);
+            std::transform(tch.begin()+1, tch.end(), tch.begin()+1, ::tolower);
+            this->header["channel_type"] =                  tch;
+        }
+        this->header["sensor_type"] =                   mstr::clean_bc_str(this->atsh.sensor_type, 6);
+        this->header["sensor_serial_number"] =          static_cast<int64_t>(this->atsh.sensor_serial_number);
 
-        header["x1"] =                            static_cast<double>(this->atsh.x1);
-        header["y1"] =                            static_cast<double>(this->atsh.y1);
-        header["z1"] =                            static_cast<double>(this->atsh.z1);
-        header["x2"] =                            static_cast<double>(this->atsh.x2);
-        header["y2"] =                            static_cast<double>(this->atsh.y2);
-        header["z2"] =                            static_cast<double>(this->atsh.z2);
+        this->header["x1"] =                            static_cast<double>(this->atsh.x1);
+        this->header["y1"] =                            static_cast<double>(this->atsh.y1);
+        this->header["z1"] =                            static_cast<double>(this->atsh.z1);
+        this->header["x2"] =                            static_cast<double>(this->atsh.x2);
+        this->header["y2"] =                            static_cast<double>(this->atsh.y2);
+        this->header["z2"] =                            static_cast<double>(this->atsh.z2);
 
         // pos and diplength not supported since 2004 - inconsistency removed
 
-        header["rho_probe_ohm"] =                 static_cast<double>(this->atsh.rho_probe_ohm);
-        header["DC_offset_voltage_mV"] =          static_cast<double>(this->atsh.DC_offset_voltage_mV);
-        header["gain_stage1"] =                   static_cast<double>(this->atsh.gain_stage1);
-        header["gain_stage2"] =                   static_cast<double>(this->atsh.gain_stage2);
+        this->header["rho_probe_ohm"] =                 static_cast<double>(this->atsh.rho_probe_ohm);
+        this->header["DC_offset_voltage_mV"] =          static_cast<double>(this->atsh.DC_offset_voltage_mV);
+        this->header["gain_stage1"] =                   static_cast<double>(this->atsh.gain_stage1);
+        this->header["gain_stage2"] =                   static_cast<double>(this->atsh.gain_stage2);
 
         // Data from status information ?
-        header["iLat_ms"] =                       static_cast<int64_t>(this->atsh.iLat_ms);
-        header["iLong_ms"] =                      static_cast<int64_t>(this->atsh.iLong_ms);
-        header["iElev_cm"] =                      static_cast<int64_t>(this->atsh.iElev_cm);
-        header["Lat_Long_TYPE"] =                 std::string(1, this->atsh.Lat_Long_TYPE);
-        header["coordinate_type"] =               std::string(1, this->atsh.coordinate_type);
-        header["ref_meridian"] =                  static_cast<int64_t>(this->atsh.ref_meridian);
+        this->header["iLat_ms"] =                       static_cast<int64_t>(this->atsh.iLat_ms);
+        this->header["iLong_ms"] =                      static_cast<int64_t>(this->atsh.iLong_ms);
+        this->header["iElev_cm"] =                      static_cast<int64_t>(this->atsh.iElev_cm);
+        this->header["Lat_Long_TYPE"] =                 std::string(1, this->atsh.Lat_Long_TYPE);
+        this->header["coordinate_type"] =               std::string(1, this->atsh.coordinate_type);
+        this->header["ref_meridian"] =                  static_cast<int64_t>(this->atsh.ref_meridian);
 
-        header["Northing"] =                      static_cast<double>(this->atsh.Northing);
-        header["Easting"] =                       static_cast<double>(this->atsh.Easting);
-        header["gps_clock_status"] =              std::string(1, this->atsh.gps_clock_status);
-        header["GPS_accuracy"] =                  std::string(1, this->atsh.GPS_accuracy);
-        header["offset_UTC"] =                    static_cast<int64_t>(this->atsh.offset_UTC);
+        this->header["Northing"] =                      static_cast<double>(this->atsh.Northing);
+        this->header["Easting"] =                       static_cast<double>(this->atsh.Easting);
+        this->header["gps_clock_status"] =              std::string(1, this->atsh.gps_clock_status);
+        this->header["GPS_accuracy"] =                  std::string(1, this->atsh.GPS_accuracy);
+        this->header["offset_UTC"] =                    static_cast<int64_t>(this->atsh.offset_UTC);
 
         int TypeNo = 0;
         int GMSno = 0;
@@ -648,59 +703,59 @@ struct ats_header_json {
             GMSno = 0;
         }
 
-        header["SystemType"] =                    Name;
+        this->header["SystemType"] =                    Name;
         // beside from binary header
-        header["GMSno"] =                         GMSno;
-        header["TypeNo"] =                        TypeNo;
-        header["ats_data_file"] =                 this->filename.filename();
+        this->header["GMSno"] =                         GMSno;
+        this->header["TypeNo"] =                        TypeNo;
+        this->header["ats_data_file"] =                 this->filename.filename();
         //
         set_filter_bank(Name);
 
         // Data from XML-Job specification
-        header["survey_header_filename"] =        mstr::clean_bc_str(this->atsh.survey_header_filename, 12);
-        header["type_of_meas"] =                  mstr::clean_bc_str(this->atsh.type_of_meas, 4);
+        this->header["survey_header_filename"] =        mstr::clean_bc_str(this->atsh.survey_header_filename, 12);
+        this->header["type_of_meas"] =                  mstr::clean_bc_str(this->atsh.type_of_meas, 4);
 
-        header["DCOffsetCorrValue"] =             static_cast<double>(this->atsh.DCOffsetCorrValue);
-        header["DCOffsetCorrOn"] =                static_cast<int64_t>(this->atsh.DCOffsetCorrOn);
-        header["InputDivOn"] =                    static_cast<int64_t>(this->atsh.InputDivOn);
-        header["bit_indicator"] =                 static_cast<int64_t>(this->atsh.bit_indicator);
-        header["result_selftest"] =               mstr::clean_bc_str(this->atsh.result_selftest, 2);
-        header["numslices"] =                     static_cast<int64_t>(this->atsh.numslices);
+        this->header["DCOffsetCorrValue"] =             static_cast<double>(this->atsh.DCOffsetCorrValue);
+        this->header["DCOffsetCorrOn"] =                static_cast<int64_t>(this->atsh.DCOffsetCorrOn);
+        this->header["InputDivOn"] =                    static_cast<int64_t>(this->atsh.InputDivOn);
+        this->header["bit_indicator"] =                 static_cast<int64_t>(this->atsh.bit_indicator);
+        this->header["result_selftest"] =               mstr::clean_bc_str(this->atsh.result_selftest, 2);
+        this->header["numslices"] =                     static_cast<int64_t>(this->atsh.numslices);
 
-        header["cal_freqs"] =                     static_cast<int64_t>(this->atsh.cal_freqs);
-        header["cal_entry_length"] =              static_cast<int64_t>(this->atsh.cal_entry_length);
-        header["cal_version"] =                   static_cast<int64_t>(this->atsh.cal_version);
-        header["cal_start_address"] =             static_cast<int64_t>(this->atsh.cal_start_address);
+        this->header["cal_freqs"] =                     static_cast<int64_t>(this->atsh.cal_freqs);
+        this->header["cal_entry_length"] =              static_cast<int64_t>(this->atsh.cal_entry_length);
+        this->header["cal_version"] =                   static_cast<int64_t>(this->atsh.cal_version);
+        this->header["cal_start_address"] =             static_cast<int64_t>(this->atsh.cal_start_address);
 
         // bitfield; filterbank was set above      
-        header["LF_filters"] =                    get_lf_filter_strings();
-        header["UTMZone"] =                       mstr::clean_bc_str(this->atsh.UTMZone, 12);
-        header["system_cal_datetime"] =           static_cast<int64_t>(this->atsh.system_cal_datetime);
-        header["sensor_cal_filename"] =           mstr::clean_bc_str(this->atsh.sensor_cal_filename, 12);
-        header["sensor_cal_datetime"] =           static_cast<int64_t>(this->atsh.sensor_cal_datetime);
+        this->header["LF_filters"] =                    get_lf_filter_strings();
+        this->header["UTMZone"] =                       mstr::clean_bc_str(this->atsh.UTMZone, 12);
+        this->header["system_cal_datetime"] =           static_cast<int64_t>(this->atsh.system_cal_datetime);
+        this->header["sensor_cal_filename"] =           mstr::clean_bc_str(this->atsh.sensor_cal_filename, 12);
+        this->header["sensor_cal_datetime"] =           static_cast<int64_t>(this->atsh.sensor_cal_datetime);
 
-        header["powerline1"] =                    static_cast<double>(this->atsh.powerline1);
-        header["powerline2"] =                    static_cast<double>(this->atsh.powerline2);
+        this->header["powerline1"] =                    static_cast<double>(this->atsh.powerline1);
+        this->header["powerline2"] =                    static_cast<double>(this->atsh.powerline2);
 
         // bitfield; filterbank was set above 
-        header["HF_filters"] =                    get_hf_filter_strings();
-        header["external_gain"] =                 static_cast<double>(this->atsh.external_gain);
-        header["ADB_board_type"] =                mstr::clean_bc_str(this->atsh.ADB_board_type, 4);
+        this->header["HF_filters"] =                    get_hf_filter_strings();
+        this->header["external_gain"] =                 static_cast<double>(this->atsh.external_gain);
+        this->header["ADB_board_type"] =                mstr::clean_bc_str(this->atsh.ADB_board_type, 4);
 
-        header["Client"] =                        mstr::clean_bc_str(this->atsh.comments.Client, 16);
-        header["Contractor"] =                    mstr::clean_bc_str(this->atsh.comments.Contractor, 16);
-        header["Area"] =                          mstr::clean_bc_str(this->atsh.comments.Area, 16);
-        header["SurveyID"] =                      mstr::clean_bc_str(this->atsh.comments.SurveyID, 16);
-        header["Operator"] =                      mstr::clean_bc_str(this->atsh.comments.Operator, 16);
-        header["SiteName"] =                      mstr::clean_bc_str(this->atsh.comments.SiteName, 112);
-        header["XmlHeader"] =                     mstr::clean_bc_str(this->atsh.comments.XmlHeader, 64);
+        this->header["Client"] =                        mstr::clean_bc_str(this->atsh.comments.Client, 16);
+        this->header["Contractor"] =                    mstr::clean_bc_str(this->atsh.comments.Contractor, 16);
+        this->header["Area"] =                          mstr::clean_bc_str(this->atsh.comments.Area, 16);
+        this->header["SurveyID"] =                      mstr::clean_bc_str(this->atsh.comments.SurveyID, 16);
+        this->header["Operator"] =                      mstr::clean_bc_str(this->atsh.comments.Operator, 16);
+        this->header["SiteName"] =                      mstr::clean_bc_str(this->atsh.comments.SiteName, 112);
+        this->header["XmlHeader"] =                     mstr::clean_bc_str(this->atsh.comments.XmlHeader, 64);
 
         // remove the useless comment weather:
         std::string wstr =                        mstr::clean_bc_str(this->atsh.comments.Comments, 288);
         if (wstr == "weather:") wstr.clear();
-        header["Comments"] =                      wstr;
-        header["SiteNameRR"] =                    mstr::clean_bc_str(this->atsh.comments.SiteNameRR, 112);
-        header["SiteNameEMAP"] =                  mstr::clean_bc_str(this->atsh.comments.SiteNameEMAP, 112);
+        this->header["Comments"] =                      wstr;
+        this->header["SiteNameRR"] =                    mstr::clean_bc_str(this->atsh.comments.SiteNameRR, 112);
+        this->header["SiteNameEMAP"] =                  mstr::clean_bc_str(this->atsh.comments.SiteNameEMAP, 112);
 
     }
 
@@ -712,52 +767,52 @@ struct ats_header_json {
 
 
 
-        this->atsh.header_length        = static_cast<uint16_t>(header["header_length"]);
-        this->atsh.header_version       = static_cast<int16_t>(header["header_version"]);
+        this->atsh.header_length        = static_cast<uint16_t>(this->header["header_length"]);
+        this->atsh.header_version       = static_cast<int16_t>(this->header["header_version"]);
 
-        this->atsh.samples              = static_cast<uint32_t>(header["samples"]);
-        this->atsh.sample_rate          = static_cast<float>(header["sample_rate"]);
-        this->atsh.start                = static_cast<uint32_t>(header["start"]);
-        this->atsh.lsbval               = static_cast<double>(header["lsbval"]);
-        this->atsh.GMToffset            = static_cast<int32_t>(header["GMToffset"]);
-        this->atsh.orig_sample_rate     = static_cast<float>(header["orig_sample_rate"]);
+        this->atsh.samples              = static_cast<uint32_t>(this->header["samples"]);
+        this->atsh.sample_rate          = static_cast<float>(this->header["sample_rate"]);
+        this->atsh.start                = static_cast<uint32_t>(this->header["start"]);
+        this->atsh.lsbval               = static_cast<double>(this->header["lsbval"]);
+        this->atsh.GMToffset            = static_cast<int32_t>(this->header["GMToffset"]);
+        this->atsh.orig_sample_rate     = static_cast<float>(this->header["orig_sample_rate"]);
 
-        this->atsh.serial_number        = static_cast<uint16_t>(header["serial_number"]);
-        this->atsh.serial_number_ADC_board = static_cast<uint8_t>(header["serial_number_ADC_board"]);
-        this->atsh.channel_number       = static_cast<uint8_t>(header["channel_number"]);
-        this->atsh.chopper              = static_cast<uint8_t>(header["chopper"]);
-        strncpy(this->atsh.channel_type, header["channel_type"].get<std::string>().c_str(), sizeof(this->atsh.channel_type));
-        strncpy(this->atsh.sensor_type, header["sensor_type"].get<std::string>().c_str(), sizeof(this->atsh.sensor_type));
-        this->atsh.sensor_serial_number = static_cast<int16_t>(header["sensor_serial_number"]);
+        this->atsh.serial_number        = static_cast<uint16_t>(this->header["serial_number"]);
+        this->atsh.serial_number_ADC_board = static_cast<uint8_t>(this->header["serial_number_ADC_board"]);
+        this->atsh.channel_number       = static_cast<uint8_t>(this->header["channel_number"]);
+        this->atsh.chopper              = static_cast<uint8_t>(this->header["chopper"]);
+        strncpy(this->atsh.channel_type, this->header["channel_type"].get<std::string>().c_str(), sizeof(this->atsh.channel_type));
+        strncpy(this->atsh.sensor_type, this->header["sensor_type"].get<std::string>().c_str(), sizeof(this->atsh.sensor_type));
+        this->atsh.sensor_serial_number = static_cast<int16_t>(this->header["sensor_serial_number"]);
 
-        this->atsh.x1                   = static_cast<float>(header["x1"]);
-        this->atsh.y1                   = static_cast<float>(header["y1"]);
-        this->atsh.z1                   = static_cast<float>(header["z1"]);
-        this->atsh.x2                   = static_cast<float>(header["x2"]);
-        this->atsh.y2                   = static_cast<float>(header["y2"]);
-        this->atsh.z2                   = static_cast<float>(header["z2"]);
+        this->atsh.x1                   = static_cast<float>(this->header["x1"]);
+        this->atsh.y1                   = static_cast<float>(this->header["y1"]);
+        this->atsh.z1                   = static_cast<float>(this->header["z1"]);
+        this->atsh.x2                   = static_cast<float>(this->header["x2"]);
+        this->atsh.y2                   = static_cast<float>(this->header["y2"]);
+        this->atsh.z2                   = static_cast<float>(this->header["z2"]);
 
-        this->atsh.rho_probe_ohm        = static_cast<float>(header["rho_probe_ohm"]);
-        this->atsh.DC_offset_voltage_mV = static_cast<float>(header["DC_offset_voltage_mV"]);
-        this->atsh.gain_stage1          = static_cast<float>(header["gain_stage1"]);
-        this->atsh.gain_stage2          = static_cast<float>(header["gain_stage2"]);
+        this->atsh.rho_probe_ohm        = static_cast<float>(this->header["rho_probe_ohm"]);
+        this->atsh.DC_offset_voltage_mV = static_cast<float>(this->header["DC_offset_voltage_mV"]);
+        this->atsh.gain_stage1          = static_cast<float>(this->header["gain_stage1"]);
+        this->atsh.gain_stage2          = static_cast<float>(this->header["gain_stage2"]);
 
-        this->atsh.iLat_ms              = static_cast<int32_t>(header["iLat_ms"]);
-        this->atsh.iLong_ms             = static_cast<int32_t>(header["iLong_ms"]);
-        this->atsh.iElev_cm             = static_cast<int32_t>(header["iElev_cm"]);
+        this->atsh.iLat_ms              = static_cast<int32_t>(this->header["iLat_ms"]);
+        this->atsh.iLong_ms             = static_cast<int32_t>(this->header["iLong_ms"]);
+        this->atsh.iElev_cm             = static_cast<int32_t>(this->header["iElev_cm"]);
 
-        this->atsh.Lat_Long_TYPE        = header["Lat_Long_TYPE"].get<std::string>().at(0);
-        this->atsh.coordinate_type      = header["coordinate_type"].get<std::string>().at(0);
+        this->atsh.Lat_Long_TYPE        = this->header["Lat_Long_TYPE"].get<std::string>().at(0);
+        this->atsh.coordinate_type      = this->header["coordinate_type"].get<std::string>().at(0);
 
-        this->atsh.ref_meridian         = static_cast<int16_t>(header["ref_meridian"]);
+        this->atsh.ref_meridian         = static_cast<int16_t>(this->header["ref_meridian"]);
 
-        this->atsh.Northing             = static_cast<double>(header["Northing"]);
-        this->atsh.Easting              = static_cast<double>(header["Easting"]);
-        this->atsh.gps_clock_status     = header["gps_clock_status"].get<std::string>().at(0);
-        this->atsh.GPS_accuracy         = header["GPS_accuracy"].get<std::string>().at(0);
-        this->atsh.offset_UTC           = static_cast<int16_t>(header["offset_UTC"]);
+        this->atsh.Northing             = static_cast<double>(this->header["Northing"]);
+        this->atsh.Easting              = static_cast<double>(this->header["Easting"]);
+        this->atsh.gps_clock_status     = this->header["gps_clock_status"].get<std::string>().at(0);
+        this->atsh.GPS_accuracy         = this->header["GPS_accuracy"].get<std::string>().at(0);
+        this->atsh.offset_UTC           = static_cast<int16_t>(this->header["offset_UTC"]);
 
-        std::string official_name = header["SystemType"].get<std::string>(); //like ADU-08e
+        std::string official_name = this->header["SystemType"].get<std::string>(); //like ADU-08e
         std::string header_name;
         for (const auto &name : ats_sys_names) {
             if (name.second == official_name) {
@@ -772,58 +827,58 @@ struct ats_header_json {
         }
 
         // make filters, where ADU-07 and ADU-06 use ADU-07e filters
-        this->set_filter_bank(header["SystemType"]);
+        this->set_filter_bank(this->header["SystemType"]);
         strncpy(this->atsh.SystemType, header_name.c_str(), sizeof(this->atsh.SystemType));
 
-        strncpy(this->atsh.survey_header_filename, header["survey_header_filename"].get<std::string>().c_str(), sizeof(this->atsh.survey_header_filename));
-        strncpy(this->atsh.type_of_meas, header["type_of_meas"].get<std::string>().c_str(), sizeof(this->atsh.type_of_meas));
-        this->atsh.DCOffsetCorrValue    = static_cast<double>(header["DCOffsetCorrValue"]);
-        this->atsh.DCOffsetCorrOn       = static_cast<int8_t>(header["DCOffsetCorrOn"]);
-        this->atsh.InputDivOn           = static_cast<int8_t>(header["InputDivOn"]);
-        this->atsh.bit_indicator        = static_cast<int16_t>(header["bit_indicator"]);
-        strncpy(this->atsh.result_selftest, header["result_selftest"].get<std::string>().c_str(), sizeof(this->atsh.result_selftest));
-        this->atsh.numslices            = static_cast<uint16_t>(header["numslices"]);
-        this->atsh.cal_freqs            = static_cast<int16_t>(header["cal_freqs"]);
-        this->atsh.cal_entry_length     = static_cast<int16_t>(header["cal_entry_length"]);
-        this->atsh.cal_version          = static_cast<int16_t>(header["cal_version"]);
-        this->atsh.cal_start_address    = static_cast<int16_t>(header["cal_start_address"]);
+        strncpy(this->atsh.survey_header_filename, this->header["survey_header_filename"].get<std::string>().c_str(), sizeof(this->atsh.survey_header_filename));
+        strncpy(this->atsh.type_of_meas, this->header["type_of_meas"].get<std::string>().c_str(), sizeof(this->atsh.type_of_meas));
+        this->atsh.DCOffsetCorrValue    = static_cast<double>(this->header["DCOffsetCorrValue"]);
+        this->atsh.DCOffsetCorrOn       = static_cast<int8_t>(this->header["DCOffsetCorrOn"]);
+        this->atsh.InputDivOn           = static_cast<int8_t>(this->header["InputDivOn"]);
+        this->atsh.bit_indicator        = static_cast<int16_t>(this->header["bit_indicator"]);
+        strncpy(this->atsh.result_selftest, this->header["result_selftest"].get<std::string>().c_str(), sizeof(this->atsh.result_selftest));
+        this->atsh.numslices            = static_cast<uint16_t>(this->header["numslices"]);
+        this->atsh.cal_freqs            = static_cast<int16_t>(this->header["cal_freqs"]);
+        this->atsh.cal_entry_length     = static_cast<int16_t>(this->header["cal_entry_length"]);
+        this->atsh.cal_version          = static_cast<int16_t>(this->header["cal_version"]);
+        this->atsh.cal_start_address    = static_cast<int16_t>(this->header["cal_start_address"]);
 
 
-        this->set_lf_filter_int(header["LF_filters"]);
+        this->set_lf_filter_int(this->header["LF_filters"]);
 
 
-        strncpy(this->atsh.UTMZone, header["UTMZone"].get<std::string>().c_str(), sizeof(this->atsh.UTMZone));
-        this->atsh.system_cal_datetime  = static_cast<uint32_t>(header["system_cal_datetime"]);
-        strncpy(this->atsh.sensor_cal_filename, header["sensor_cal_filename"].get<std::string>().c_str(), sizeof(this->atsh.sensor_cal_filename));
+        strncpy(this->atsh.UTMZone, this->header["UTMZone"].get<std::string>().c_str(), sizeof(this->atsh.UTMZone));
+        this->atsh.system_cal_datetime  = static_cast<uint32_t>(this->header["system_cal_datetime"]);
+        strncpy(this->atsh.sensor_cal_filename, this->header["sensor_cal_filename"].get<std::string>().c_str(), sizeof(this->atsh.sensor_cal_filename));
 
-        this->atsh.sensor_cal_datetime  = static_cast<uint32_t>(header["sensor_cal_datetime"]);
-        this->atsh.powerline1           = static_cast<float>(header["powerline1"]);
-        this->atsh.powerline2           = static_cast<float>(header["powerline2"]);
+        this->atsh.sensor_cal_datetime  = static_cast<uint32_t>(this->header["sensor_cal_datetime"]);
+        this->atsh.powerline1           = static_cast<float>(this->header["powerline1"]);
+        this->atsh.powerline2           = static_cast<float>(this->header["powerline2"]);
 
-        this->set_hf_filter_int(header["HF_filters"]);
+        this->set_hf_filter_int(this->header["HF_filters"]);
 
-        this->atsh.external_gain  =        static_cast<float>(header["external_gain"]);
-        strncpy(this->atsh.ADB_board_type, header["ADB_board_type"].get<std::string>().c_str(), sizeof(this->atsh.ADB_board_type));
+        this->atsh.external_gain  =        static_cast<float>(this->header["external_gain"]);
+        strncpy(this->atsh.ADB_board_type, this->header["ADB_board_type"].get<std::string>().c_str(), sizeof(this->atsh.ADB_board_type));
 
 
         if (conv_from_06) {
-            std::string s = header["Comments"];
-            header["Comments"] = "converted from ADU-06";
+            std::string s = this->header["Comments"];
+            this->header["Comments"] = "converted from ADU-06";
             if (s.size()) {
-                header["Comments"] += "; " + s;
+                this->header["Comments"] += "; " + s;
             }
         }
 
-        strncpy(this->atsh.comments.Client, header["Client"].get<std::string>().c_str(), sizeof(this->atsh.comments.Client));
-        strncpy(this->atsh.comments.Contractor, header["Contractor"].get<std::string>().c_str(), sizeof(this->atsh.comments.Contractor));
-        strncpy(this->atsh.comments.Area, header["Area"].get<std::string>().c_str(), sizeof(this->atsh.comments.Area));
-        strncpy(this->atsh.comments.SurveyID, header["SurveyID"].get<std::string>().c_str(), sizeof(this->atsh.comments.SurveyID));
-        strncpy(this->atsh.comments.Operator, header["Operator"].get<std::string>().c_str(), sizeof(this->atsh.comments.Operator));
-        strncpy(this->atsh.comments.SiteName, header["SiteName"].get<std::string>().c_str(), sizeof(this->atsh.comments.SiteName));
-        strncpy(this->atsh.comments.XmlHeader, header["XmlHeader"].get<std::string>().c_str(), sizeof(this->atsh.comments.XmlHeader));
-        strncpy(this->atsh.comments.Comments, header["Comments"].get<std::string>().c_str(), sizeof(this->atsh.comments.Comments));
-        strncpy(this->atsh.comments.SiteNameRR, header["SiteNameRR"].get<std::string>().c_str(), sizeof(this->atsh.comments.SiteNameRR));
-        strncpy(this->atsh.comments.SiteNameEMAP, header["SiteNameEMAP"].get<std::string>().c_str(), sizeof(this->atsh.comments.SiteNameEMAP));
+        strncpy(this->atsh.comments.Client, this->header["Client"].get<std::string>().c_str(), sizeof(this->atsh.comments.Client));
+        strncpy(this->atsh.comments.Contractor, this->header["Contractor"].get<std::string>().c_str(), sizeof(this->atsh.comments.Contractor));
+        strncpy(this->atsh.comments.Area, this->header["Area"].get<std::string>().c_str(), sizeof(this->atsh.comments.Area));
+        strncpy(this->atsh.comments.SurveyID, this->header["SurveyID"].get<std::string>().c_str(), sizeof(this->atsh.comments.SurveyID));
+        strncpy(this->atsh.comments.Operator, this->header["Operator"].get<std::string>().c_str(), sizeof(this->atsh.comments.Operator));
+        strncpy(this->atsh.comments.SiteName, this->header["SiteName"].get<std::string>().c_str(), sizeof(this->atsh.comments.SiteName));
+        strncpy(this->atsh.comments.XmlHeader, this->header["XmlHeader"].get<std::string>().c_str(), sizeof(this->atsh.comments.XmlHeader));
+        strncpy(this->atsh.comments.Comments, this->header["Comments"].get<std::string>().c_str(), sizeof(this->atsh.comments.Comments));
+        strncpy(this->atsh.comments.SiteNameRR, this->header["SiteNameRR"].get<std::string>().c_str(), sizeof(this->atsh.comments.SiteNameRR));
+        strncpy(this->atsh.comments.SiteNameEMAP, this->header["SiteNameEMAP"].get<std::string>().c_str(), sizeof(this->atsh.comments.SiteNameEMAP));
 
 
 

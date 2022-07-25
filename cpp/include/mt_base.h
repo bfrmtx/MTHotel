@@ -101,6 +101,48 @@ enum class ADU: int {
 
 };
 
+std::vector<std::string> survey_dirs() {
+
+    std::vector<std::string> dirs;
+    dirs.emplace_back("cal"); dirs.emplace_back("config"); dirs.emplace_back("db");
+    dirs.emplace_back("doc"); dirs.emplace_back("dump"); dirs.emplace_back("edi");
+    dirs.emplace_back("filters"); dirs.emplace_back("jle"); dirs.emplace_back("jobs");
+    dirs.emplace_back("log"); dirs.emplace_back("processings");
+    dirs.emplace_back("shell"); dirs.emplace_back("tmp"); dirs.emplace_back("ts");
+    dirs.emplace_back("meta"); // meta information with log from the system etc
+
+    return dirs;
+}
+
+bool create_survey_dirs(const std::filesystem::path survey, std::vector<std::string> sub_dirs) {
+    if (!sub_dirs.size()) {
+        std::string err_str = __func__;
+        err_str += ":: sub dirs provided! ->";
+        throw err_str;
+        return false;
+    }
+    try {
+        std::filesystem::create_directory(survey);
+
+
+        for (const auto str : sub_dirs) {
+            auto svd = survey;
+            std::filesystem::create_directory((svd /= str));
+        }
+
+    }
+    catch (...) {
+        std::string err_str = __func__;
+        err_str += ":: error creating sub directories ->";
+        throw err_str;
+        return false;
+    }
+
+    return true;
+}
+
+
+
 
 
 #endif

@@ -10,7 +10,7 @@ namespace mtime {
 
 static const double zero_frac = 1E-6;
 
-std::string iso_8601_str_str(const std::string &date, const std::string &time, const double &fracs = 0.0, const std::string separator = "T", const std::string TZ = "Z") {
+std::string iso_8601_str_d_str_d(const std::string &date, const std::string &time, const double &fracs = 0.0, const std::string separator = "T", const std::string TZ = "Z") {
   std::string dt = date + separator + time;
   std::string sfracs;
   if (fabs(fracs) > zero_frac) {
@@ -22,12 +22,12 @@ std::string iso_8601_str_str(const std::string &date, const std::string &time, c
   return dt + TZ;
 }
 /*!
- * \brief string_iso8601_time_t parses an ISO dat string like 2022-01-18T17:30:00.4Z or 2022-01-18T17:30:00Z or 2022-01-18T17:30:00.4
+ * \brief time_t_iso_8601_str parses an ISO dat string like 2022-01-18T17:30:00.4Z or 2022-01-18T17:30:00Z or 2022-01-18T17:30:00.4
  * \param date ISO date string w or /wo ending Z os seconds like 00 or 00.4
  * \param fracs in case it has fraction of secnod, will be set here
  * \return time_t struct; time_t can NOT hold fractions of seconds
  */
-time_t string_iso8601_time_t(const std::string &date, double fracs = 0.0) {
+time_t time_t_iso_8601_str(const std::string &date, double fracs = 0.0) {
   struct tm tt = {0};
   double dseconds;
   if (sscanf(date.c_str(), "%04d-%02d-%02dT%02d:%02d:%lfZ",
@@ -45,7 +45,7 @@ time_t string_iso8601_time_t(const std::string &date, double fracs = 0.0) {
   return std::mktime(&tt) - timezone;
 }
 
-std::string time_t_iso8601_utc(const time_t &ti, std::string &date, std::string &time, const double &fracs = 0.0, const std::string separator = "T", const std::string TZ = "Z") {
+std::string iso8601_time_t(const time_t &ti, std::string &date, std::string &time, const double &fracs = 0.0, const std::string separator = "T", const std::string TZ = "Z") {
   struct tm tt = {0};
   std::string sfracs;
   tt = *std::gmtime(&ti);
@@ -79,8 +79,6 @@ std::string measdir_time(const time_t &ti) {
     time += mstr::zero_fill_field(tt.tm_sec, 2);
 
     return date + time;
-
-
 }
 
 template <class T>

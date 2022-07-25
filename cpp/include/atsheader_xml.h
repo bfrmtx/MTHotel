@@ -5,7 +5,6 @@
 #include "atsheader.h"
 #include "atsheader_def.h"
 
-#include "atss_time.h"
 
 // code snippets for generating xml files from ats
 

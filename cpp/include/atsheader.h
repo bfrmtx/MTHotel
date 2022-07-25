@@ -13,7 +13,6 @@
 #include <vector>
 
 #include "atsheader_def.h"
-#include "atss_time.h"
 #include "strings_etc.h"
 
 namespace fs = std::filesystem;
@@ -232,7 +231,7 @@ public:
    * \return
    */
     template <typename T>
-    size_t ats_read_ints_doubles(std::vector<T> &ints_doubles, const bool close_after_read = false) {
+    size_t ats_read_ints_doubles(std::vector<T> &ints_doubles) {
         if (!this->file.is_open()) {
             std::string err_str = __func__;
             err_str += ":: file not open!";
@@ -250,6 +249,13 @@ public:
             return ints_doubles.size();
         }
         auto pos_start = file.tellg();
+        // next op will fail
+        // typically when previous read reached EOF
+        if (file.peek() == EOF || (std::istream::traits_type::eof() == pos_start)) {
+            ints_doubles.resize(0);
+            return 0;
+        }
+
         if (pos_start < 1024) {
             std::string err_str = __func__;
             err_str += ":: we seem to be still INSIDE HEADER";
@@ -258,54 +264,30 @@ public:
             throw err_str;
             return ints_doubles.size();
         }
+
+        size_t i = 0;
         if (typeid(ints_doubles.at(0)) == typeid(int32_t)) {
-            for (auto &idata32 : ints_doubles) {
-                this->file.read(static_cast<char *>(static_cast<void *>(&idata32)), 4);
+            while (!this->file.eof() && (i < ints_doubles.size())) {
+                this->file.read(static_cast<char *>(static_cast<void *>(&ints_doubles[i++])), 4);
             }
-        } else if (typeid(ints_doubles.at(0)) == typeid(double)) {
+        }
+        else if (typeid(ints_doubles.at(0)) == typeid(double)) {
             std::int32_t idata32;
-            for (auto &data : ints_doubles) {
+            while (!this->file.eof() && (i < ints_doubles.size())) {
                 this->file.read(static_cast<char *>(static_cast<void *>(&idata32)), 4);
-                data = this->header.lsbval * idata32;
+                ints_doubles[i++] = this->header.lsbval * idata32;
             }
         }
-        // automatically try to read the rest
-        if (this->file.eof()) {
-            file.clear();
-            file.seekg(0, file.end);
-            // std::cout << file.tellg() << " " << pos_start << std::endl;
-            // that can be end or error; end you get in a while loop where the last read fits 100% and now nothing is left
-            if (file.tellg() == pos_start) {
-                ints_doubles.resize(0);
-                // no OPS if eof bit set - cant rewind in case, clear error bit
-                return ints_doubles.size();
-            }
-            ints_doubles.resize((file.tellg() - pos_start) / sizeof(int32_t));
-            file.seekg(pos_start);
-
-            if (typeid(ints_doubles.at(0)) == typeid(int32_t)) {
-                for (auto &idata32 : ints_doubles) {
-                    this->file.read(static_cast<char *>(static_cast<void *>(&idata32)), 4);
-                }
-            } else if (typeid(ints_doubles.at(0)) == typeid(double)) {
-                std::int32_t idata32;
-                for (auto &data : ints_doubles) {
-                    this->file.read(static_cast<char *>(static_cast<void *>(&idata32)), 4);
-                    data = this->header.lsbval * idata32;
-                }
-            }
-            if (this->file.eof()) {
-                this->file.close();
-                std::string err_str = __func__;
-                err_str += ":: read over end, FAIL read size";
-                throw err_str;
-                ints_doubles.resize(0);
-                return ints_doubles.size();
-            }
+        // i was incremented BEFORE the while loop above terminated with eof; last element is dirt
+        if ((this->file.eof() ) && (i > 1)) {
+            --i;
+            ints_doubles.resize(i);  // keeps the elements;
         }
+        else if ((i == 1) || !i) {
+            ints_doubles.resize(0);
+        }
+        // success
 
-        if (close_after_read)
-            this->file.close();
         return ints_doubles.size();
     }
 
@@ -426,11 +408,8 @@ public:
     }
 
     std::string start_date() const {
-        std::string udate, utime;
-        double f = 0.0;
         int64_t utc = static_cast<int64_t>(this->header.start);
-        auto result = mtime::time_t_iso8601_utc(utc, udate, utime, f);
-        return udate;
+        return mstr::iso8601_time_t(utc, 1);
     }
 
     std::string stop_date() const {
@@ -438,19 +417,14 @@ public:
         sf_lhs +=  static_cast<long double>(this->header.start);
         double f = 0.0, intpart;
         f = modf(sf_lhs, &intpart);
-        int64_t utc = (long int) intpart;
-        std::string udate, utime;
-        auto result = mtime::time_t_iso8601_utc(utc, udate, utime, f);
-        return udate;
+        int64_t utc = static_cast<int64_t>(intpart);
+        return mstr::iso8601_time_t(utc, 1);
 
     }
 
     std::string start_time() const {
-        std::string udate, utime;
-        double f = 0.0;
         int64_t utc = static_cast<int64_t>(this->header.start);
-        auto result = mtime::time_t_iso8601_utc(utc, udate, utime, f);
-        return utime;
+        return mstr::iso8601_time_t(utc, 2);
     }
 
     std::string stop_time() const {
@@ -458,10 +432,8 @@ public:
         sf_lhs +=  static_cast<long double>(this->header.start);
         double f = 0.0, intpart;
         f = modf(sf_lhs, &intpart);
-        long int utc = (long int) (intpart);
-        std::string udate, utime;
-        auto result = mtime::time_t_iso8601_utc(utc, udate, utime, f);
-        return utime;
+        int64_t utc = static_cast<int64_t>(intpart);
+        return mstr::iso8601_time_t(utc, 2, f);
     }
 
 private:
@@ -588,17 +560,36 @@ public:
  * \param atsheaders
  */
 void ats_channel_sort(std::vector<std::shared_ptr<atsheader>> &atsheaders) {
-    std::vector<std::string> chtp = {"Ex", "Ey", "Hx", "Hy", "Hz"};
+    std::vector<std::string> chtp = {"Ex", "Ey", "Hx", "Hy", "Hz", "Ez", "Jx", "Jy", "Jz", "x", "y", "z", "T", "t"};
     std::vector<std::shared_ptr<atsheader>> new_atsheaders;
+    std::vector<size_t> idxs;
     for (const auto &chtpye : chtp) {
+        size_t i = 0;
         for (auto &atsh : atsheaders) {
             std::string typ(atsh->header.channel_type, sizeof(atsh->header.channel_type));
             if (chtpye == typ) {
                 new_atsheaders.push_back(atsh);
+                idxs.emplace_back(i);
             }
+            ++i;
         }
     }
+
+    // remove erase items from vector
+    std::sort(idxs.begin(), idxs.end());  // Make sure the container is sorted
+    for (auto ix = idxs.rbegin(); ix != idxs.rend(); ++ix) {
+        atsheaders.erase(atsheaders.begin() + *ix);
+    }
+
+
     new_atsheaders.swap(atsheaders);
+    // do we have unkown channels ?
+    if (new_atsheaders.size()) {
+         for (auto &atsh : atsheaders) {
+            new_atsheaders.push_back(atsh);
+        }
+    }
+
 }
 
 #endif // ATSHEADER
