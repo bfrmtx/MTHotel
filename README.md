@@ -53,10 +53,10 @@ Example:
 
 084_V85_C02_R001_THx_BL_2S.json  ... the JSON header
 
-084_V85_C02_R001_THx_BL_2S_meta.json  ... the JSON meta data (e.g. data not used for processing, like system logs)
+084_V85_C02_R001_THx_BL_2S.json  ... the JSON meta data **in a diffrent tree!** (e.g. data not used for processing, like system logs)
 
 
-## ... and the Power Users
+## ... and the extended usage
 
 Creating this kind of files is easy. That can be up-sampled IMU data from airborne surveys, temperature from the fluxgate (FGS-03e and FGS-04e support temperature reading) ... or seismic data.
 
