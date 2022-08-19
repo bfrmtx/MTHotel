@@ -28,7 +28,8 @@
  * \param create_measdir
  * \param create_sitedir
  */
-void ats2json(std::shared_ptr<atsheader> &ats, const std::filesystem::path &outdir_base, std::mutex &dirlock, const bool &create_measdir = false, const bool &create_sitedir = false) {
+void ats2json(std::shared_ptr<atsheader> &ats, const std::filesystem::path &outdir_base, std::mutex &dirlock, const bool &create_measdir = false, const bool &create_sitedir = false,
+              const std::string &default_e_sensor = "", const std::string &default_h_sensor = "") {
 
     if (outdir_base.empty()) {
         std::string err_str = __func__;
@@ -54,8 +55,8 @@ void ats2json(std::shared_ptr<atsheader> &ats, const std::filesystem::path &outd
         auto atsj = std::make_shared<ats_header_json>(ats->header,  ats->path());
         atsj->get_ats_header(); // fill the json
         // atsj->header["sensor_type"].get<std::string>())
-        auto chan = std::make_shared<channel<double>>(atsj->header["channel_type"], atsj->header["sample_rate"], atsj->start_datetime(), 0.0);
-        chan->set_base_file<int64_t>(atsj->header["SystemType"], atsj->header["serial_number"], atsj->header["channel_number"], atsj->get_run());
+        auto chan = std::make_shared<channel>(atsj->header["channel_type"], atsj->header["sample_rate"], atsj->start_datetime(), 0.0);
+        chan->set_base_file(atsj->header["SystemType"], atsj->header["serial_number"], atsj->header["channel_number"], atsj->get_run());
         chan->set_lat_lon_elev(atsj->get_lat(), atsj->get_lon(), atsj->get_elev());
         chan->angle = atsj->pos2angle();
         chan->dip = atsj->pos2dip();
@@ -185,10 +186,16 @@ void ats2json(std::shared_ptr<atsheader> &ats, const std::filesystem::path &outd
 
 
         std::cout << chan->filename() << std::endl;
-        std::cout << chan->filename("json") << "  " << samples_read << " <-> " << chan->samples(outdir) <<  std::endl;
+        try {
+            std::cout << chan->filename(".json") << "  " << samples_read << " <-> " << chan->samples(outdir / chan->filename()) <<  std::endl;
+        }
+        catch (const std::string &error) {
 
+            std::cerr << std::endl << error << std::endl;
+            return;
+        }
         if (std::filesystem::exists(metadir)) {
-            auto meta = atsj->write_meta(metadir, chan->filename("json"));
+            auto meta = atsj->write_meta(metadir, chan->filename(".json"));
             auto new_xml = metadir /= atsj->xml_path().filename();
             std::cout << meta << " written" << std::endl;
             try {

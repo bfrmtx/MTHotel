@@ -273,8 +273,8 @@ struct ats_header_json {
         this->header = rhs->header;
     }
 
-    std::filesystem::path write_meta(const std::filesystem::path &path_only, const std::string filename) {
-        std::filesystem::path filepath(path_only);
+    std::filesystem::path write_meta(const std::filesystem::path &directory_path_only, const std::string filename) {
+        std::filesystem::path filepath(std::filesystem::canonical(directory_path_only));
         filepath /= filename;
 
         std::ofstream file;

@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
   // needs ONE ats file name as parameter for testing
   // std::vector<std::shared_ptr<atsheader>> atsheaders;
 
-  unsigned l = 1;
 
   auto tir = std::make_shared<xml::XMLDocument>();
 
@@ -75,7 +74,6 @@ int main(int argc, char *argv[]) {
     auto pscal_sens = open_node(proot, "calibration_sensors");
     auto pchan = open_node(pscal_sens, "channel");
 
-    size_t si = 0;
     while (pchan) {
       int id = -1;
       int old_id = id;
@@ -134,9 +132,10 @@ int main(int argc, char *argv[]) {
             if (serial != INT64_MAX)
               cal_entries.back().serial = serial;
             if (cal_date.size())
-              cal_entries.back().date = cal_date;
+                cal_entries.back().datetime = cal_date;
             if (cal_time.size())
-              cal_entries.back().time = cal_time;
+                cal_entries.back().datetime += "T" + cal_time;
+            else cal_entries.back().datetime += "T00:00:00";
             // cal_entries.back().write_file("/tmp");
           }
         }
@@ -153,9 +152,11 @@ int main(int argc, char *argv[]) {
             if (serial != INT64_MAX)
               cal_entries.back().serial = serial;
             if (cal_date.size())
-              cal_entries.back().date = cal_date;
+              cal_entries.back().datetime = cal_date;
             if (cal_time.size())
-              cal_entries.back().time = cal_time;
+              cal_entries.back().datetime += "T" + cal_time;
+            else cal_entries.back().datetime += "T00:00:00";
+
 
             // cal_entries.back().write_file("/tmp");
           }
@@ -167,9 +168,10 @@ int main(int argc, char *argv[]) {
           if (serial != INT64_MAX)
             cal_entries.back().serial = serial;
           if (cal_date.size())
-            cal_entries.back().date = cal_date;
+            cal_entries.back().datetime = cal_date;
           if (cal_time.size())
-            cal_entries.back().time = cal_time;
+              cal_entries.back().datetime += "T" + cal_time;
+          else cal_entries.back().datetime += "T00:00:00";
           cal_entries.back().write_file("/tmp");
         }
       }

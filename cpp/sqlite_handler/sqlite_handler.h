@@ -16,7 +16,7 @@ class sqlite_handler
 public:
     sqlite_handler();
 
-    size_t sqlite_select(const std::filesystem::path &db_name, const std::string query);
+    std::vector<std::vector<std::string>> sqlite_select(const std::filesystem::path &db_name, const std::string query);
 
     std::vector<std::string> header;
     std::vector<std::vector<std::string>> table;
@@ -27,7 +27,7 @@ public:
     void clear();
 private:
 
-    //static int callback(void* ptr, int argc, char** argv, char** col_name);
+    static int callback(void* ptr, int argc, char** argv, char** col_name);
 
 
 };

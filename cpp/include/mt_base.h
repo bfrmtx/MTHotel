@@ -142,7 +142,4 @@ bool create_survey_dirs(const std::filesystem::path survey, std::vector<std::str
 }
 
 
-
-
-
 #endif

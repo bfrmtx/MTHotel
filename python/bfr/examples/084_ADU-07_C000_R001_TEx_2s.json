@@ -1,0 +1,27 @@
+{
+  "date": "2009-08-20",
+  "time": "13:22:25",
+  "fracs": 0.0,
+  "latitude": 39.026196666666664,
+  "longitude": 29.123953333333333,
+  "elevation": 1088.31,
+  "angle": 0.0,
+  "dip": 90.0,
+  "units": "mV/km",
+  "source": "",
+  "site": "Sarıçam",
+  "sensor_calibration": {
+    "sensor": "EFP-06",
+    "serial": 0,
+    "chopper": 1,
+    "units_amplitude": "mV",
+    "units_frequency": "Hz",
+    "units_phase": "degrees",
+    "date": "1970-01-01",
+    "time": "00:00:00",
+    "Operator": "",
+    "f": [],
+    "a": [],
+    "p": []
+  }
+}

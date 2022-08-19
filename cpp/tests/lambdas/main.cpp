@@ -55,24 +55,27 @@ int main()
         cals.emplace_back(std::make_shared<calibration>("MFS-06e", i, 1));
 
     }
+    cals.emplace_back(std::make_shared<calibration>("MFS-06e", 3, 1)); // second hit
 
+    i = 0;
     for (const auto &cal : cals) {
-        std::cout << cal->serial << " ";
+        std::cout << cal->serial << "(" << i << ")  ";
+        ++i;
     }
     std::cout << std::endl;
 
-    std::sort(cals.begin(), cals.end(), compare_serial);
+    //std::sort(cals.begin(), cals.end(), compare_serial);
 
-    for (const auto &cal : cals) {
-        std::cout << cal->serial << " ";
-    }
-    std::cout << std::endl;
+//    for (const auto &cal : cals) {
+//        std::cout << cal->serial << " ";
+//    }
+//    std::cout << std::endl;
 
 
     i = 0;
     for (const auto &cal : cals) {
-        if (find_serial(find_me, cal)) std::cout << cal->serial << " found at " << i;
-        ++i;
+        if (find_serial(find_me, cal)) std::cout << cal->serial << " auto loop chopper on found at " << i << std::endl;
+        i++;
     }
     std::cout << std::endl;
 
@@ -85,6 +88,16 @@ int main()
         std::cout << "first (" << (*found)->serial << ") found at "  << found - cals.begin();
     }
     std::cout << std::endl;
+
+    size_t fnd = 0;
+    auto nfound = cals.begin();
+    while ( (nfound = std::find_if(nfound, cals.end(), s_find_serial(find_me))) != cals.end()) {
+        if (nfound != cals.end()) {
+            std::cout <<  fnd << ". (" << (*nfound)->serial << ") found at "  << nfound - cals.begin() << std::endl;
+            ++fnd;
+        }
+        ++nfound;
+    }
 
 
     size_t chunk_size = 5;

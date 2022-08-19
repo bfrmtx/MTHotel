@@ -16,11 +16,8 @@ namespace fs = std::filesystem;
 
 #include "atsheader_def.h"
 #include "atsheader.h"
-#include "atmheader.h"
-#include "atsheader_xml.h"
 #include "cal_base.h"
 #include "../cal/read_cal/read_cal.h"
-#include "../xml/tinyxmlwriter/tinyxmlwriter.h"
 #include "bthread.h"
 #include "mt_base.h"
 
@@ -31,7 +28,7 @@ namespace fs = std::filesystem;
 // run tests
 // -outdir /tmp -cat /home/bfr/devel/ats_data/cat_ats_data/NGRI/meas_2019-11-20_06-52-49/*ats /home/bfr/devel/ats_data/cat_ats_data/NGRI/meas_2019-11-22_06-22-30/*ats
 // -outdir /tmp -chats /home/bfr/devel/ats_data/zero6/site0199/*ats
-
+// -tojson -clone -outdir /tmp/aa  /survey-master/Eastern_Mining
 
 /*
    string path = "/";
@@ -47,14 +44,16 @@ for (const auto & file : directory_iterator(path))
 
 
     bool cat = false;                       //!< concatunate ats files, try read xml from atsheader & calibration from XML
-    int run = -1;                           //!< run number, greater equal 0
-    double lsbval = 0;                      //!< lsb
     bool chats = false;                     //!< convert ADU-06 files to ADU-08e files
     bool tojson = false;                    //!< convert to JSON and binary - the new format
     bool create_measdir = false;
     bool create_sitedir = false;
     bool clone = false;
     fs::path outdir;
+
+    // to be implemented
+    std::string default_e_sensor;           //!< E Sensor is not detected by default use a string like EFP-06
+    std::string default_h_sensor;           //!< H Sensor is detected by default; this is an rescue option; use a string like MFS-06
 
 
     std::vector<std::shared_ptr<atsheader>> atsheaders;     //!< all ats files or ats headers
@@ -89,16 +88,19 @@ for (const auto & file : directory_iterator(path))
             create_measdir = true;
         }
 
-        //        else if (marg.compare("-lsbval") == 0) {
-        //            lsbval = atof(argv[++l]);
-        //        }
-        else if (marg.compare("-run") == 0) {
-            run = atoi(argv[++l]);
-        }
         else if (marg.compare("-outdir") == 0) {
             outdir = std::string(argv[++l]);
+            if (!fs::exists(outdir)) fs::create_directory(outdir);
             outdir = fs::canonical(outdir);
         }
+
+        else if (marg.compare("-default_e_sensor") == 0) {
+            default_e_sensor = std::string(argv[++l]);
+        }
+        else if (marg.compare("-default_h_sensor") == 0) {
+            default_h_sensor = std::string(argv[++l]);
+        }
+
 
         else if (marg.compare("-") == 0) {
             std::cerr << "\nunrecognized option " << argv[l] << std::endl;
@@ -121,11 +123,16 @@ for (const auto & file : directory_iterator(path))
     }
     else {
         clone_dir = std::string(argv[argc-1]);
-        clone_dir = fs::canonical(clone_dir);
+        if (!fs::exists(clone_dir)) {
+            std::cerr << "clone directory does not exist! : " << clone_dir << std::endl;
+            return EXIT_FAILURE;
+        }
         if (clone_dir.empty()) {
             std::cerr << "clone needs a survey directoy as last argument" << std::endl;
             return EXIT_FAILURE;
         }
+        clone_dir = fs::canonical(clone_dir);
+
         if (!fs::is_directory(clone_dir)) {
             std::cerr << "clone needs a survey directoy as last argument" << std::endl;
             return EXIT_FAILURE;
@@ -242,7 +249,8 @@ for (const auto & file : directory_iterator(path))
             std::cout << "start cat thread ";
             for (auto& ats : cat_ats) {
                 std::cout << " " << i++;
-                threads.emplace_back(std::jthread (cat_ats_files, std::ref(ats), std::ref(outdir), std::ref(xmls_and_files), std::ref(xml_files), std::ref(mtx_dir), std::ref(mtx_xml), std::ref(mtx_xml_files)));
+                threads.emplace_back(std::jthread (cat_ats_files, std::ref(ats), std::ref(outdir), std::ref(xmls_and_files), std::ref(xml_files), std::ref(mtx_dir),
+                                                  std::ref(mtx_xml), std::ref(mtx_xml_files)));
                 //cat_ats_files(ats, outdir, xmls_and_files, xml_files, mtx);
             }
             std::cout << std::endl << "wait please ... " << std::endl;
@@ -357,27 +365,27 @@ for (const auto & file : directory_iterator(path))
 
         //
         // serialized test
-        //        for (auto &atsh : atsheaders) {
-        //            std::cout << atsh->path() << std::endl;
-        //            ats2json(atsh, outdir, dirlock, create_measdir, create_sitedir);
-        //        }
+                for (auto &atsh : atsheaders) {
+                    std::cout << atsh->path() << std::endl;
+                    ats2json(atsh, outdir, dirlock, create_measdir, create_sitedir, default_e_sensor, default_h_sensor);
+                }
         //
 
-        for (const auto &ex : execs) {
-            try {
-                std::vector<std::jthread> threads;
-                std::cout << "starting: " << ex << std::endl;
-                for (size_t j = 0; j < ex; ++j) {
-                    threads.emplace_back(std::jthread (ats2json, std::ref(atsheaders.at(thread_index++)), std::ref(outdir),
-                                                      std::ref(dirlock), std::ref(create_measdir), std::ref(create_sitedir)));
-                }
-
-            }
-            catch (...) {
-                std::cerr << "could not execute all threads" << std::endl;
-                return EXIT_FAILURE;
-            }
-        }
+//        for (const auto &ex : execs) {
+//            try {
+//                std::vector<std::jthread> threads;
+//                std::cout << "starting: " << ex << std::endl;
+//                for (size_t j = 0; j < ex; ++j) {
+//                    threads.emplace_back(std::jthread (ats2json, std::ref(atsheaders.at(thread_index++)), std::ref(outdir),
+//                                                      std::ref(dirlock), std::ref(create_measdir), std::ref(create_sitedir),
+//                                                      std::ref(default_e_sensor), std::ref(default_h_sensor)) );
+//                }
+//            }
+//            catch (...) {
+//                std::cerr << "could not execute all threads" << std::endl;
+//                return EXIT_FAILURE;
+//            }
+//        }
 
 
     }

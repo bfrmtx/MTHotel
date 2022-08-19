@@ -2,56 +2,110 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <sqlite3.h>
 
+#include "sqlite_handler.h"
 using namespace std;
 
-static int callback(void* ptr, int argc, char** argv, char** col_name)
+
+int main()
 {
 
-    //fprintf(stderr, "%s: ", (const char*)data);
-    vector<vector<string>>* table = static_cast<vector<vector<string>>*>(ptr);
-    vector<string> header;
-    vector<string> row;
-    if (!table->size()) for (int i = 0; i < argc; i++) header.push_back(col_name[i]);
-    for (int i = 0; i < argc; i++) {
-        // printf("%s = %s\n", col_name[i], argv[i] ? argv[i] : "NULL");
-        row.push_back(argv[i] ? argv[i] : "NULL");
+    //auto sql_info = std::unique_ptr<sqlite_handler>();
+
+
+    std::filesystem::path sqlfile("/home/bfr/number_test.sql3");
+    auto sql_info = std::make_unique<sqlite_handler>();
+
+    //std::filesystem::path sqlfile("/usr/local/procmt/bin/info.sql3");
+    std::vector<std::vector<std::string>> table, table2;
+    std::vector<double> f;
+    std::vector<uint64_t> vui;
+
+
+    std::cout << table.size() << std::endl;
+    //table2 = table;
+
+    string sql_query("SELECT * FROM uints;");
+    try {
+        table = sql_info->sqlite_select_strs(sqlfile, sql_query);
     }
-    if (!table->size()) table->push_back(header);
-    table->push_back(row);
-    // printf("\n");
-    return 0;
-}
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+        sql_info.reset();
+    }
+    if (table.size()) {
+        sql_info->show_table(table);
+    }
 
-int main(int argc, char** argv)
-{
-    sqlite3* DB;
-    int exit = 0;
-    exit = sqlite3_open("info.sql3", &DB);
+    sql_query = "SELECT value FROM uints";
+    try {
+        vui = sql_info->sqlite_vector_uint64_t(sqlfile, sql_query);
+    }
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+        sql_info.reset();
+    }
+
+    for (const auto &v : vui) {
+        std::cout << v << std::endl;
+    }
+    std::cout  << std::endl;
+
+    sqlfile = "/tmp/number_test.sql3";
+    sql_query = "CREATE TABLE IF NOT EXISTS `uuints` ( `key` TEXT, `value` UNSIGNED INTEGER)";
+
+    try {
+        sql_info->create_table(sqlfile, sql_query);
+    }
+    catch (const std::string &error) {
+        std::cerr << error << std::endl << std::endl;
+        sql_info.reset();
+    }
+
+
+/*
 
     string sql_query("SELECT * FROM sensortypes;");
-    if (exit) {
-        std::cerr << "Error open DB " << sqlite3_errmsg(DB) << std::endl;
-        return (-1);
-    }
-    else
-        std::cout << "Opened Database Successfully!" << std::endl;
-    vector<vector<string>> table;
-    int rc = sqlite3_exec(DB, sql_query.c_str(), callback, &table, NULL);
 
-    if (rc != SQLITE_OK)
-        cerr << "Error SELECT" << endl;
-    else {
-        cout << "Operation OK!" << endl;
+    try {
+       table = sql_info->sqlite_select_strs(sqlfile, sql_query);
     }
-    for (auto &row : table) {
-        for (auto &col : row) {
-            cout << col << " ";
-        }
-        cout << std::endl;
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+        sql_info.reset();
     }
-    sqlite3_close(DB);
 
+    if (table.size()) {
+        sql_info->show_table(table);
+    }
+
+    sql_query = "PRAGMA table_info('sensortypes')" ;
+
+    try {
+        table2 = sql_info->sqlite_select_strs(sqlfile, sql_query);
+    }
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+        sql_info.reset();
+    }
+
+    if (table2.size()) {
+        sql_info->show_stable(table2);
+    }
+
+    sql_query = "SELECT * FROM default_mt_frequencies";
+    try {
+        f = sql_info->sqlite_vector_double(sqlfile, sql_query);
+    }
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+        sql_info.reset();
+    }
+
+    if (f.size()) {
+        for (const auto v : f) std::cout << std::setw(12) << v << "  " << 1.0/v << std::endl;
+        std::cout << std::endl;
+    }
+*/
     return (0);
 }

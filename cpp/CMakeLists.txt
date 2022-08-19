@@ -1,4 +1,5 @@
 #
+# # don't forget in QtCreator to set CMAKE_INSTALL_PREFIX in the GUI under build
 cmake_minimum_required(VERSION 3.20)
 project(MTHotel LANGUAGES CXX)
 
@@ -109,5 +110,8 @@ add_subdirectory(tests/read_cal_test)
 add_subdirectory(tests/thread_pool)
 add_subdirectory(tests/execpts)
 add_subdirectory(tests/times)
+add_subdirectory(tests/dir_magic)
+add_subdirectory(tests/ffts)
+add_subdirectory(tests/prztest)
 
 

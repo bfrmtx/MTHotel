@@ -28,8 +28,7 @@ struct calibration
     std::string units_amplitude;
     std::string units_frequency;
     std::string units_phase;
-    std::string date;
-    std::string time;
+    std::string datetime;
     std::string Operator;           //!< the one made the calibration; UPPERCASE because operator is keyword in C++
 
     std::vector<double> f;
@@ -50,21 +49,20 @@ struct calibration
         this->units_amplitude = rhs->units_amplitude;
         this->units_frequency = rhs->units_frequency;
         this->units_phase = rhs->units_phase;
-        this->date = rhs->date;
-        this->time = rhs->time;
+        this->datetime = rhs->datetime;
         this->Operator = rhs->Operator;
-
         this->f = rhs->f;
         this->a = rhs->a;
         this->p = rhs->p;
         this->ct = rhs->ct;
     }
 
+
+
     void clear() {
         this->sensor.clear();
         this->serial = 0;
-        this->date.clear();
-        this->time.clear();
+        this->datetime.clear();
         this->Operator.clear();
         this->chopper = ChopperStatus::off;
         this->units_amplitude = "unknown";
@@ -79,8 +77,7 @@ struct calibration
             this->units_frequency = "Hz";
             this->units_phase = "degrees";
             if (!skip_date_time) {
-                this->date = "1970-01-01";
-                this->time = "00:00:00";
+                this->datetime = "1970-01-01T00:00:00";
             }
             this->Operator = "";
             this->ct = CalibrationType::mtx_old;
@@ -90,8 +87,7 @@ struct calibration
             this->units_frequency = "Hz";
             this->units_phase = "degrees";
             if (!skip_date_time) {
-                this->date = "1970-01-01";
-                this->time = "00:00:00";
+                this->datetime = "1970-01-01T00:00:00";
             }
             this->Operator = "";
             this->ct = CalibrationType::mtx;
@@ -102,8 +98,7 @@ struct calibration
             this->units_frequency = "unknown";
             this->units_phase = "unknown";
             if (!skip_date_time) {
-                this->date = "1970-01-01";
-                this->time = "00:00:00";
+                this->datetime = "1970-01-01T00:00:00";
             }
             this->Operator = "";
             this->ct = CalibrationType::nn;
@@ -194,8 +189,7 @@ struct calibration
         head["sensor_calibration"]["units_amplitude"] = this->units_amplitude;
         head["sensor_calibration"]["units_frequency"] = this->units_frequency;
         head["sensor_calibration"]["units_phase"] = this->units_phase;
-        head["sensor_calibration"]["date"] = this->date;
-        head["sensor_calibration"]["time"] = this->time;
+        head["sensor_calibration"]["datetime"] = this->datetime;
         head["sensor_calibration"]["Operator"] = this->Operator;
 
         head["sensor_calibration"]["f"] = f;
@@ -208,12 +202,12 @@ struct calibration
     /*!
      * \brief write_file write a json file with sensor, serial and chopper are part of file name; CONTENT hast NOT! these parts
      * hence that if e.g. sensor would be included inside the file, filename AND content must be altered in case - that is stupid
-     * \param path_only
+     * \param directory_path_only
      * \return site of calibration frequencies
      */
-    size_t write_file(const std::filesystem::path &path_only) const {
+    size_t write_file(const std::filesystem::path &directory_path_only) const {
 
-        std::filesystem::path filepath(path_only);
+        std::filesystem::path filepath(std::filesystem::canonical(directory_path_only));
         std::string fname(this->sensor);
         fname += "_" + mstr::zero_fill_field(this->serial, 4);
         if (this->chopper == ChopperStatus::on) fname += "_chopper_on.json";
@@ -225,13 +219,13 @@ struct calibration
         nlohmann::ordered_json head;                // use ordered because of readability (vectors last)
         // use other.update(head); to join
 
-
+        head["sensor_calibration"]["sensor"] = this->sensor;
+        head["sensor_calibration"]["serial"] = this->serial;
         head["sensor_calibration"]["chopper"] = int(this->chopper);
         head["sensor_calibration"]["units_amplitude"] = this->units_amplitude;
         head["sensor_calibration"]["units_frequency"] = this->units_frequency;
         head["sensor_calibration"]["units_phase"] = this->units_phase;
-        head["sensor_calibration"]["date"] = this->date;
-        head["sensor_calibration"]["time"] = this->time;
+        head["sensor_calibration"]["datetime"] = this->datetime;
         head["sensor_calibration"]["Operator"] = this->Operator;
 
         head["sensor_calibration"]["f"] = f;
@@ -326,6 +320,41 @@ struct calibration
     }
 
     /*!
+     * \brief parse_head .. hence that for electrodes we may have data, serial, only EFP-06 or so
+     * \return
+     */
+    size_t parse_head(const nlohmann::ordered_json &head, const std::filesystem::path &filepath = "") {
+
+        this->sensor = std::string(head["sensor_calibration"]["sensor"]);
+        this->serial = uint64_t(head["sensor_calibration"]["serial"]);
+        int64_t ch = int64_t(head["sensor_calibration"]["chopper"]);
+        if (ch == 1) this->chopper = ChopperStatus::on;
+        else this->chopper = ChopperStatus::off;
+
+
+        this->units_amplitude = std::string(head["sensor_calibration"]["units_amplitude"]);
+        this->units_frequency = std::string(head["sensor_calibration"]["units_frequency"]);
+        this->units_phase = std::string(head["sensor_calibration"]["units_phase"]);
+        this->datetime = std::string(head["sensor_calibration"]["datetime"]);
+        this->Operator = std::string(head["sensor_calibration"]["Operator"]);
+
+        this->f = std::vector<double>(head["sensor_calibration"]["f"]);
+        this->a = std::vector<double>(head["sensor_calibration"]["a"]);
+        this->p = std::vector<double>(head["sensor_calibration"]["p"]);
+
+        if ((this->f.size() != this->a.size()) || (this->f.size() != this->p.size())) {
+            this->clear();
+            std::string err_str = __func__;
+            err_str += ":: calibration vecors f,a, are inconsistent ->";
+            err_str += std::filesystem::absolute(filepath).string();
+            throw err_str;
+            return 0;
+        }
+
+        return this->f.size();
+    }
+
+    /*!
      * \brief read_file JSON format
      * \param filepath from the extracted filename we generate type sensor serial chopper
      * \return
@@ -358,25 +387,8 @@ struct calibration
         file.close();
         // std::cout << std::setw(2) << head << std::endl; // debug only
 
-        this->units_amplitude = std::string(head["sensor_calibration"]["units_amplitude"]);
-        this->units_frequency = std::string(head["sensor_calibration"]["units_frequency"]);
-        this->units_phase = std::string(head["sensor_calibration"]["units_phase"]);
-        this->date = std::string(head["sensor_calibration"]["date"]);
-        this->time = std::string(head["sensor_calibration"]["time"]);
-        this->Operator = std::string(head["sensor_calibration"]["Operator"]);
+        this->parse_head(head, filepath);
 
-        this->f = std::vector<double>(head["sensor_calibration"]["f"]);
-        this->a = std::vector<double>(head["sensor_calibration"]["a"]);
-        this->p = std::vector<double>(head["sensor_calibration"]["p"]);
-
-        if ((f.size() != a.size()) || (f.size() != p.size())) {
-            this->clear();
-            std::string err_str = __func__;
-            err_str += ":: calibration vecors f,a, are inconsistent ->";
-            err_str += std::filesystem::absolute(filepath).string();
-            throw err_str;
-            return 0;
-        }
 
         bool go_mtx_f = false;
         bool go_mtx_p = false;
@@ -434,8 +446,8 @@ struct calibration
         else tix->element("ci", this->sensor);
         tix->element("ci_serial_number", this->serial);
         tix->element_empty("ci_revision");
-        tix->element("ci_date", this->date);
-        tix->element("ci_time", this->time);
+        tix->element("ci_date", this->datetime.substr(0,9));
+        tix->element("ci_time", this->datetime.substr(10));
         tix->element_empty("ci_calibration_valid_until");
         tix->element_empty("ci_next_calibration");
         tix->element_empty("ci_tag");
@@ -473,7 +485,7 @@ struct calibration
         tix->pop("calibration");
     }
 
-    std::filesystem::path mtx_cal_head(const std::filesystem::path &path_only, bool create_filepath_only) const {
+    std::filesystem::path mtx_cal_head(const std::filesystem::path &directory_path_only, bool create_filepath_only) const {
 
         if (this->ct == CalibrationType::nn) {
             std::string err_str = __func__;
@@ -482,7 +494,7 @@ struct calibration
             return std::filesystem::path();
         }
 
-        std::filesystem::path filepath(path_only);
+        std::filesystem::path filepath(std::filesystem::canonical(directory_path_only));
         std::string fname(this->sensor);
         fname += "_" + (mstr::zero_fill_field(this->serial, 4) + ".txt");
         filepath /= fname;
@@ -508,7 +520,7 @@ struct calibration
 
 
         file << "Magnetometer: " << this->sensor <<  " #" << std::to_string(this->serial);
-        file << " Date: " << this->date  << " Time: " << this->time << std::endl << std::endl;
+        file << " DateTime: " << this->datetime << std::endl << std::endl;
 
         file.close();
 
@@ -554,6 +566,11 @@ struct calibration
         file.close();
     }
 
+    std::string brief() const {
+        std::stringstream ss;
+        ss << "Sensor: " << this->sensor << " Serial: " << this->serial << " Entries: " << this->f.size();
+        return ss.str();
+    }
 
 
 };  // end calibration
@@ -569,8 +586,7 @@ bool operator == (const std::shared_ptr<calibration>& lhs, const std::shared_ptr
     if (lhs->units_amplitude != rhs->units_amplitude) return false;
     if (lhs->units_frequency != rhs->units_frequency) return false;
     if (lhs->units_phase != rhs->units_phase) return false;
-    if (lhs->date != rhs->date) return false;
-    if (lhs->time != rhs->time) return false;
+    if (lhs->datetime != rhs->datetime) return false;
     if (lhs->Operator != rhs->Operator) return false;
     if (lhs->ct != rhs->ct) return false;
 

@@ -24,8 +24,8 @@ read_cal::read_cal()
     }
     this->dbloaded = true;
     // that is a two column db
-    this->sqldb.sqlite_select(dbfile, "SELECT * FROM sensor_aliases");
-    for (auto &row : this->sqldb.table) {
+    auto table = this->sqldb.sqlite_select(dbfile, "SELECT * FROM sensor_aliases");
+    for (const auto &row : table) {
         //                for (auto &col : row) {
         //                    std::cout << col << " ";
         //                }
@@ -197,8 +197,7 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
 
     if (!failed) {
         this->guess_date();
-        cal->date = this->magdate;
-        cal->time = this->magtime;
+        cal->datetime = this->magdate + "T" + this->magtime ;
         cal->serial = std::stoi(this->fmagser);
         cal->sensor = this->fmagtype;
         cal->chopper = this->chopper;
@@ -327,37 +326,46 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
         return cal_entries;
     }
 
-    //try {
+    // ... OR IN MAIN BLOCK CATCH
+    // try {
 
-        bool loaded = tir->LoadFile(filename.string().c_str());
-        if (loaded) {
-            std::string err_str = __func__;
-            err_str += ":: error loading XML file ";
-            err_str += filename.string();
-            throw err_str;
-            return cal_entries;
-        }
-        auto proot = tir->RootElement(); // that is the envelope, mostly "measurement"
-        if (proot == nullptr) {
-            std::string err_str = __func__;
-            err_str += "::Root Element XML_ERROR_FILE_READ_ERROR";
-            err_str += filename.string();
-            throw err_str;
-            return cal_entries;
-        }
+    bool loaded = tir->LoadFile(filename.string().c_str());
+    if (loaded) {
+        std::string err_str = __func__;
+        err_str += ":: error loading XML file ";
+        err_str += filename.string();
+        throw err_str;
+        return cal_entries;
+    }
+    auto proot = tir->RootElement(); // that is the envelope, mostly "measurement"
+    if (proot == nullptr) {
+        std::string err_str = __func__;
+        err_str += "::Root Element XML_ERROR_FILE_READ_ERROR";
+        err_str += filename.string();
+        throw err_str;
+        return cal_entries;
+    }
 
-        auto pscal_sens = open_node(proot, "calibration_sensors");
-        auto pchan = open_node(pscal_sens, "channel");
+    auto pscal_sens = open_node(proot, "calibration_sensors", true);
+    if (pscal_sens == nullptr) {
+        std::string err_str = __func__;
+        err_str += "::calibration_sensors entry not there, ";
+        err_str += filename.string();
+        throw err_str;
+        return cal_entries;
+    }
+    auto pchan = open_node(pscal_sens, "channel");
 
-        while (pchan) {
-            int id = -1;
-            int old_id = id;
-            pchan->QueryIntAttribute("id", &id);
-            if (old_id != id) {
-                std::stringstream message; // this inside a thread, try bundle output
-                message << "sensor for channel: " << id << " -> ";
-                old_id = id;
-                auto pca = open_node(pchan, "calibration");
+    while (pchan) {
+        int id = -1;
+        int old_id = id;
+        pchan->QueryIntAttribute("id", &id);
+        if (old_id != id) {
+            std::stringstream message; // this inside a thread, try bundle output
+            message << "sensor for channel: " << id << " -> ";
+            old_id = id;
+            auto pca = open_node(pchan, "calibration");
+            try {
                 auto pci = open_node(pca, "calibrated_item");
                 std::string sensor(xml_svalue(pci, "ci"));
                 int64_t serial = xml_ivalue(pci, "ci_serial_number");
@@ -409,9 +417,10 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
                         if (serial != INT64_MAX)
                             cal_entries.back()->serial = serial;
                         if (cal_date.size())
-                            cal_entries.back()->date = cal_date;
+                            cal_entries.back()->datetime = cal_date;
                         if (cal_time.size())
-                            cal_entries.back()->time = cal_time;
+                            cal_entries.back()->datetime += "T" + cal_time;
+                        else cal_entries.back()->datetime += "T00:00:00";
                         // cal_entries.back()->write_file("/tmp");
                     }
                 }
@@ -428,9 +437,10 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
                         if (serial != INT64_MAX)
                             cal_entries.back()->serial = serial;
                         if (cal_date.size())
-                            cal_entries.back()->date = cal_date;
+                            cal_entries.back()->datetime = cal_date;
                         if (cal_time.size())
-                            cal_entries.back()->time = cal_time;
+                            cal_entries.back()->datetime += "T" + cal_time;
+                        else cal_entries.back()->datetime += "T00:00:00";
 
                         // cal_entries.back()->write_file("/tmp");
                     }
@@ -442,19 +452,25 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
                     if (serial != INT64_MAX)
                         cal_entries.back()->serial = serial;
                     if (cal_date.size())
-                        cal_entries.back()->date = cal_date;
+                        cal_entries.back()->datetime = cal_date;
                     if (cal_time.size())
-                        cal_entries.back()->time = cal_time;
+                        cal_entries.back()->datetime += "T" + cal_time;
+                    else cal_entries.back()->datetime += "T00:00:00";
                     // cal_entries.back()->write_file("/tmp");
                 }
                 std::cout << message.str() << std::endl;
             }
-            pchan = pchan->NextSiblingElement("channel");
+            catch (const std::string &error) {
+                std::cerr << error << std::endl;
+                std::cerr << "ignore in case this is E" << std::endl;
+            }
         }
+        pchan = pchan->NextSiblingElement("channel");
+    }
 
-//    } catch (const std::string &error) {
-//        std::cerr << error << std::endl;
-//    }
+    //    } catch (const std::string &error) {
+    //        std::cerr << error << std::endl;
+    //    }
 
 
     return cal_entries;
@@ -542,9 +558,10 @@ std::vector<std::shared_ptr<calibration> > read_cal::read_std_xml_single(const s
                 if (serial != INT64_MAX)
                     cal_entries.back()->serial = serial;
                 if (cal_date.size())
-                    cal_entries.back()->date = cal_date;
+                    cal_entries.back()->datetime = cal_date;
                 if (cal_time.size())
-                    cal_entries.back()->time = cal_time;
+                    cal_entries.back()->datetime += "T" + cal_time;
+                else cal_entries.back()->datetime += "T00:00:00";
                 // cal_entries.back()->write_file("/tmp");
             }
         }
@@ -561,9 +578,10 @@ std::vector<std::shared_ptr<calibration> > read_cal::read_std_xml_single(const s
                 if (serial != INT64_MAX)
                     cal_entries.back()->serial = serial;
                 if (cal_date.size())
-                    cal_entries.back()->date = cal_date;
+                    cal_entries.back()->datetime = cal_date;
                 if (cal_time.size())
-                    cal_entries.back()->time = cal_time;
+                    cal_entries.back()->datetime += "T" + cal_time;
+                else cal_entries.back()->datetime += "T00:00:00";
 
                 // cal_entries.back()->write_file("/tmp");
             }
@@ -575,9 +593,10 @@ std::vector<std::shared_ptr<calibration> > read_cal::read_std_xml_single(const s
             if (serial != INT64_MAX)
                 cal_entries.back()->serial = serial;
             if (cal_date.size())
-                cal_entries.back()->date = cal_date;
+                cal_entries.back()->datetime = cal_date;
             if (cal_time.size())
-                cal_entries.back()->time = cal_time;
+                cal_entries.back()->datetime += "T" + cal_time;
+            else cal_entries.back()->datetime += "T00:00:00";
             // cal_entries.back()->write_file("/tmp");
         }
 

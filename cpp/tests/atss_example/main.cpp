@@ -14,7 +14,7 @@ using jsn = nlohmann::ordered_json;
 int main()
 {
 
-    std::shared_ptr<channel<double>> channel_hx = std::make_shared<channel<double>>(" H_x "); // empty spaces and "_" will be removed
+    std::shared_ptr<channel> channel_hx = std::make_shared<channel>(" H_x "); // empty spaces and "_" will be removed
 
     std::vector<double> d(12);
     channel_hx->set_serial(124);
@@ -48,7 +48,7 @@ int main()
 
     while(force_date_valid){
         try {
-            channel_hx->set_date_time(sdate, fracs);
+            channel_hx->set_datetime(sdate, fracs);
             cout << "this line will be executed ONLY if the date is valid" << endl;
             force_date_valid = false;
         }
@@ -59,12 +59,12 @@ int main()
             std::cerr << endl << "in this demo I correct the start time" << std::endl;
             sdate = "2022-01-18";
             stime = "17:30:00";
-            channel_hx->set_date_time((sdate + "T" + stime), fracs);
+            channel_hx->set_datetime((sdate + "T" + stime), fracs);
             force_date_valid = true;
         }
     }
-    std::cout << "start date time " << mstr::get_date_from_iso8601(channel_hx->datetime) << " " << mstr::get_time_fracs_from_iso8601(channel_hx->datetime) << std::endl;
-    std::cout << "Full ISO string " << channel_hx->datetime << std::endl;
+    std::cout << "start date time " << mstr::get_date_from_iso8601(channel_hx->get_datetime()) << " " << mstr::get_time_fracs_from_iso8601(channel_hx->get_datetime()) << std::endl;
+    std::cout << "Full ISO string " << channel_hx->get_datetime() << std::endl;
 
     std::cout << "add 6 days" << std::endl;
     double tfracs = 0.0;

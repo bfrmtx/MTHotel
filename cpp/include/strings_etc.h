@@ -329,6 +329,32 @@ double sample_rate_to_str(const double& sample_rate, double& f_or_s, std::string
     return f_or_s - diff_s;
 }
 
+double str_to_sample_rate(const std::string &srate) {
+    std::string snum;
+    std::string sunit;
+    double rate = 0.0;
+    int isok = 0;
+
+    for (const auto &c : srate) {
+        if (std::isdigit(c)) snum.push_back(c);
+        if (std::isalpha(c)) sunit.push_back(c);
+
+    }
+
+    try {
+        rate = std::stod(snum);
+        if (sunit == "Hz") isok = 1;
+        if (sunit == "s") isok = 2;
+    }
+    catch (...) {
+        rate = 0.0;
+        return rate;
+    }
+    if (isok == 1) return rate;
+    else if (isok == 2) return 1.0/rate;
+    return rate;
+}
+
 std::string sample_rate_to_str_simple(const double& sample_rate) {
     double f_or_s;
     std::string unit;
@@ -412,7 +438,23 @@ time_t time_t_iso_8601_str(const std::string& datetime) {
                &tt.tm_hour, &tt.tm_min, &dseconds) != 6)
         return -1;
     double fs;
-    auto fracpart = std::modf (dseconds , &fs);
+    double fracpart = std::modf (dseconds , &fs);
+    tt.tm_sec = int(fs);
+    tt.tm_mon  -= 1;
+    tt.tm_year -= 1900;
+    tt.tm_isdst = 0;
+    return mktime(&tt) - timezone;
+}
+
+time_t time_t_iso_8601_str_fracs(const std::string& datetime, double &remaining_fracs) {
+    struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    double dseconds;
+    if (sscanf(datetime.c_str(), "%04d-%02d-%02dT%02d:%02d:%lf",
+               &tt.tm_year, &tt.tm_mon, &tt.tm_mday,
+               &tt.tm_hour, &tt.tm_min, &dseconds) != 6)
+        return -1;
+    double fs;
+    remaining_fracs = std::modf (dseconds , &fs);
     tt.tm_sec = int(fs);
     tt.tm_mon  -= 1;
     tt.tm_year -= 1900;
