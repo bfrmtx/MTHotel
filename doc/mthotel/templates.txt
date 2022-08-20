@@ -1,0 +1,25 @@
+
+
+.. code-block:: bash
+
+
+
+
+.. index::
+   single: svn; svn
+   single: svn; subversion
+   
+   
+.. index::
+   single: MySQL; .my.cnf
+   
+   
+.. _linux_services:
+
+
+``
+
+:ref:`dd example <linux_dd_1>`
+
+
+.. include:: ./mysql_date.rstinc
