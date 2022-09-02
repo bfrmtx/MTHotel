@@ -24,8 +24,7 @@ def calibration():
         'units_amplitude': "mV/nT",  # default; same unit as time series and no normalization
         'units_frequency': "Hz",     # x-axis of your calibration e.g. Hz (never s )
         'units_phase': "degrees",    # degrees 0... 360
-        'date': "1970-01-01",        # date of calibration (1970-01-01 indicates no date available)
-        'time': "00:00:00",          # time of calibration (leave empty if you want)
+        'datetime': "1970-01-01T00:00:00",   # date of calibration (1970-01-01 indicates no date available)
         'Operator': "",              # the person who has made the calibration (capital letter because operator is a keyword in C++)
         'f': [0.0],                  # frequencies in units as above
         'a': [0.0],                  # amplitudes  in units as above
@@ -72,13 +71,12 @@ def get_cal_from_db(dbname, sensor, serial, chopper):
 
 
 def atss_file():
-    # file name is partof the data - will not be repeated in header
+    # file name is part of the data - will not be repeated in header
     # order of the dictionary is file name!
     file = {
         'serial': 0,            # such as 1234 (no negative numbers please) for the system
         'system': "",           # such as ADU-08e, XYZ (a manufacturer is not needed because the system indicates it)
         'channel_no': 0,        # channel number - you can integrate EAMP stations as channels if the have the SAME!! timings
-        'run': 0,               # counts for same frequency at the same place - or a sclice
         'channel_type': "",     # type such as Ex, Ey, Hx, Hy, Hz or currents like Jx, Jy, Jz or Pitch, Roll, Yaw or x, y, z or T for temperature
         'sample_rate': 0.0,     # contains sample_rate. Unit: Hz (samples per second) - "Hz" or "s" will be appended while writing in real time
         # the FILENAME contains a UNIT for better readability; you MUST have 256Hz (sample rate 256) OR 4s (sample rate 0.25);
@@ -95,15 +93,13 @@ def atss_header():
     # FORBIDDEN strings: are strings like MY_Station ... BECAUSE if it appears in the filename it will be interpreted as seprator
     header = {
         # 2007-12-24T18:21:00.01234Z is NOT supported by C/C++/Python/PHP and others COMPLETELY
-        'date': "1970-01-01",   # ISO 8601 date 2021-05-19 UTC
-        'time': "00:00:00",     # ISO 8601 time in UTC
-        'fracs': 0.0,           # factions of seconds, at your own risk. It is always the best to cut the data to full seconds
+        'datetime' : "1970-01-01T00:00:00.0",  # ISO 8601 datetime in UTC
         'latitude': 0.0,        # decimal degree such as 52.2443
         'longitude': 0.0,       # decimal degree such as 10.5594
         'elevation': 0.0,       # elevation in meter
-        'angle': 0.0,           # orientaion from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
+        'angle': 0.0,           # orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
         'dip': 0.0,             # angle positive down - in case it had been measured
-        'units': "",            # for ADUs it will be mV H or oher -  or scaled E mV/km
+        'units': "mV",          # for ADUs it will be mV H or other -  or scaled E mV/km
         'source': "",           # empty or indicate as, ns, ca, cp, tx or what ever
     }
     return header
@@ -148,8 +144,6 @@ def atss_filename(channel):
                     filename = filename + fill + "C" + f"{channel['channel_no']:03}"
                 elif tag == "channel_type":
                     filename = filename + fill + "T" + f"{channel['channel_type']}"
-                elif tag == "run":
-                    filename = filename + fill + "R" + f"{channel['run']:03}"
                 elif tag == "serial":
                     filename = filename + fill + f"{channel['serial']:03}"
                 else:
@@ -186,9 +180,6 @@ def read_atssheader(filename):
         if tag.startswith('C'):
             tag = tag[1:]
             chan["channel_no"] = int(tag)
-        if tag.startswith('R'):
-            tag = tag[1:]
-            chan["run"] = int(tag)
         if tag.startswith('T'):
             tag = tag[1:]
             chan["channel_type"] = tag
@@ -201,7 +192,7 @@ def read_atssheader(filename):
             tag = tag[:-2]
             chan["sample_rate"] = float(tag)
 
-    # try the binnary atss file with doubles
+    # try the binary atss file with doubles
     if exists(headername + ".atss"):
         samples = getsize(headername + ".atss")
         chan['samples'] = int(samples / 8)
@@ -210,7 +201,7 @@ def read_atssheader(filename):
     if exists(headername + ".json"):
         with open(headername + ".json") as json_file:
             data = json.load(json_file)
-            if 'date' in data:                      # date should always be there
+            if 'datetime' in data:                      # datetime should always be there
                 chan = chan | data
 
     return chan
