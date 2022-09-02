@@ -108,8 +108,8 @@ std::vector<std::string> survey_dirs() {
     dirs.emplace_back("doc"); dirs.emplace_back("dump"); dirs.emplace_back("edi");
     dirs.emplace_back("filters"); dirs.emplace_back("jle"); dirs.emplace_back("jobs");
     dirs.emplace_back("log"); dirs.emplace_back("processings");
-    dirs.emplace_back("shell"); dirs.emplace_back("tmp"); dirs.emplace_back("ts");
-    dirs.emplace_back("meta"); // meta information with log from the system etc
+    dirs.emplace_back("shell"); dirs.emplace_back("tmp"); dirs.emplace_back("stations");
+    dirs.emplace_back("meta"); // meta information with log from the system etc, mirror of stations
 
     return dirs;
 }

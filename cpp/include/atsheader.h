@@ -65,8 +65,8 @@ public:
    * \brief atsheader
    * \param filename file to open for reading the header
    */
-    atsheader(const fs::path &filename) {
-        this->read(filename, true);
+    atsheader(const fs::path &filename,  const bool close_after_read = true) {
+        this->read(filename, close_after_read);
     }
     /*!
      * \brief atsheadercopy constructor
@@ -398,6 +398,10 @@ public:
    */
     fs::path path() const {
         return this->filename;
+    }
+
+    std::string site_name() const {
+        return this->filename.parent_path().parent_path().filename();
     }
 
     void change_dir(const fs::path &new_dir) {

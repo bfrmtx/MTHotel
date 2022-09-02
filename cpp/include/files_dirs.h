@@ -1,7 +1,9 @@
 #ifndef FILES_DIRS_H
 #define FILES_DIRS_H
 
+#include <iostream>
 #include <string>
+#include "strings_etc.h"
 #include <filesystem>
 #include <functional>
 // code snipp recursive copy
@@ -25,6 +27,8 @@
 // Recursively copies those files and folders from src to target which matches
 // predicate, and overwrites existing files in target.
 
+namespace fdirs {
+
 const auto no_ats_filter = [](const std::filesystem::path& p) -> bool
 {
     return p.stem().generic_string().find("Sub") != std::string::npos;
@@ -35,6 +39,51 @@ const auto no_measdir_filter = [](const std::filesystem::path& p) -> bool
     return p.stem().generic_string().find("Sub") != std::string::npos;
 };
 
+template <typename T>
+T first_gap( std::vector<T> &v )
+{
+    // Handle the special case of an empty vector.  Return 1.
+    if( v.empty() ) return T(1);
+
+    // Sort the vector
+    std::sort( v.begin(), v.end() );
+
+    // Find the first adjacent pair that differ by more than 1.
+    auto i = std::adjacent_find( v.begin(), v.end(), [](int l, int r){return l+1<r;} );
+
+    // Handle the special case of no gaps.  Return the last value + 1.
+    if ( i == v.end() ) --i;
+
+    return 1 + *i;
+}
+
+/*!
+ * \brief scan_runs returns the firts free number of run_001 ... run_003, run_004
+ * \param station_dir
+ * \return here would be 2
+ */
+size_t scan_runs(const std::filesystem::path& station_dir) {
+    std::vector<size_t> iruns;
+    for (const auto & entry : std::filesystem::directory_iterator(station_dir)) {
+        //std::cout << entry.path() << std::endl;
+        if (std::filesystem::is_directory(entry)) {
+            auto i = mstr::string2run(entry.path().filename().c_str());
+            if (i != SIZE_MAX) iruns.push_back(i);
+            else return SIZE_MAX;
+        }
+    }
+    return fdirs::first_gap(iruns);
+}
+
+std::filesystem::path meta_dir(const std::filesystem::path &dir ) {
+    std::filesystem::path p;
+    for (const auto &e : dir) {
+        if (e == "stations") p /= "meta";
+        else p /= e;
+    }
+    return p;
+
+}
 
 
 void CopyRecursive(const std::filesystem::path& src, const std::filesystem::path& target,
@@ -84,5 +133,5 @@ int main()
     CopyRecursive(src, target, filter);
 }
 */
-
+}
 #endif // FILES_DIRS_H

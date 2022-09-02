@@ -123,7 +123,7 @@ int main()
     for (const auto &chan : channels) {
         std::ifstream ifile;
         chan->prepare_read_atss(ifile);
-        chan->read_bin(ins[i], ifile, true);
+        chan->read_data(ins[i], ifile, true);
         if (ins[i].size()) std::cout << "read " << ins[i].size() << std::endl;
         detrend_and_hanning<double>(ins[i].begin(), ins[i].end());
         ++i;

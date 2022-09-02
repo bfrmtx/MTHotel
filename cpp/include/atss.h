@@ -2,11 +2,17 @@
 #define ATSS_H
 
 #include <iostream>
+#include <iomanip>
+#include <list>
 #include <vector>
 #include <string>
 #include <cstddef>
 #include <cstdlib>
 #include <fstream>
+#include <mutex>
+#include <shared_mutex>
+#include "atsheader.h"
+#include "files_dirs.h"
 #include "json.h"
 #include "cal_base.h"
 #include "strings_etc.h"
@@ -14,9 +20,6 @@
 
 
 using jsn = nlohmann::ordered_json;
-
-
-
 
 
 /*!
@@ -209,6 +212,11 @@ public:
         return mstr::iso8601_time_t(nt.tt, iso_0_date_1_time_2, nt.fracs);
     }
 
+    /*!
+     * \brief start_datetime
+     * \param iso_0_date_1_time_2
+     * \return
+     */
     std::string start_datetime(const int iso_0_date_1_time_2 = 0) const {
         auto nt = this->sample_time(0);
         return mstr::iso8601_time_t(nt.tt, iso_0_date_1_time_2, nt.fracs);
@@ -238,8 +246,7 @@ public:
     }
 
     // 2007-12-24T18:21:00.01234 is probably not supported by C/C++/Python/PHP and others COMPLETELY, eg. fraction of seconds is a problem
-    //std::string datetime = "1970-01-01T00:00:00"; //!< ISO 8601 in UTC - other timezones are not supported; convert!
-    time_t tt = 0;              //!< seconds since 1970, can be negative in some implementaions
+    time_t tt = 0;              //!< generates the ISO 8601 in UTC , as time_t seconds since 1970, can be negative in some implementaions
     double fracs = 0.0;         //!< fractions of seconds from 0 ...0.9999...
     double sample_rate = 0.0;   //!< in Hz always
     size_t samples = 0;         //!< total samples of the file
@@ -284,7 +291,6 @@ public:
         this->serial = rhs->serial;
         this->system = rhs->system;
         this->channel_no = rhs->channel_no;
-        this->run = rhs->run;
         this->channel_type = rhs->channel_type;
     }
 
@@ -348,14 +354,16 @@ public:
         return  this->pt.start_datetime(iso_0_date_1_time_2);
     }
 
-
+    void set_cal(const std::shared_ptr<calibration> &cal) {
+        if (this->cal != nullptr) this->cal.reset();
+        this->cal = cal;
+    }
 
     void set_base_file(const std::string& system = "", const int64_t& ser = 0,
-                       const int64_t& channel_no = 0, const int64_t& run = 0) {
+                       const int64_t& channel_no = 0) {
         this->set_system(system);
         this->set_serial(ser);
         this->set_channel_no(channel_no);
-        this->set_run(run);
     }
     /*!
      * \brief parse_json_filename - put it in a try block
@@ -378,13 +386,12 @@ public:
             if (i == 0) this->serial = size_t(std::abs(std::stol(item)));
             else if (i == 1) this->system = item;
             else if (i == 2) this->channel_no = size_t(std::abs(std::stol(item.substr(1))));
-            else if (i == 3) this->run = size_t(std::abs(std::stol(item.substr(1))));
-            else if (i == 4) this->channel_type = item.substr(1);
-            else if (i == 5) this->pt.sample_rate = mstr::str_to_sample_rate(item);
+            else if (i == 3) this->channel_type = item.substr(1);
+            else if (i == 4) this->pt.sample_rate = mstr::str_to_sample_rate(item);
             ++i;
         }
 
-        if (i != 6) {
+        if (i != 5) {
             std::string err_str = std::string("channel::") + __func__;
             err_str += "::error parsing filename " + in_json_file.string();
             this->pt.clear();
@@ -414,6 +421,20 @@ public:
         return this->filepath_wo_ext;
     }
 
+    std::filesystem::path get_run_dir() const {
+        return this->filepath_wo_ext.parent_path();
+    }
+
+    std::filesystem::path get_site_dir() const {
+        return this->filepath_wo_ext.parent_path().parent_path();
+    }
+
+    std::filesystem::path get_site_name() const {
+        return this->filepath_wo_ext.parent_path().parent_path().filename();
+    }
+
+
+
 
     // simple set and get
 
@@ -442,12 +463,41 @@ public:
         return this->channel_type;
     }
 
-    void set_run(const std::integral auto& run) {
-        this->run = size_t(std::abs(run));
+    std::filesystem::path set_dir(const std::filesystem::path &dir_only) {
+        this->filepath_wo_ext = dir_only / this->filename();
+        return this->filepath_wo_ext;
     }
 
+    bool set_run(const std::integral auto& run) {
+
+        bool success = false;
+        std::filesystem::path newrun = this->filepath_wo_ext.parent_path().parent_path();
+        if (newrun == filepath_wo_ext.root_path()) {
+            std::string err_str = std::string("channel::") + __func__;
+            err_str += "::can not create run, I am a root dir";
+            throw err_str;
+            return success;
+        }
+        newrun /=  mstr::run2string(run);
+        if (!std::filesystem::exists(newrun)) success =  std::filesystem::create_directory(newrun);
+        else success = true;
+
+        if (!success) {
+            std::string err_str = std::string("channel::") + __func__;
+            err_str += "::can not create run " + mstr::zero_fill_field(run, 3);
+            throw err_str;
+            return success;
+        }
+        this->filepath_wo_ext = newrun / this->filepath_wo_ext.filename();
+        return success;
+    }
+
+
+
     size_t get_run() const {
-        return this->run;
+        std::filesystem::path srun = this->filepath_wo_ext.parent_path();
+        if (srun == filepath_wo_ext.root_path()) return SIZE_MAX;
+        return mstr::string2run(srun.filename().c_str());
     }
 
     void set_channel_no(const std::integral auto& channel_no) {
@@ -490,7 +540,6 @@ public:
         str += mstr::zero_fill_field(this->serial, 3) + "_";
         str += this->system + "_";
         str += "C" + mstr::zero_fill_field(this->channel_no, 3) + "_";
-        str += "R" + mstr::zero_fill_field(this->run, 3) + "_";
         str += "T" + this->channel_type + "_";
         double f_or_s;
         std::string unit;
@@ -520,7 +569,6 @@ public:
     std::size_t serial = 0;             //!< such as 1234 (no negative numbers please) for the system
     std::string system = "";            //!< such as ADU-08e, XYZ (a manufacturer is not needed because the system indicates it)
     std::size_t channel_no = 0;         //!< channel number - you can integrate EAMP stations as channels if the have the SAME!! timings
-    std::size_t run = 0;                //!< counts for same frequency at the same place - or a sclice
     std::string channel_type = "";      //!< type such as Ex, Ey, Hx, Hy, Hz or currents like Jx, Jy, Jz or Pitch, Roll, Yaw or x, y, z or T for temperature
     /*!
      * sample_rate contains sample_rate. Unit: Hz (samples per second) - "Hz" or "s" will be appended while writing in real time
@@ -529,6 +577,10 @@ public:
      */
 
     double treat_as_null = 1E-32;
+
+    std::string tmp_station;
+    double tmp_lsb = 1.0;
+    std::filesystem::path tmp_orgin;
 
 
     /*!
@@ -552,7 +604,7 @@ public:
      * \param directory_path_only full path including the measdir
      * \param jsn_cal the calibration part
      */
-    std::filesystem::path write_header(const std::filesystem::path &directory_path_only, const jsn &jsn_cal) const {
+    std::filesystem::path write_header(const std::shared_ptr<calibration> &jsn_cal = nullptr)  {
         jsn head;
         head["datetime"] = this->start_datetime();
         head["latitude"] =  this->latitude;
@@ -562,10 +614,17 @@ public:
         head["dip"] =  this->dip;
         head["units"] = this->units;
         head["source"] = this->source;
-        head.update(jsn_cal);
+        if (jsn_cal != nullptr) head.update(jsn_cal->toJson_embedd());
+        else if (this->cal != nullptr) head.update(this->cal->toJson_embedd());
+        else {
+            this->cal = std::make_shared<calibration>();
+            head.update(this->cal->toJson_embedd());
 
-        std::filesystem::path filepath(std::filesystem::canonical(directory_path_only));
-        filepath /= this->filename(".json");
+        }
+
+        std::filesystem::path filepath = this->filepath_wo_ext;
+        if (std::filesystem::is_directory(filepath)) filepath /= this->filename(".json");
+        else filepath.replace_extension(".json");
         std::ofstream file;
         file.open (filepath, std::fstream::out | std::fstream::trunc);
 
@@ -575,7 +634,7 @@ public:
             err_str += "::can not write header, file not open ";
             err_str += filepath.string();
             throw err_str;
-            return std::filesystem::path("");
+            std::filesystem::path();
         }
 
         file << std::setw(2) << head << std::endl;
@@ -586,30 +645,60 @@ public:
         //std::cout << std::setw(2) << head << std::endl;
     }
 
-    bool prepare_write_atss(const std::filesystem::path &directory_path_only, std::ofstream &file) {
+    //    bool prepare_write_atss(const std::filesystem::path &directory_path_only, std::ofstream &file) {
 
-        std::filesystem::path filepath(std::filesystem::canonical(directory_path_only));
-        filepath /= this->filename(".atss");
-        file.open (filepath, std::ios::out | std::ios::trunc | std::ios::binary);
+    //        std::filesystem::path filepath(std::filesystem::canonical(directory_path_only));
+    //        filepath /= this->filename(".atss");
+    //        file.open (filepath, std::ios::out | std::ios::trunc | std::ios::binary);
 
-        if (!file.is_open()) {
-            file.close();
-            std::string err_str = __func__;
-            err_str += "::file not open ";
-            err_str += filepath.string();
-            throw err_str;
-            return false;
+    //        if (!file.is_open()) {
+    //            file.close();
+    //            std::string err_str = __func__;
+    //            err_str += "::file not open ";
+    //            err_str += filepath.string();
+    //            throw err_str;
+    //            return false;
+    //        }
+
+    //        return file.is_open();
+    //    }
+
+    bool write_data(const std::vector<double> &data, std::ofstream &file) const {
+        // write a slice in case
+        if (file.is_open()) {
+            for (auto dat : data) {
+                file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
+            }
+            return true;
+        }
+        else {
+            std::filesystem::path filepath = this->filepath_wo_ext;
+            filepath.replace_extension(".atss");
+            file.open (filepath, std::ios::out | std::ios::trunc | std::ios::binary);
+
+            if (!file.is_open()) {
+                file.close();
+                std::string err_str = __func__;
+                err_str += "::file not open ";
+                err_str += filepath.string();
+                throw err_str;
+                return false;
+            }
+            for (auto dat : data) {
+                file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
+            }
         }
 
-        return file.is_open();
+        return true;
     }
 
-    void write_bin(const std::vector<double> &data, std::ofstream &file) {
+    //    void write_bin(const std::vector<double> &data, std::ofstream &file) {
 
-        for (auto dat : data) {
-            file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
-        }
-    }
+
+    //        for (auto dat : data) {
+    //            file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
+    //        }
+    //    }
 
     bool prepare_read_atss(std::ifstream &file) {
 
@@ -637,29 +726,41 @@ public:
         return ok;
     }
 
-    size_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
 
-        // too much checking ?
-        if (file.peek() == EOF ) {
-            data.resize(0);
-            return 0;
+
+    size_t read_data(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
+
+        if (file.is_open()) {
+            return this->read_bin(data, file, read_last_chunk);
         }
 
-        size_t i = 0;
-        while (!file.eof() && i < data.size()) {
-            file.read(static_cast<char *>(static_cast<void *>(&data[i++])), 8);
+        else {
+            bool ok = false;
+
+            try {
+                ok = std::filesystem::exists(this->get_atss_filepath());
+            }
+            catch (std::filesystem::filesystem_error& e) {
+                std::string err_str = __func__;
+                std::cerr << err_str << " " << e.what() << std::endl;
+                return 0;
+            }
+
+            file.open(this->get_atss_filepath(), std::ios::in | std::ios::binary);
+            if (!file.is_open()) {
+                file.close();
+                std::string err_str = __func__;
+                err_str += "::can not open, file not open ";
+                err_str += this->get_atss_filepath().string();
+                throw err_str;
+                return 0;
+            }
+            else {
+                return this->read_bin(data, file, read_last_chunk);
+            }
         }
 
-        // read last chunk in case
-        if ((file.eof() ) && read_last_chunk && (i > 1) ) {
-            --i;
-            data.resize(i);  // keeps the elements; i was incremented BEFORE the while loop above terminated
-        }
-        else if ((i == 1) || !i) {
-            data.resize(0);
-        }
-
-        return data.size();
+        return 0;
     }
 
     size_t samples(const std::filesystem::path &filepath_wo_ext = "")  {
@@ -698,6 +799,33 @@ public:
         return ss.str();
     }
 
+private:
+
+    size_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
+
+        // too much checking ?
+        if (file.peek() == EOF ) {
+            data.resize(0);
+            return 0;
+        }
+
+        size_t i = 0;
+        while (!file.eof() && i < data.size()) {
+            file.read(static_cast<char *>(static_cast<void *>(&data[i++])), 8);
+        }
+
+        // read last chunk in case
+        if ((file.eof() ) && read_last_chunk && (i > 1) ) {
+            --i;
+            data.resize(i);  // keeps the elements; i was incremented BEFORE the while loop above terminated
+        }
+        else if ((i == 1) || !i) {
+            data.resize(0);
+        }
+
+        return data.size();
+    }
+
 };  // end channel class
 
 
@@ -710,6 +838,32 @@ auto compare_channel_start_eq = [](const std::shared_ptr<channel> &lhs, const st
     // operator for pointer, * invoces the < operator wich is defined for a pointer rhs
     return lhs->pt == rhs->pt;
 };
+
+auto compare_channel_sampling_rate_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+    return (lhs->get_sample_rate() == rhs->get_sample_rate());
+};
+
+auto compare_channel_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+    return (lhs->get_run_dir() == rhs->get_run_dir());
+};
+
+auto compare_channel_site_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+    return (lhs->get_site_dir() == rhs->get_site_dir());
+
+};
+
+auto compare_channel_site_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+    return ( (lhs->get_site_dir() == rhs->get_site_dir()) && (lhs->get_run_dir() == rhs->get_run_dir()) );
+
+};
+
+auto same_run = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+    return ( (lhs->pt == rhs->pt) && (lhs->get_sample_rate() == rhs->get_sample_rate() && (lhs->get_channel_no() != rhs->get_channel_no()) ) );
+
+};
+
+
+
 
 #endif // ATSS_H
 

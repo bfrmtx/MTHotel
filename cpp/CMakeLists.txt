@@ -110,8 +110,8 @@ add_subdirectory(tests/read_cal_test)
 add_subdirectory(tests/thread_pool)
 add_subdirectory(tests/execpts)
 add_subdirectory(tests/times)
-add_subdirectory(tests/dir_magic)
 add_subdirectory(tests/ffts)
 add_subdirectory(tests/prztest)
+add_subdirectory(tests/dirtest)
 
 

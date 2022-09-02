@@ -29,6 +29,8 @@ namespace fs = std::filesystem;
 // -outdir /tmp -cat /home/bfr/devel/ats_data/cat_ats_data/NGRI/meas_2019-11-20_06-52-49/*ats /home/bfr/devel/ats_data/cat_ats_data/NGRI/meas_2019-11-22_06-22-30/*ats
 // -outdir /tmp -chats /home/bfr/devel/ats_data/zero6/site0199/*ats
 // -tojson -clone -outdir /tmp/aa  /survey-master/Eastern_Mining
+// -tojson -clone -outdir /tmp/aa  /survey-master/Northern_Mining
+
 
 /*
    string path = "/";
@@ -115,7 +117,6 @@ for (const auto & file : directory_iterator(path))
         while (argc > 1 && (l < unsigned(argc))) {
             std::string marg(argv[l]);
             if ( (marg.compare(marg.size()-4, 4, ".ats") == 0) || (marg.compare(marg.size()-4, 4, ".ATS") == 0) ) {
-
                 atsheaders.emplace_back(std::make_shared<atsheader>(fs::path(marg)));
             }
             ++l;
@@ -324,6 +325,8 @@ for (const auto & file : directory_iterator(path))
 
     if (tojson || clone) {
 
+        std::unique_ptr<survey_d> survey;
+
         if (outdir.empty()) {
             std::cout << "please supply -outdir name" << std::endl;
             return EXIT_FAILURE;
@@ -339,19 +342,21 @@ for (const auto & file : directory_iterator(path))
                 return EXIT_FAILURE;
             }
             std::cout << clone_dir.parent_path().filename() << std::endl;
-           // << fuck das geht nich
             try {
-                //std::filesystem::create_directory(outdir);
-                outdir /= clone_dir.filename();
-                std::filesystem::create_directory(outdir);
-                create_survey_dirs(outdir, survey_dirs());
-                outdir /= "ts"; // put the data in the time series directory
-
+                survey = std::make_unique<survey_d>(outdir / clone_dir.filename(), false, atsheaders.size());
             }
-            catch (std::error_code& ec) {
-                std::string err_str = std::string("atstools->") + __func__;
-                std::cerr << ec.message();
-                std::cerr << err_str << " " << outdir << std::endl;
+
+            catch (std::filesystem::filesystem_error& e) {
+                std::cerr <<  e.what() << std::endl;
+                return EXIT_FAILURE;
+            }
+            catch( const std::string &error ) {
+                std::cerr << error <<std::endl;
+                return EXIT_FAILURE;
+            }
+            catch (...) {
+                std::cerr << "create SURVEY" << std::endl;
+                return EXIT_FAILURE;
             }
 
 
@@ -361,32 +366,102 @@ for (const auto & file : directory_iterator(path))
         std::vector<size_t> execs = mk_mini_threads(0, atsheaders.size());
 
         size_t thread_index = 0;
-        std::mutex dirlock;
+
+        for (const auto &ex : execs) {
+            try {
+                std::vector<std::jthread> threads;
+                std::cout << "starting: " << ex << std::endl;
+                for (size_t j = 0; j < ex; ++j) {
+                    threads.emplace_back(std::jthread (collect_atsheaders, std::ref(atsheaders.at(thread_index++)), std::ref(survey)));
+
+                }
+            }
+            catch( const std::string &error ) {
+                std::cerr << error <<std::endl;
+                return EXIT_FAILURE;
+            }
+            catch(std::filesystem::filesystem_error& e) {
+                std::cerr <<  e.what() << std::endl;
+                return EXIT_FAILURE;
+
+            }
+            catch (...) {
+                std::cerr << "could not execute all threads" << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+        std::cout << "done collecting" << std::endl;
+
+        try {
+            survey->mk_tree();
+        }
+        catch( const std::string &error ) {
+            std::cerr << error <<std::endl;
+            return EXIT_FAILURE;
+        }
+        catch(std::filesystem::filesystem_error& e) {
+            std::cerr <<  e.what() << std::endl;
+            return EXIT_FAILURE;
+
+        }
+        catch (...) {
+            std::cerr << "could not execute all threads" << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        std::cout << "done make tree" << std::endl;
+        atsheaders.clear();
+        thread_index = 0;
+        for (const auto &ex : execs) {
+            try {
+                std::vector<std::jthread> threads;
+                std::cout << "starting: " << ex << std::endl;
+                for (size_t j = 0; j < ex; ++j) {
+                    threads.emplace_back(std::jthread (fill_survey_tree, std::ref(survey), thread_index++) );
+
+                }
+            }
+            catch( const std::string &error ) {
+                std::cerr << error <<std::endl;
+                return EXIT_FAILURE;
+            }
+            catch(std::filesystem::filesystem_error& e) {
+                std::cerr <<  e.what() << std::endl;
+            }
+            catch (...) {
+                std::cerr << "could not execute all threads" << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+
+        std::cout << "done" << std::endl;
+
 
         //
         // serialized test
-                for (auto &atsh : atsheaders) {
-                    std::cout << atsh->path() << std::endl;
-                    ats2json(atsh, outdir, dirlock, create_measdir, create_sitedir, default_e_sensor, default_h_sensor);
-                }
+        //                for (auto &atsh : atsheaders) {
+        //                    std::cout << atsh->path() << std::endl;
+        //                    ats2json(atsh, survey, dirlock, default_e_sensor, default_h_sensor);
+        //                }
         //
 
-//        for (const auto &ex : execs) {
-//            try {
-//                std::vector<std::jthread> threads;
-//                std::cout << "starting: " << ex << std::endl;
-//                for (size_t j = 0; j < ex; ++j) {
-//                    threads.emplace_back(std::jthread (ats2json, std::ref(atsheaders.at(thread_index++)), std::ref(outdir),
-//                                                      std::ref(dirlock), std::ref(create_measdir), std::ref(create_sitedir),
-//                                                      std::ref(default_e_sensor), std::ref(default_h_sensor)) );
-//                }
-//            }
-//            catch (...) {
-//                std::cerr << "could not execute all threads" << std::endl;
-//                return EXIT_FAILURE;
-//            }
-//        }
+        //        for (const auto &ex : execs) {
+        //            try {
+        //                std::vector<std::jthread> threads;
+        //                std::cout << "starting: " << ex << std::endl;
+        //                for (size_t j = 0; j < ex; ++j) {
+        //                    threads.emplace_back(std::jthread (ats2json, std::ref(atsheaders.at(thread_index++)), std::ref(survey),
+        //                                                      std::ref(dirlock),
+        //                                                      std::ref(default_e_sensor), std::ref(default_h_sensor)) );
+        //                }
+        //            }
+        //            catch (...) {
+        //                std::cerr << "could not execute all threads" << std::endl;
+        //                return EXIT_FAILURE;
+        //            }
+        //        }
 
+        std::cout << "done" << std::endl;
 
     }
 

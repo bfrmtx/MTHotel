@@ -541,6 +541,28 @@ bool isdigit_first_char(const std::string &str)
     return (str.at(0) == '-' || std::isdigit(str.at(0)) || str.at(0) == '+');
 }
 
+/*!
+ * \brief run2string
+ * \param run
+ * \return run_001 or run_012 and so on
+ */
+std::string run2string(const auto& run) {
+    std::string srun("run_");
+    return srun + mstr::zero_fill_field(run, 3);
+}
+
+/*!
+ * \brief string2run
+ * \param srun run_001 or run_012 and so on
+ * \return
+ */
+size_t string2run(const std::string &srun) {
+    if (srun.at(3) != '_') return SIZE_MAX;
+    std::string ssrun = srun.substr (4);
+    if (ssrun.empty() || (ssrun.size() > 6)) return SIZE_MAX;
+    return size_t(std::stoul(ssrun));
+}
+
 
 /*
 time_t parseiso8601utc(const char *date) {

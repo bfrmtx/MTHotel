@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 clear
 PROJ='MTHotel'
 INTSTALLDIR='/usr/local/mthotel'
