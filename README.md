@@ -7,64 +7,43 @@ All code is license free - you can do what you want.
 
 # ATSS
 
-atss is a **simplified** ats file (the old data format of metronix since 1998)
+atss is a **simple** binary array (data stream) of double numbers ( 64bit IEEE 754-2008), which is readable by any computer & software such as C/C++, Python and Matlab.
 
-For today's applications two features are missing:
-* a complete channel description **including** the calibration
-* possibility to stream the data
+The ending has been chosen in order not to conflict with other file types. It is meant to be **a**dvanced **t**ime **s**eries **s**tream. Strictly speaking: it is not a format at all.
 
-*(Actually the old ats can include the calibration but the ADU-06 at that time with the MSDOS operating system was not able to do this. Later the correct decision was to keep the header as it was with 1024 bytes length. With all E-series coils and fluxgates the calibration is today available during recording)*
+Together it comes with a *JSON* file (RFC 8259, ECMA-404) description, containing the header, needed to understand what the doubles are representing.
 
+## Naming Convention
 
-The ADU-08e, ADU-10e and ADU-07e got a **WebDAV server** implemented.
+* 084_V01_C02_R001_THx_BL_2S.ats   ... the *old binary* data with binary header
+* run_001/084_ADU-08e_C02_THx_2s.atss  ... the binary data stream
+* run_001/084_ADU-08e_C02_THx_2s.json  ... the JSON header
+* meta/run_001/084_ADU-08e_C02_THx_BL_2s.json  ... the JSON meta data **in a different tree!** (e.g. data not used for processing, like system logs)
+
+SystemSerial_System_Channel_ChannelType_SamplingRate is a filename (or ending with 64Hz for example) where "s" indicate seconds and Hz indicate Hertz, for readability. <br>
+The filename is split by underscores. You can not give a system name like abc_logger.
+
+The run number is stored a directory name like run_NNN. This makes it possible to easily store the data later in the [USGS](https://www.usgs.gov/) -> [MTH5](https://mth5.readthedocs.io) format.
+
+**Surprisingly** the header will not contain the amount of samples or stop time. Since atss is a *stream** format, the amount of samples is simply file_size/8 and the stop time is calculated from the amount for samples and the sampling rate.
+
+The ADU-08e, ADU-10e / ADU-11e got a **WebDAV server** implemented.
 The web service will be used for data streaming, and is accessed by https://192.168.0.203/data for example.
 
+When streaming the data the JSON header is untouched. The atss file *only* appends at the end.
 
-Streaming data can only be *updated at the end*.
-(the old ats format was updated at the beginning *and* the end when appending data).
-
-
-The streaming format has bee broken down into two trivial files:
-
-* a binary data stream (int_32 ending with *.bin* **or** double 64bit ending with *.atss*) which appends data at the end (hence that a int_32 can not be converted into a 32bit float without possible loss of precision)
-* a simple JSON header which is created on start and does not need an update
-* the samples are calculated from file size (/4 for int, /8 for double)
-
-
-For **permanent stations** (observatories) this allows a **rsync** daemon.
+For **permanent stations** (observatories) this allows a **rsync** or other daemon. <br>
 The data streaming can be simplified that way, that the rsync *appends* the data at **the end only**.
 In other words: you don't copy the data when the recording is finished, you transfer the data continuously *while* recording.
 
+### ... and the extended usage
 
+Some channel types are defined like Ex, Ey, Hx, Hy, Hz or currents like Jx, Jy, Jz or Pitch, Roll, Yaw or x, y, z (coordinates) or T for temperature.
 
-#### A new filename convention ...
+You can put the flight data from your IMU into Pitch, Roll, Yaw .atss and tack to the airborne EM data. <br>
+The transmitter currents land up in Jx, Jy, Jz .atss in case you have semi airborne data. <br>
 
-can be implemented now ats "**.atss*" - or ats simplified
-
-* Most users will convert the data into their proprietary formats. With a readable header and a good filename this can be done easily.
-* Users using Python can now access the data directly
-* the simple layout allows re-write and other file operations
-
-Example:
-
-084_V01_C02_R001_THx_BL_2S.ats   ... the old binary data
-
-084_V85_C02_R001_THx_BL_2S.atss  ... the binary data stream
-
-084_V85_C02_R001_THx_BL_2S.json  ... the JSON header
-
-084_V85_C02_R001_THx_BL_2S.json  ... the JSON meta data **in a diffrent tree!** (e.g. data not used for processing, like system logs)
-
-
-## ... and the extended usage
-
-Creating this kind of files is easy. That can be up-sampled IMU data from airborne surveys, temperature from the fluxgate (FGS-03e and FGS-04e support temperature reading) ... or seismic data.
-
-That reminds me that I may find a person helping me to create *miniseed* data.
-
-....HDF5 is possible but in this case all of your tools would work out of the box ... havn't seen this desire yet.
-
-A **directory tree** which is exactly the same for a survey (procmt creates one) would solve this problem as well (and much better)
+Some fluxgates (FGS-03e and FGS-04e support temperature reading) log the the temperature, use T .atss
 
 ## Compile
 
