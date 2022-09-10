@@ -78,7 +78,7 @@ void collect_atsheaders(std::shared_ptr<atsheader> &ats, std::unique_ptr<survey_
 
 void fill_survey_tree(std::unique_ptr<survey_d> &survey, const size_t &index) {
 
-    auto chan = survey->get_channel(index);
+    auto chan = survey->get_channel_from_all(index);
     if (chan->get_atss_filepath().empty()) return;
     auto ats = std::make_shared<atsheader>(chan->tmp_orgin, false);
     size_t samples = static_cast<uint64_t>(ats->header.samples);

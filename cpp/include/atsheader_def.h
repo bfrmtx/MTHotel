@@ -342,14 +342,23 @@ struct ats_header_json {
         return (this->atsh.iLat_ms / 1000.) / 3600.;
     }
 
+
     double get_lon() const {
         return (this->atsh.iLong_ms / 1000.) / 3600.;
     }
 
+    /*!
+     * \brief get_elev elevation in meter
+     * \return
+     */
     double get_elev() const {
         return (this->atsh.iElev_cm / 100.);
     }
 
+    /*!
+     * \brief pos2length caculate diple length
+     * \return
+     */
     double pos2length() const {
         double tx, ty, tz;
         tx = double(this->atsh.x2 - this->atsh.x1);
@@ -361,6 +370,10 @@ struct ats_header_json {
         return diplength;
     }
 
+    /*!
+     * \brief pos2angle calculate angle for North to East
+     * \return
+     */
     double pos2angle() const {
 
         if (!this->header.contains("channel_type") ) {

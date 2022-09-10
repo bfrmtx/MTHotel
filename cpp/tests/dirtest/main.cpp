@@ -31,15 +31,35 @@ int main(int argc, char **argv)
     try {
         // create a survey with existin data
         survey  = std::make_unique<survey_d>(argv[1]);
+        survey->ls();
+
+        auto station = survey->get_station("Sarıçam");
+
+        std::cout << survey->get_first_ch("Sarıçam", 7777)->get_datetime() << std::endl;
+        std::cout << " " ;
+
 
     }
     catch (std::filesystem::filesystem_error& e) {
         std::cerr << e.what() << std::endl;
         return 1;
     }
+    catch (const std::out_of_range& e) {
+       std::cerr  << e.what() << '\n';
+     }
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+        return EXIT_FAILURE;
+    }
+    catch(...) {
+        std::cerr << "unknown error" << std::endl;
+        return EXIT_FAILURE;
+
+    }
 
 
-    survey->ls();
+
+
 
 
 

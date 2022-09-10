@@ -15,6 +15,7 @@ public:
 
     run_d(const std::filesystem::path &run_dir, const bool no_create = true) : run_dir(run_dir) {
 
+        this->channels.reserve(10);
         if (!no_create) {
             std::filesystem::create_directory(this->run_dir);
         }
@@ -77,6 +78,15 @@ public:
         return this->channels.size();
     }
 
+    std::shared_ptr<channel> ch_first()  {
+        if (!channels.size()) {
+            std::string err_str = __func__;
+            err_str += "Station " + this->run_dir.parent_path().filename().string() + " " + this->run_dir.filename().string() +" is empty";
+            throw err_str;
+        }
+        return channels.at(0);
+    }
+
     void ls() const {
         size_t i = 0;
         for (const auto &ch : channels) {
@@ -91,7 +101,7 @@ public:
     }
 
     std::filesystem::path run_dir;
-    std::list<std::shared_ptr<channel>> channels;
+    std::vector<std::shared_ptr<channel>> channels;
 
 
 };
@@ -180,18 +190,37 @@ public:
         return runpath;
     }
 
+    std::shared_ptr<run_d> get_run(const size_t &run_no) const{
+        std::filesystem::path spath;
+        auto srun = mstr::run2string(run_no);
+        spath = this->station_dir / srun;
+        std::shared_ptr<run_d> run;
+
+        if (!std::filesystem::exists(spath)) {
+            std::string err_str = __func__;
+            err_str += ":: run does not exists! " + this->station_dir.filename().string();
+            throw err_str;
+        }
+        else {
+            for (const auto &r : this->runs ) {
+                if (r->get_run_no() == run_no) return r;
+            }
+        }
+        return run;
+    }
+
     void ls() const {
         size_t i = 0;
         for (const auto &run : runs) {
             ++i;
             if (i != runs.size()) {
                 std::cout  << "    " << "│   " << "├" << "───" << run->run_dir.filename().string();
-                    if (run->channels.size())  std::cout  << std::endl;
+                if (run->channels.size())  std::cout  << std::endl;
                 else std::cout <<  " (empty) "<< std::endl;
             }
             else {
                 std::cout << "    " << "│   " << "└" << "───" << run->run_dir.filename().string();
-                    if (run->channels.size())  std::cout  << std::endl;
+                if (run->channels.size())  std::cout  << std::endl;
                 else std::cout <<  " (empty) "<< std::endl;
             }
             run->ls();
@@ -273,7 +302,7 @@ public:
         }
     }
 
-    std::shared_ptr<channel> get_channel(const size_t &index) const {
+    std::shared_ptr<channel> get_channel_from_all(const size_t &index) const {
         std::shared_lock lock(this->station_lock);
         return this->all_channels.at(index);
     }
@@ -292,7 +321,31 @@ public:
         this->stations.clear();
     }
 
+    std::shared_ptr<station_d> get_station(const std::string& station_name) const {
+        std::shared_lock lock(this->station_lock);
+        std::filesystem::path spath;
+        spath = this->survey_dir / "stations" / station_name;
+        // lamda
+        auto stat = std::find_if(this->stations.begin(), this->stations.end(), [spath] (const std::shared_ptr<station_d> s) { return s->station_dir == spath ; });
+        if (stat == stations.end()) {
+            std::string err_str = __func__;
+            err_str += "Station " + station_name + " does not exists";
+            throw err_str;
+        }
 
+        return *stat;
+    }
+
+
+    std::shared_ptr<channel> get_first_ch(const std::string &station_name, const size_t &run_no) const {
+
+        auto station = this->get_station(station_name);
+        // check nullptr ... ? use catch!
+        auto run = station->get_run(run_no);
+        return run->ch_first();
+
+
+    }
 
     void hide_station(const std::string &station_name) {
         try {
@@ -367,12 +420,12 @@ public:
             ++i;
             if (i != stations.size()) {
                 std::cout   << "    " << "├" << "───" << station->station_dir.filename().string();
-                                      if (station->runs.size())  std::cout  << std::endl;
+                if (station->runs.size())  std::cout  << std::endl;
                 else std::cout <<  " (empty) "<< std::endl;
             }
             else {
                 std::cout << "    " << "└" << "───" << station->station_dir.filename().string();
-                                      if (station->runs.size()) std::cout  << std::endl;
+                if (station->runs.size()) std::cout  << std::endl;
                 else std::cout <<  " (empty) "<< std::endl;
             }
             station->ls();
@@ -400,7 +453,7 @@ private:
         return this->stations.size();
     }
 
-    std::list<std::shared_ptr<station_d>> stations;
+    std::vector<std::shared_ptr<station_d>> stations;
     std::vector<std::shared_ptr<channel>> all_channels;
 
     std::filesystem::path survey_dir;

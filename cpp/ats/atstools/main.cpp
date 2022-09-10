@@ -40,7 +40,7 @@ for (const auto & file : directory_iterator(path))
 */
 
 
-    int main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
 
 
@@ -251,7 +251,7 @@ for (const auto & file : directory_iterator(path))
             for (auto& ats : cat_ats) {
                 std::cout << " " << i++;
                 threads.emplace_back(std::jthread (cat_ats_files, std::ref(ats), std::ref(outdir), std::ref(xmls_and_files), std::ref(xml_files), std::ref(mtx_dir),
-                                                  std::ref(mtx_xml), std::ref(mtx_xml_files)));
+                                                   std::ref(mtx_xml), std::ref(mtx_xml_files)));
                 //cat_ats_files(ats, outdir, xmls_and_files, xml_files, mtx);
             }
             std::cout << std::endl << "wait please ... " << std::endl;
@@ -433,9 +433,17 @@ for (const auto & file : directory_iterator(path))
                 return EXIT_FAILURE;
             }
         }
+        try
+        {
+            std::filesystem::copy((clone_dir / "doc"), (survey->survey_path() / "reports"), std::filesystem::copy_options::skip_existing | std::filesystem::copy_options::recursive);
+            std::filesystem::copy((clone_dir / "shell"), (survey->survey_path() / "shell"), std::filesystem::copy_options::skip_existing | std::filesystem::copy_options::recursive);
+        }
 
+        catch (std::exception& e)
+        {
+            std::cerr << e.what();
+        }
         std::cout << "done" << std::endl;
-
 
         //
         // serialized test
