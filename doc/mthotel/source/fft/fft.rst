@@ -13,9 +13,9 @@ FFT / DFT
  :delim: ;
 
  sample rate; sample frequency; f\ :sub:`s`; **Hz** or 1/s
- discretization quantity;; Δt = 1/f\ :sub:`s`; **s**
+ discretization quantity;bin size; Δt = 1/f\ :sub:`s`; **s**
  samples;; **N**; (no dimension)
- window length;; T = N * Δt; **s**
+ window length;; wl = T = N * Δt; **s**
 
 
 N corresponds to time measured/recorded or used
@@ -30,19 +30,44 @@ N corresponds to time measured/recorded or used
 
  sampling rate; f\ :sub:`s` = 1/Δt; bandwidth; bw = f\ :sub:`s` /2
  samples; N; spectral lines; N/2 + 1 (+1 == DC part)
- window length;T = N * Δt; frequency resolution [Hz]; Δf = bw / N/2 :math:`\frac{1}{0}``
+ window length;wl = T = N * Δt; frequency resolution [Hz]; :math:`Δf = \frac{bw}{N/2} = \frac{ f_s }{N}`
+
+.. warning:: 
+   Almost everywhere the DC part (or N+1) is not included. |br|
+   The **FFTW** returns the DC part as 1\ :sup:`st` element. |br|
+   You need the DC part only for the *inverse* transform. |br|
+   For MT and noise analysis you *detrend* the data (DC part is removed). And here only
+   you have the symmetry of (for example) 1024 real input and 512 complex output
+   
+
+.. note::
+ In the real world by selecting N **samples** = *wl* you already have a window length of **T**
+
+The *Nyquist* frequency is f\ :sub:`s` /2 where a sine wave would be described with two points. |br|
+Additionally some digitzers or loggers use an anti alias filter at 80% of the Nyquist frequency. 
+So at 1024 Hz sample rate the cut off could be 0.8 * 512 = 410 Hz. |br|
+As a good choice for data interpretation a limit of f\ :sub:`s` /4 can be used
 
 weiter
 
-inline :math::`\frac{1}{0!}+\frac{2}{1!}x+\frac{3}{2!}x^2+\frac{4}{3!}x^3+...` and so on
+Power Spectral Density (PSD)
+-------------------------------
 
-Cable is 6 mm\ :sup:`2`\  in ...
+When you change the bandwidth the amplitude also changes. 
 
-inline :math:`\frac{1}{0!}+\frac{2}{1!}x+\frac{3}{2!}x^2+\frac{4}{3!}x^3+...` and so on
+For a sample rate of 1024 we use 1024 samples and 4096 samples, according to 1 s and 4 s data. |br|
+The bin size in the frequency domain has changed now :math:`Δf = \frac{bw}{N/2}`` == 1 Hz and 0.25 Hz 
+frequency resolution, respectively bin sizes. So *each bin or bucket* of the 4096 window contain 4 times less data.
 
-.. math::
+On https://community.sw.siemens.com/s/article/what-is-a-power-spectral-density-psd you find a genius picture for that:
 
- x = -b \pm \frac{\sqrt{b^{2}-4ac}}{2a}
+
+
+
+.. warning:: 
+   Almost everywhere people are paying with sine waves. |br|
+   In MT we have broad band noise and **must** scale the FFT. You want tp process data with different window length
+   but get the same amplitudes independently.
 
 
 .. math::

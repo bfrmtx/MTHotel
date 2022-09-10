@@ -47,8 +47,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'MTHotel'
-copyright = '2018, Dr. Bernhard Friedrichs'
-author = 'Dr. Bernhard Friedrichs'
+copyright = '2022, Bernhard Friedrichs'
+author = 'Bernhard Friedrichs'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
