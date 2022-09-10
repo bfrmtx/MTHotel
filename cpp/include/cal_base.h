@@ -46,8 +46,8 @@ struct calibration
         this->sensor = rhs->sensor;
         this->serial = rhs->serial;
         this->chopper = rhs->chopper;
-        this->units_amplitude = rhs->units_amplitude;
         this->units_frequency = rhs->units_frequency;
+        this->units_amplitude = rhs->units_amplitude;
         this->units_phase = rhs->units_phase;
         this->datetime = rhs->datetime;
         this->Operator = rhs->Operator;
@@ -65,16 +65,16 @@ struct calibration
         this->datetime.clear();
         this->Operator.clear();
         this->chopper = ChopperStatus::off;
-        this->units_amplitude = "unknown";
         this->units_frequency = "unknown";
+        this->units_amplitude = "unknown";
         this->units_phase = "unknown";
         this->ct = CalibrationType::nn;
     }
 
     void set_format(const CalibrationType ct, bool skip_date_time = true) {
         if (ct == CalibrationType::mtx_old) {
-            this->units_amplitude = "V/(nT*Hz)";
             this->units_frequency = "Hz";
+            this->units_amplitude = "V/(nT*Hz)";
             this->units_phase = "degrees";
             if (!skip_date_time) {
                 this->datetime = "1970-01-01T00:00:00";
@@ -83,8 +83,8 @@ struct calibration
             this->ct = CalibrationType::mtx_old;
         }
         else if (ct == CalibrationType::mtx) {
-            this->units_amplitude = "mV/nT";
             this->units_frequency = "Hz";
+            this->units_amplitude = "mV/nT";
             this->units_phase = "degrees";
             if (!skip_date_time) {
                 this->datetime = "1970-01-01T00:00:00";
@@ -94,8 +94,8 @@ struct calibration
 
         }
         else if (ct == CalibrationType::nn) {
-            this->units_amplitude = "unknown";
             this->units_frequency = "unknown";
+            this->units_amplitude = "unknown";
             this->units_phase = "unknown";
             if (!skip_date_time) {
                 this->datetime = "1970-01-01T00:00:00";
@@ -186,8 +186,8 @@ struct calibration
         head["sensor_calibration"]["sensor"] = this->sensor;
         head["sensor_calibration"]["serial"] = this->serial;
         head["sensor_calibration"]["chopper"] = int(this->chopper);
-        head["sensor_calibration"]["units_amplitude"] = this->units_amplitude;
         head["sensor_calibration"]["units_frequency"] = this->units_frequency;
+        head["sensor_calibration"]["units_amplitude"] = this->units_amplitude;
         head["sensor_calibration"]["units_phase"] = this->units_phase;
         head["sensor_calibration"]["datetime"] = this->datetime;
         head["sensor_calibration"]["Operator"] = this->Operator;
@@ -222,8 +222,8 @@ struct calibration
         head["sensor_calibration"]["sensor"] = this->sensor;
         head["sensor_calibration"]["serial"] = this->serial;
         head["sensor_calibration"]["chopper"] = int(this->chopper);
-        head["sensor_calibration"]["units_amplitude"] = this->units_amplitude;
         head["sensor_calibration"]["units_frequency"] = this->units_frequency;
+        head["sensor_calibration"]["units_amplitude"] = this->units_amplitude;
         head["sensor_calibration"]["units_phase"] = this->units_phase;
         head["sensor_calibration"]["datetime"] = this->datetime;
         head["sensor_calibration"]["Operator"] = this->Operator;
@@ -332,8 +332,8 @@ struct calibration
         else this->chopper = ChopperStatus::off;
 
 
-        this->units_amplitude = std::string(head["sensor_calibration"]["units_amplitude"]);
         this->units_frequency = std::string(head["sensor_calibration"]["units_frequency"]);
+        this->units_amplitude = std::string(head["sensor_calibration"]["units_amplitude"]);
         this->units_phase = std::string(head["sensor_calibration"]["units_phase"]);
         this->datetime = std::string(head["sensor_calibration"]["datetime"]);
         this->Operator = std::string(head["sensor_calibration"]["Operator"]);
