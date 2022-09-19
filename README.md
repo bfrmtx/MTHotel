@@ -5,6 +5,8 @@ All code is license free - you can do what you want.
 
 *Hope to find some guests...*
 
+More details shall follow here: https://mth5.geo-metronix.de/
+
 # ATSS
 
 atss is a **simple** binary array (data stream) of double numbers ( 64bit IEEE 754-2008), which is readable by any computer & software such as C/C++, Python and Matlab.
