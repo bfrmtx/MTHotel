@@ -106,6 +106,8 @@ std::vector<std::string> survey_dirs() {
     std::vector<std::string> dirs;
     dirs.emplace_back("config"); dirs.emplace_back("db");
     dirs.emplace_back("reports"); dirs.emplace_back("dump"); dirs.emplace_back("edi");
+    // filters would also contain calibration functions of coils and boards
+    // they are multiplied all together in order to get a final filter / calibration
     dirs.emplace_back("filters"); dirs.emplace_back("jle"); dirs.emplace_back("jobs");
     dirs.emplace_back("log"); dirs.emplace_back("processings");
     dirs.emplace_back("shell"); dirs.emplace_back("tmp"); dirs.emplace_back("stations");

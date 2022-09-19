@@ -28,6 +28,6 @@ build/
 CMakeLists.txt.user
 qtcsettings.cmake
 qt6/
-doc/mthotel/build/
-doc/mthotel/source/_build/
-doc/mthotel/source/_static/
+doc/mth5/build/
+doc/mth5/source/_build/
+doc/mth5/source/_static/

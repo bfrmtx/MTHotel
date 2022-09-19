@@ -711,7 +711,7 @@ struct ats_header_json {
             TypeNo = 0;
         }
         try {
-            TypeNo = ats_sys_family.at(Name);
+            GMSno = ats_sys_family.at(Name);
         } catch (...) {
             GMSno = 0;
         }
@@ -895,6 +895,161 @@ struct ats_header_json {
 
 
 
+
+    }
+
+
+    /*!
+     * \brief create_default_header
+     * \param channel_type Ex, Ey, Hx, Hy, Hz
+     */
+    void create_default_header(const std::string channel_type) {
+        this->header["header_length"] =                 static_cast<int64_t>(1024);
+        this->header["header_version"] =                static_cast<int64_t>(80);
+
+        this->header["samples"] =                       static_cast<int64_t>(0);
+        this->header["sample_rate"] =                   static_cast<double>(0);
+        this->header["start"] =                         static_cast<int64_t>(0);
+        this->header["lsbval"] =                        static_cast<double>(0);
+        this->header["GMToffset"] =                     static_cast<int64_t>(0);
+        this->header["orig_sample_rate"] =              static_cast<double>(0);
+
+
+        this->header["x1"] =                            static_cast<double>(0);
+        this->header["y1"] =                            static_cast<double>(0);
+        this->header["z1"] =                            static_cast<double>(0);
+        this->header["x2"] =                            static_cast<double>(0);
+        this->header["y2"] =                            static_cast<double>(0);
+        this->header["z2"] =                            static_cast<double>(0);
+
+
+        this->header["serial_number"] =                 static_cast<int64_t>(999);
+        if (channel_type == "Ex") {
+            this->header["serial_number_ADC_board"] =   static_cast<int64_t>(1);
+            this->header["channel_number"] =            static_cast<int64_t>(0);
+            this->header["sensor_type"] =               "EFP06";
+            this->header["sensor_serial_number"] =      1;
+            this->header["x1"] =                        static_cast<double>(-500);
+            this->header["x2"] =                        static_cast<double>(500);
+            this->header["InputDivOn"] =                static_cast<int64_t>(0);
+
+
+
+
+        }
+        else if (channel_type == "Ey") {
+            this->header["serial_number_ADC_board"] =   static_cast<int64_t>(2);
+            this->header["channel_number"] =            static_cast<int64_t>(1);
+            this->header["sensor_type"] =               "EFP06";
+            this->header["sensor_serial_number"] =      2;
+            this->header["y1"] =                        static_cast<double>(-500);
+            this->header["y2"] =                        static_cast<double>(500);
+            this->header["InputDivOn"] =                static_cast<int64_t>(0);
+
+
+        }
+        else if (channel_type == "Hx") {
+            this->header["serial_number_ADC_board"] =   static_cast<int64_t>(3);
+            this->header["channel_number"] =            static_cast<int64_t>(2);
+            this->header["sensor_type"] =               "MFS06E";
+            this->header["sensor_serial_number"] =      3;
+            this->header["InputDivOn"] =                static_cast<int64_t>(1);
+
+
+        }
+        else if (channel_type == "Hy") {
+            this->header["serial_number_ADC_board"] =   static_cast<int64_t>(4);
+            this->header["channel_number"] =            static_cast<int64_t>(3);
+            this->header["sensor_type"] =               "MFS06E";
+            this->header["sensor_serial_number"] =      4;
+            this->header["InputDivOn"] =                static_cast<int64_t>(1);
+
+
+        }
+        else if (channel_type == "Hz") {
+            this->header["serial_number_ADC_board"] =   static_cast<int64_t>(5);
+            this->header["channel_number"] =            static_cast<int64_t>(4);
+            this->header["sensor_type"] =               "MFS06E";
+            this->header["sensor_serial_number"] =      5;
+            this->header["InputDivOn"] =                static_cast<int64_t>(1);
+
+
+        }
+        this->header["chopper"] =                       static_cast<int64_t>(0);
+        this->header["channel_type"] =                  channel_type;
+
+
+        // pos and diplength not supported since 2004 - inconsistency removed
+
+        this->header["rho_probe_ohm"] =                 static_cast<double>(1);
+        this->header["DC_offset_voltage_mV"] =          static_cast<double>(0);
+        this->header["gain_stage1"] =                   static_cast<double>(1);
+        this->header["gain_stage2"] =                   static_cast<double>(1);
+
+        // Data from status information ?
+        this->header["iLat_ms"] =                       static_cast<int64_t>(0);
+        this->header["iLong_ms"] =                      static_cast<int64_t>(0);
+        this->header["iElev_cm"] =                      static_cast<int64_t>(0);
+        this->header["Lat_Long_TYPE"] =                 "G";
+        this->header["coordinate_type"] =               "U";
+        this->header["ref_meridian"] =                  static_cast<int64_t>(0);
+
+        this->header["Northing"] =                      static_cast<double>(0);
+        this->header["Easting"] =                       static_cast<double>(0);
+        this->header["gps_clock_status"] =              "C";
+        this->header["GPS_accuracy"] =                  "1";
+        this->header["offset_UTC"] =                    0;
+
+        this->header["SystemType"] =                    "ADU-08e";
+        // beside from binary header
+        this->header["GMSno"] =                         8;
+        this->header["TypeNo"] =                        1;
+        this->header["ats_data_file"] =                 "";
+        //
+        set_filter_bank("ADU-08e");
+
+        // Data from XML-Job specification
+        this->header["survey_header_filename"] =        "";
+        this->header["type_of_meas"] =                  "MT";
+
+        this->header["DCOffsetCorrValue"] =             static_cast<double>(0);
+        this->header["DCOffsetCorrOn"] =                static_cast<int64_t>(0);
+        this->header["bit_indicator"] =                 static_cast<int64_t>(0);
+        this->header["result_selftest"] =               "OK";
+        this->header["numslices"] =                     static_cast<int64_t>(0);
+
+        this->header["cal_freqs"] =                     static_cast<int64_t>(0);
+        this->header["cal_entry_length"] =              static_cast<int64_t>(0);
+        this->header["cal_version"] =                   static_cast<int64_t>(0);
+        this->header["cal_start_address"] =             static_cast<int64_t>(0);
+
+        // bitfield; filterbank was set above
+        this->header["LF_filters"] =                    "";
+        this->header["UTMZone"] =                       "";
+        this->header["system_cal_datetime"] =           static_cast<int64_t>(0);
+        this->header["sensor_cal_filename"] =           "SENSOR.CAL";
+        this->header["sensor_cal_datetime"] =           static_cast<int64_t>(0);
+
+        this->header["powerline1"] =                    static_cast<double>(0.0);
+        this->header["powerline2"] =                    static_cast<double>(0.0);
+
+        // bitfield; filterbank was set above
+        this->header["HF_filters"] =                    "";
+        this->header["external_gain"] =                 static_cast<double>(0);
+        this->header["ADB_board_type"] =                "BB";
+
+        this->header["Client"] =                        "";
+        this->header["Contractor"] =                    "";
+        this->header["Area"] =                          "";
+        this->header["SurveyID"] =                      "";
+        this->header["Operator"] =                      "";
+        this->header["SiteName"] =                      "";
+        this->header["XmlHeader"] =                     "";
+
+
+        this->header["Comments"] =                      "from ASCII";
+        this->header["SiteNameRR"] =                    "";
+        this->header["SiteNameEMAP"] =                  "";
 
     }
 

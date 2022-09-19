@@ -113,5 +113,7 @@ add_subdirectory(tests/times)
 add_subdirectory(tests/ffts)
 add_subdirectory(tests/prztest)
 add_subdirectory(tests/dirtest)
+add_subdirectory(ats/ascii2ats)
+
 
 

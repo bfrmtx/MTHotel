@@ -175,9 +175,6 @@ public:
         }
         std::string run = mstr::zero_fill_field(irun,3);
         std::string serial = mstr::zero_fill_field(this->header.serial_number,3);
-
-
-
         std::replace(sat.begin(), sat.end(), ':', '-'); // replace all ':' to '-'
         std::replace(sot.begin(), sot.end(), ':', '-'); // replace all ':' to '-'
 
@@ -195,11 +192,30 @@ public:
         xmlfile += "_";
         xmlfile += samp;
         xmlfile += ".xml";
-
-
         return xmlfile;
+    }
 
+    std::string get_ats_filename(const size_t &run = 99) const {
+        // 084_V01_C00_R001_TEx_BL_8S.ats
+        std::string atsfile = mstr::zero_fill_field(this->header.serial_number,3);
+        atsfile += "_V01_C";
+        atsfile += mstr::zero_fill_field(this->header.channel_number,2);
+        atsfile += "_R";
+        atsfile += mstr::zero_fill_field(run,3);
+        atsfile += "_T";
+        std::string ct;
 
+        if (sizeof(this->header.channel_type) > 1) {
+        atsfile += this->header.channel_type[0];
+        atsfile += this->header.channel_type[1];
+        }
+
+        if (this->header.sample_rate < 4096.5)  atsfile += "_BL_";
+        else atsfile += "_BH_";
+
+        atsfile += mstr::sample_rate_to_str_simple(this->header.sample_rate);
+        atsfile += ".ats";
+        return atsfile;
     }
 
     bool re_write() {
@@ -438,6 +454,10 @@ public:
         f = modf(sf_lhs, &intpart);
         int64_t utc = static_cast<int64_t>(intpart);
         return mstr::iso8601_time_t(utc, 2, f);
+    }
+
+    void set_new_filename(const fs::path filename) {
+        this->filename = filename;
     }
 
 private:

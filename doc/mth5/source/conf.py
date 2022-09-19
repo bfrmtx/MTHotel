@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Linux Knowlegde Database documentation build configuration file, created by
-# sphinx-quickstart on Tue Jan 16 20:01:53 2018.
-#
 # This file is execfile()d with the current directory set to its
 # containing dir.
 #
@@ -46,7 +43,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'MTHotel'
+project = 'MTHotel / MTH5'
 copyright = '2022, Bernhard Friedrichs'
 author = 'Bernhard Friedrichs'
 

@@ -1,0 +1,23 @@
+{
+  "datetime": "2017-04-17T07:34:36",
+  "latitude": 29.048946666666666,
+  "longitude": 79.948655,
+  "elevation": 216.93,
+  "angle": 90.0,
+  "dip": 0.0,
+  "units": "mV/km",
+  "source": "",
+  "sensor_calibration": {
+    "sensor": "EFP-06",
+    "serial": 0,
+    "chopper": 1,
+    "units_amplitude": "mV",
+    "units_frequency": "Hz",
+    "units_phase": "degrees",
+    "datetime": "1970-01-01T00:00:00",
+    "Operator": "",
+    "f": [],
+    "a": [],
+    "p": []
+  }
+}

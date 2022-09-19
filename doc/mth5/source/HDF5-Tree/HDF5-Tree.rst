@@ -23,7 +23,6 @@ are that way organized that the can be finally pushed into the MTH5 HDF5 format.
 ::
    
    └── Northern Mining
-    ├── cal
     ├── db
     ├── doc
     ├── dump
