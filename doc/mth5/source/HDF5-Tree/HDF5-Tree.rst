@@ -22,23 +22,72 @@ are that way organized that the can be finally pushed into the MTH5 HDF5 format.
 
 ::
    
-   └── Northern Mining
+    Northern Mining
+    ├── config
     ├── db
-    ├── doc
     ├── dump
     ├── edi
     ├── filters
+    ├── jle
     ├── jobs
     ├── log
+    ├── meta
+    │   └── Sarıçam
+    │       ├── run_001
+    │       │   ├── 084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
+    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.json
+    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.json
+    │       │   ├── 084_ADU-07e_C002_THx_128Hz.json
+    │       │   ├── 084_ADU-07e_C003_THy_128Hz.json
+    │       │   └── 084_ADU-07e_C004_THz_128Hz.json
+    │       └── run_002
+    │           ├── 084_2009-08-21_07-01-00_2009-08-21_07-06-00_R001_2048H.xml
+    │           ├── 084_ADU-07e_C000_TEx_2048Hz.json
+    │           ├── 084_ADU-07e_C001_TEy_2048Hz.json
+    │           ├── 084_ADU-07e_C002_THx_2048Hz.json
+    │           ├── 084_ADU-07e_C003_THy_2048Hz.json
+    │           └── 084_ADU-07e_C004_THz_2048Hz.json
     ├── processings
+    ├── reports
+    │   └── old_cal
+    │       ├── FGS03E_000_master.txt
+    │       ├── MFS05141.TXT
+    │       ├── MFS06024.TXT
+    │       ├── MFS06026.TXT
+    │       ├── MFS06032.TXT
+    │       ├── MFS06E_000_master.txt
+    │       ├── MFS07E_000_master.txt
+    │       └── MFS10e0021.TXT
     ├── shell
+    │   ├── mkallproc.sh
+    │   ├── plot_ascii_table_edi.sh
+    │   └── procall.sh
     ├── stations
-    │   ├── Line 56 Station 896
-    │   ├── Sarıçam
-    │   │   ├── Run 001
-    │   │   └── Run 999
-    │   └── Station 123
+    │   └── Sarıçam
+    │       ├── run_001
+    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.atss
+    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.json
+    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.atss
+    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.json
+    │       │   ├── 084_ADU-07e_C002_THx_128Hz.atss
+    │       │   ├── 084_ADU-07e_C002_THx_128Hz.json
+    │       │   ├── 084_ADU-07e_C003_THy_128Hz.atss
+    │       │   ├── 084_ADU-07e_C003_THy_128Hz.json
+    │       │   ├── 084_ADU-07e_C004_THz_128Hz.atss
+    │       │   └── 084_ADU-07e_C004_THz_128Hz.json
+    │       └── run_002
+    │           ├── 084_ADU-07e_C000_TEx_2048Hz.atss
+    │           ├── 084_ADU-07e_C000_TEx_2048Hz.json
+    │           ├── 084_ADU-07e_C001_TEy_2048Hz.atss
+    │           ├── 084_ADU-07e_C001_TEy_2048Hz.json
+    │           ├── 084_ADU-07e_C002_THx_2048Hz.atss
+    │           ├── 084_ADU-07e_C002_THx_2048Hz.json
+    │           ├── 084_ADU-07e_C003_THy_2048Hz.atss
+    │           ├── 084_ADU-07e_C003_THy_2048Hz.json
+    │           ├── 084_ADU-07e_C004_THz_2048Hz.atss
+    │           └── 084_ADU-07e_C004_THz_2048Hz.json
     └── tmp
+
 
 .
 
