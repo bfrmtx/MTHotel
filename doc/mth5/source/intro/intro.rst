@@ -15,6 +15,6 @@ A greater part is about pushing the data into data later in the `USGS <https://w
 
 The data loggers as "streaming servers" can not directly write into `HDF5 <https://www.hdfgroup.org>`_ 
 
-However the :ref:`ATSS <ATSS>` data stream and it's JSON descriptor are designed to be pushed into the MTH5 format.
+However the :ref:`ATSS <ATSS>` data stream and his JSON descriptor are designed to be pushed into the MTH5 format.
 
 Some operations (like FIR filtering or rotation) may before pushing.
