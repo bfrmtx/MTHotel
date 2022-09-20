@@ -14,6 +14,7 @@ MTHotel / MTH5 Documentation
    atss/atss
    HDF5-Tree/HDF5-Tree
    fft/fft
+   downloads/downloads 
 
 
 Indices and tables
