@@ -8,11 +8,12 @@ Created on Thu Aug  4 16:48:47 2022
 """
 
 # =============================================================================
-# Imports
+# General imports
 # =============================================================================
 
 import datetime
 import json
+import logging
 import math
 import numpy as np
 import os
@@ -20,6 +21,11 @@ import pandas as pd
 import pycstruct
 import struct
 import sys
+
+
+# =============================================================================
+# Local imports
+# =============================================================================
 from mth5.io import Collection
 
 # =============================================================================
@@ -552,12 +558,13 @@ class AtsMetronix:
 
     """
 
-    def __init__(self, fn=None, station_name=None, **kwargs):
+    def __init__(self, fn=None, **kwargs):
 
         self.fn = fn
         self.instrument_id = 'Metronix_'
         self.header = None
         self.slice_headers = None
+        self.run_number = 0
 
         # Testing path existence
         if not os.path.exists(self.fn):
@@ -576,6 +583,7 @@ class AtsMetronix:
             # Exception for file not being a Metronix one
             sys.stdout.write("Path is not an ATS file.")
             return
+
 
     @staticmethod
     def create_bin_ats_header():
@@ -626,11 +634,11 @@ class AtsMetronix:
         b_ats_header.add('utf-8',   'system_type', length=12)
         b_ats_header.add('utf-8',   'survey_header_filename', length=12)
         b_ats_header.add('utf-8',   'type_of_meas', length=4)
-        b_ats_header.add('float64', 'DCOffsetCorrValue')
-        b_ats_header.add('int8',    'DCOffsetCorrOn')
-        b_ats_header.add('int8',    'InputDivOn')
+        b_ats_header.add('float64', 'DC_offset_corr_value')
+        b_ats_header.add('int8',    'DC_offset_corr_on')
+        b_ats_header.add('int8',    'input_div_on')
         b_ats_header.add('int16',   'bit_indicator')
-        b_ats_header.add('utf-8',   'result_selftest', length=2)
+        b_ats_header.add('utf-8',   'result_self_test', length=2)
         b_ats_header.add('uint16',  'num_slices')
         b_ats_header.add('int16',   'cal_freqs')
         b_ats_header.add('int16',   'cal_entry_length')
@@ -693,13 +701,14 @@ class AtsMetronix:
             From B. Friedrichs, modified by H. Larnier
         """
         b_header = self.create_bin_ats_header()
-
+        logging.info('Opening file ' + self.fn)
         try:
             with open(self.fn, 'rb') as f:
                 b_length = f.read(2)
                 b_version = f.read(2)
                 (length,) = struct.unpack('<H', b_length)
                 (version,) = struct.unpack('<h', b_version)
+                logging.info('Version is ' + str(version))
                 f.seek(0)
                 if version >= 1080:
                     inbytes = f.read(1024)      # sliced used first full header with 1024
@@ -762,7 +771,7 @@ class AtsMetronix:
             'HF-HP-500Hz': 2,       # is default on ADU-08 BB board in HF mode
         }
 
-        if ((self.header['ADB_board_type'] == "HF") or (self.header['ADB_board_type'] == "BB")):
+        if (self.header['ADB_board_type'] == "HF") or (self.header['ADB_board_type'] == "BB"):
             for key, value in hf_filters.items():
                 # print(key, "  ", value)
                 if (value == self.header["HF_filters"]):
@@ -771,6 +780,20 @@ class AtsMetronix:
             self.header.pop('HF_filters', None)
             self.header.pop('LF_filters', None)
 
+
+        #
+
+        # Getting start and end time, both decimal and datetime format
+        self.header['start_time'] = self.header['start'] / 86400
+        self.header['end_time'] = self.header['start_time']\
+                                    + self.header['samples'] / self.header['sample_rate'] / 86400
+        print(self.header['start_time'])
+        self.header['start_time_datetime'] = datetime.datetime(1970, 1, 1) + datetime.timedelta(
+            days=self.header['start_time'])
+        self.header['end_time_datetime'] = datetime.datetime(1970, 1, 1) + datetime.timedelta(
+            days=self.header['end_time'])
+
+        #
         # make UTF-8 for access and json
         # hence some Geosystem programmers used " " instead of "\x0" for filling
         # try it least to strip
@@ -779,55 +802,59 @@ class AtsMetronix:
         self.header['channel_type'] = self.header['channel_type'].strip()
         self.header['sensor_type'] = self.header['sensor_type'].strip()
 
-        self.header['Lat_Long_TYPE'] = self.header['Lat_Long_TYPE'].strip()
+        self.header['lat_long_type'] = self.header['lat_long_type'].strip()
         self.header['coordinate_type'] = self.header['coordinate_type'].strip()
 
-        self.header['gps_clock_status'] = self.header['gps_clock_status'].strip()
-        self.header['SystemType'] = self.header['SystemType'].strip()
+        self.header['GPS_clock_status'] = self.header['GPS_clock_status'].strip()
+        self.header['system_type'] = self.header['system_type'].strip()
         self.header['survey_header_filename'] = self.header['survey_header_filename'].strip()
         self.header['type_of_meas'] = self.header['type_of_meas'].strip()
 
-        self.header['UTMZone'] = self.header['UTMZone'].strip()
-        self.header['result_selftest'] = self.header['result_selftest'].strip()
+        self.header['UTM_zone'] = self.header['UTM_zone'].strip()
+        self.header['result_self_test'] = self.header['result_self_test'].strip()
 
         self.header['sensor_cal_filename'] = self.header['sensor_cal_filename'].strip()
 
         self.header['ADB_board_type'] = self.header['ADB_board_type'].strip()
-        self.header['Client'] = self.header['Client'].strip()
-        self.header['Contractor'] = self.header['Contractor'].strip()
-        self.header['Area'] = self.header['Area'].strip()
-        self.header['SurveyID'] = self.header['SurveyID'].strip()
-        self.header['Operator'] = self.header['Operator'].strip()
-        self.header['SiteName'] = self.header['SiteName'].strip()
-        self.header['XmlHeader'] = self.header['XmlHeader'].strip()
-        self.header['Comments'] = self.header['Comments'].strip()
+        self.header['client'] = self.header['client'].strip()
+        self.header['contractor'] = self.header['contractor'].strip()
+        self.header['area'] = self.header['area'].strip()
+        self.header['survey_ID'] = self.header['survey_ID'].strip()
+        self.header['operator'] = self.header['operator'].strip()
+        self.header['site_name'] = self.header['site_name'].strip()
+
+        self.header['XML_header'] = self.header['XML_header'].strip()
+        self.header['comments'] = self.header['comments'].strip()
         # never used - clients put anything
-        self.header['Comments'] = self.header['Comments'].replace("weather:", "", 1).lstrip()
-        self.header['SiteNameRR'] = self.header['SiteNameRR'].strip()
-        self.header['SiteNameEMAP'] = self.header['SiteNameEMAP'].strip()
+        self.header['comments'] = self.header['comments'].replace("weather:", "", 1).lstrip()
+        self.header['site_name_RR'] = self.header['site_name_RR'].strip()
+        self.header['site_name_EMAP'] = self.header['site_name_EMAP'].strip()
 
         # old headers - maybe ADU-06
         if self.header['header_version'] < 80:
-            self.header['DCOffsetCorrOn'] = 0
-            self.header['DCOffsetCorrValue'] = 0.0
-            self.header['InputDivOn'] = 0
+            self.header['DC_offset_corr_on'] = 0
+            self.header['DC_offset_corr_value'] = 0.0
+            self.header['input_div_on'] = 0
             self.header['orig_sample_rate'] = 0.0
 
-    def _read_metadata(self, folder):
+    def get_run_number(self):
+
         """
-            Reading the metadata from a specific folder (aka. run),
-            and return the corresponding dictionary
+            Parse run number from file name.
+            File name definition is:
+                nn_ADU c_Channel rr_Run t_Channel_Type b_BandIndex .ats
+        :return:
         """
 
+        self.run_number = int(self.fn.split('R')[1].split('_')[0])
 
-        pass
-
-    @property
     def file_size(self):
         """size of file in bytes"""
         if self.fn is not None:
-            return self.fn.stat().st_size
-
+            return os.stat(self.fn).st_size
+            # with open(self.fn, 'r') as p:
+            #     return p.stat().st_size
+            # p.close()
 
 
 class MetronixCollection(Collection):
@@ -839,23 +866,177 @@ class MetronixCollection(Collection):
 
     """
 
-
     def __init__(self, files_path=None, **kwargs):
         super().__init__(file_path=files_path, **kwargs)
 
         self.extension = '.ats'
         self.file_path = files_path
+        self.folders = None
+        self.name_count = 1
 
+        self._default_channel_map = {
+            'A': 'Ex',
+            'B': 'Ey',
+            'X': 'Hx',
+            'Y': 'Hy',
+            'Z': 'Hz',
+        }
+
+        self._default_band_map = {
+            'A': 'HF',
+            'B': 'LF1',
+            'C': 'LF2',
+            'D': 'LF3',
+            'E': 'LF4',
+            'F': 'LF5',
+        }
+
+        if not os.path.isdir(self.file_path):
+            logging.error('Directory for Metronix data does not exists.')
+
+        if os.path.isfile(self.file_path):
+            logging.error('This is a file, not a directory.')
 
     def get_folders(self):
-        pass
+        """
+            Look into station folder and list all sub-folders for further analyzis by the code
+            Dependent on file_path variable
 
-    def read_folder(self, folder):
-        pass
+            Will populate the self.folders variable after
+        """
 
+        # Returning all folders in the station folder
+        self.folders = [os.path.join(self.file_path, _dir) for _dir in os.listdir(self.file_path)
+                        if not os.path.isfile(os.path.join(self.file_path, _dir))]
 
-    def to_dataframe(self, folder):
+        # Making sure those folders are Metronix folders
+        self.folders = [_dir for _dir in self.folders if 'meas_' in _dir]
+
+        if not len(self.folders):
+            logging.warning(f'Could not find any folders in {self.file_path}')
+
+    @staticmethod
+    def read_folder(folder):
+        """
+
+        :param folder: Metronix folder to read and containing .ats files
+        :return: data_dict: dictionary containing channels and corresponding .ats files + metadata
+        """
+
+        data_dict = {}
+        dir_files = [_file for _file in os.listdir(folder)
+                    if os.path.isfile(os.path.join(folder, _file))]
+
+        is_station_name = 0
+        for _file in dir_files:
+            file_path = os.path.join(folder, _file)
+            file_name, extension = os.path.splitext(_file)
+            if extension == '.atss':
+                logging.info('reading atss file')
+                # Creating ATSS data instance
+                _data = AtssMetronix()
+                _data.read_atss_filename(file_path)
+                data_dict[_data.header['channel_type']] = _data
+
+            elif extension == '.ats':
+                logging.info('reading ats file')
+                _data = AtsMetronix(fn=file_path, station_name=None)
+                _data.read_metadata()
+                if _data.header['site_name'] is None:
+                    is_station_name = 1
+
+                data_dict[_data.header['channel_type']] = _data
+            elif extension == '.xml':
+                logging.info('Got the Metronix xml. Nothing to be done on this for now.')
+            elif extension == '.kml':
+                logging.info('Got the Metronix kml. Nothing to be done on this for now.')
+            else:
+                continue
+
+        if not is_station_name:
+            logging.warning('NO station name found in the headers, going to attribute a random one')
+            for channel in data_dict:
+                station_name = 'Metronix_' + str(data_dict[channel].header['serial_number'])
+                data_dict[channel].header['site_name'] = station_name
+
+        return data_dict
+
+    def to_dataframe(self, run_names_zeros=4):
         """
             Reading folders and adding runs to dataframe
         """
-        pass
+
+        self.get_folders()
+
+        if not len(self.folders):
+            return None
+
+        entries = []
+        for folder in self.folders:
+            data_dict_folder = self.read_folder(folder)
+            channel_ids = list(data_dict_folder.keys())
+            for channel in channel_ids:
+                entry = {
+                    'survey': data_dict_folder[channel].header['survey_ID'],
+                    'station': data_dict_folder[channel].header['site_name'],
+                    'run': None,
+                    'start': data_dict_folder[channel].header['start_time_datetime'].isoformat(),
+                    'end': data_dict_folder[channel].header['end_time_datetime'].isoformat(),
+                    'channel_id': data_dict_folder[channel].header['channel_number'],
+                    'component': data_dict_folder[channel].header['channel_type'],
+                    'fn': data_dict_folder[channel].fn,
+                    'sample_rate': data_dict_folder[channel].header['sample_rate'],
+                    'file_size': data_dict_folder[channel].file_size(),
+                    'n_samples': data_dict_folder[channel].header['samples'],
+                    'sequence_number': data_dict_folder[channel].run_number,
+                    'instrument_id': data_dict_folder[channel].header['sensor_type'] +
+                                     '_' + str(data_dict_folder[channel].header['sensor_serial_number']),
+                    'calibration_fn': data_dict_folder[channel].header['sensor_cal_filename'],
+                }
+                entries.append(entry)
+
+        df = self._sort_df(
+            self._set_df_dtypes(pd.DataFrame(entries)),
+            run_names_zeros,
+        )
+
+        return df
+
+    def assign_run_names(self, df, zeros=4):
+        """
+        Assign run names by looping through start times.
+
+        For continous data a single run is assigned as long as the start and
+        end times of each file align.  If there is a break a new run name is
+        assigned.
+
+        Metronix data is usually always continuous, so a new run name is assigned for every folder
+
+        :param df: Dataframe returned by `to_dataframe` method
+        :type df: :class:`pandas.DataFrame`
+        :param zeros: Number of zeros in the run name, defaults to 4
+        :type zeros: integer, optional
+        :return: Dataframe with run names
+        :rtype: :class:`pandas.DataFrame`
+
+        """
+
+        rdf = df.copy()
+        sample_rates = rdf.sample_rate.unique()
+
+        for station in df.station.unique():
+            # Metronix
+            # Going to loop over each folder and attribute a new run name for every folder encounterd
+            for sr in sample_rates:
+                run_stem = str(sr)
+
+                starts = rdf.loc[
+                    (rdf.station == station) & (rdf.sample_rate == sr),
+                    "start",
+                ].unique()
+                for ii, s in enumerate(starts, 1):
+                    rdf.loc[
+                        rdf.start == s, "run"
+                    ] = f"sr{run_stem}_{ii:0{zeros}}"
+
+        return rdf
