@@ -114,7 +114,8 @@ static int sqlite_handler_scolumn_int64_t_callback(void* ptr, int argc, char** a
     try {
         num = std::stoll(std::string(argv[0]));
 
-    } catch (std::invalid_argument const& ia) {
+    }
+    catch (std::invalid_argument const& ia) {
         std::cout << "sqlite_handler_scolumn_int64_t_callback: " << ia.what() << std::endl;
         return SQLITE_ERROR;
     }

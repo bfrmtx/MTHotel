@@ -47,7 +47,7 @@ assuming 3 slices of 4096 iSamples will be 12,288 samples in the header,
 
                         */
 
-                struct ATSSliceHeader_1080
+struct ATSSliceHeader_1080
 {
     std::uint32_t uiSamples;                    //!< 000h  number of samples for this slice
     std::uint32_t uiStartDateTime;              //!< 004h  startdate/time as UNIX timestamp (UTC)
@@ -66,13 +66,13 @@ assuming 3 slices of 4096 iSamples will be 12,288 samples in the header,
 
 */
 
-    /*!
+/*!
    \brief The ATSComments_80 struct for ats header 80,81 and 90 <br>
    Some software will automatically convert to higher version<br>
    Some fields are external - the user has to set then; examples:<br>
    northing, easting, UTM Zone : these can be used for high density grids<br>
  */
-    struct ATSComments_80 {
+struct ATSComments_80 {
     char          Client           [16];        //!< 000h  UTF-8 storage, used in EDI
     char          Contractor       [16];        //!< 010h  UTF-8 storage, used in EDI
     char          Area             [16];        //!< 020h  UTF-8 storage, used in EDI
@@ -216,7 +216,12 @@ std::unordered_map<std::string, std::string> ats_sys_names = {
     {"adu09", "ADU-09u"},
     {"adu10", "ADU-10e"},
     {"adu11", "ADU-11e"},
-    {"adu12", "ADU-12e"}
+    {"adu12", "ADU-12e"},
+    {"adu07e", "ADU-08e"},
+    {"adu08e", "ADU-08e"},
+    {"adu10e", "ADU-10e"},
+    {"adu11e", "ADU-11e"},
+    {"adu12e", "ADU-12e"}
 };
 
 /*!
@@ -342,9 +347,27 @@ struct ats_header_json {
         return (this->atsh.iLat_ms / 1000.) / 3600.;
     }
 
+    /*!
+     * \brief set_double_lat
+     * \param d ISO 6709, North latitude is positive, decimal fractions
+     */
+    void set_lat(const double &d) {
+        this->atsh.iLat_ms = static_cast<int32_t>(d * 3600000.);
+
+    }
+
 
     double get_lon() const {
         return (this->atsh.iLong_ms / 1000.) / 3600.;
+    }
+
+
+    /*!
+     * \brief set_double_lon
+     * \param d ISO 6709, East longitude is positive, decimal fractions
+     */
+    void set_lon(const double &d) {
+        this->atsh.iLong_ms = static_cast<int32_t>(d * 3600000.);
     }
 
     /*!
@@ -353,6 +376,10 @@ struct ats_header_json {
      */
     double get_elev() const {
         return (this->atsh.iElev_cm / 100.);
+    }
+
+    void set_elev(const double &d) {
+        this->atsh.iElev_cm = static_cast<int32_t>(d * 100.);
     }
 
     /*!
@@ -388,8 +415,8 @@ struct ats_header_json {
         double diplength = this->pos2length();
 
         // avoid calculation noise
-        if (fabs(tx) < 0.001) tx = 0.0;
-        if (fabs(ty) < 0.001) ty = 0.0;
+        if (std::fabs(tx) < 0.001) tx = 0.0;
+        if (std::fabs(ty) < 0.001) ty = 0.0;
 
         // many user do not set coordiantes for the coils
         // Hx
@@ -530,7 +557,7 @@ struct ats_header_json {
 
     /*!
      * @brief Set the filter bank object
-     * 
+     *
      * @param adu_gen like 7 8 9 10 11
      * @return size_t successfully created filters
      */
@@ -702,17 +729,20 @@ struct ats_header_json {
 
         try {
             Name = ats_sys_names.at(str1);
-        } catch (...) {
+        }
+        catch (...) {
             Name = "unkown";
         }
         try {
             TypeNo = ats_sys_types.at(Name);
-        } catch (...) {
+        }
+        catch (...) {
             TypeNo = 0;
         }
         try {
             GMSno = ats_sys_family.at(Name);
-        } catch (...) {
+        }
+        catch (...) {
             GMSno = 0;
         }
 
@@ -740,7 +770,7 @@ struct ats_header_json {
         this->header["cal_version"] =                   static_cast<int64_t>(this->atsh.cal_version);
         this->header["cal_start_address"] =             static_cast<int64_t>(this->atsh.cal_start_address);
 
-        // bitfield; filterbank was set above      
+        // bitfield; filterbank was set above
         this->header["LF_filters"] =                    get_lf_filter_strings();
         this->header["UTMZone"] =                       mstr::clean_bc_str(this->atsh.UTMZone, 12);
         this->header["system_cal_datetime"] =           static_cast<int64_t>(this->atsh.system_cal_datetime);
@@ -750,7 +780,7 @@ struct ats_header_json {
         this->header["powerline1"] =                    static_cast<double>(this->atsh.powerline1);
         this->header["powerline2"] =                    static_cast<double>(this->atsh.powerline2);
 
-        // bitfield; filterbank was set above 
+        // bitfield; filterbank was set above
         this->header["HF_filters"] =                    get_hf_filter_strings();
         this->header["external_gain"] =                 static_cast<double>(this->atsh.external_gain);
         this->header["ADB_board_type"] =                mstr::clean_bc_str(this->atsh.ADB_board_type, 4);

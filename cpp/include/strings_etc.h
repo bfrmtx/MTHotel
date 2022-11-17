@@ -477,7 +477,7 @@ std::string iso8601_time_t(const time_t &ti, const int iso_0_date_1_time_2 = 0, 
     time += zero_fill_field(tt.tm_min, 2) + ":";
 
     time += zero_fill_field(tt.tm_sec, 2);
-    if (fabs(fracs) > zero_frac) {
+    if (std::fabs(fracs) > zero_frac) {
         sfracs = std::to_string(fracs);
         sfracs.erase(0,1);
         removeTrailingCharacters(sfracs, '0');

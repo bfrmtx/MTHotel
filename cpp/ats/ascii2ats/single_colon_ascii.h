@@ -4,9 +4,9 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <algorithm>
 #include <filesystem>
-
-// min max?
+#include <cmath>
 
 std::vector<double> read_single_colon_ascii(const std::filesystem::path filename) {
     std::vector<double> data;
@@ -35,10 +35,9 @@ std::vector<double> read_single_colon_ascii(const std::filesystem::path filename
         data.push_back(std::stod(str));
     }
 
-
     return data;
-
 }
+
 
 
 #endif // SINGLE_COLON_ASCII_H

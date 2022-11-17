@@ -435,8 +435,12 @@ int main(int argc, char* argv[])
         }
         try
         {
-            std::filesystem::copy((clone_dir / "doc"), (survey->survey_path() / "reports"), std::filesystem::copy_options::skip_existing | std::filesystem::copy_options::recursive);
-            std::filesystem::copy((clone_dir / "shell"), (survey->survey_path() / "shell"), std::filesystem::copy_options::skip_existing | std::filesystem::copy_options::recursive);
+            if (std::filesystem::exists((clone_dir / "doc"))) {
+                std::filesystem::copy((clone_dir / "doc"), (survey->survey_path() / "reports"), std::filesystem::copy_options::skip_existing | std::filesystem::copy_options::recursive);
+            }
+            if (std::filesystem::exists((clone_dir / "shell"))) {
+                std::filesystem::copy((clone_dir / "shell"), (survey->survey_path() / "shell"), std::filesystem::copy_options::skip_existing | std::filesystem::copy_options::recursive);
+            }
         }
 
         catch (std::exception& e)

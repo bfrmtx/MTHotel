@@ -1,177 +1,223 @@
 #include <iostream>
 #include <algorithm>
 #include <memory>
+#include <functional>
 #include <string>
 #include <vector>
 #include <complex>
 #include <chrono>
 #include <filesystem>
 #include <algorithm>
-
+#include <survey.h>
 #include "atss.h"
 #include "freqs.h"
-
-#include "sqlite_handler.h"
-
 #include <fftw3.h>
+
+#include "raw_spectra.h"
+
 
 #include "matplotlibcpp.h"
 namespace plt = matplotlibcpp;
 
-template<typename Iterator>
-void cleanup(Iterator first, Iterator last, const double treat_as_zero) {
-
-    while (first != last) {
-        if (abs(*first) < treat_as_zero) *first = 0.0;
-        ++first;
-    }
-
-
-}
-
-template<typename Iterator>
-void cleanup_cplx(Iterator first, Iterator last, const double treat_as_zero) {
-
-    while (first != last) {
-        if (abs(real(*first)) < treat_as_zero) *first = complex<double>(0.0, imag(*first));
-        if (abs(imag(*first)) < treat_as_zero) *first = complex<double>(real(*first), 0.0);
-
-        ++first;
-    }
-
-
-}
 
 int main()
 {
 
-    std::filesystem::path lllf("/home/bfr/devel/ats_data/three_fgs/indi/ts/S25f/meas_2017-04-17_07-34-36/295_ADU-07e_C001_R000_TEy_16s");
-    std::filesystem::path llf("/home/bfr/devel/ats_data/three_fgs/indi/ts/S25f/meas_2017-04-17_07-32-14/295_ADU-07e_C001_R000_TEy_4s");
-    std::filesystem::path lf("/home/bfr/devel/ats_data/three_fgs/indi/ts/S25f/meas_2017-04-17_07-31-38/295_ADU-07e_C001_R000_TEy_1Hz");
-    // long window vs zero padded
-    std::filesystem::path lllfl("/home/bfr/devel/ats_data/three_fgs/indi/ts/S25f/meas_2017-04-17_07-34-36/295_ADU-07e_C001_R000_TEy_16s");
-    std::filesystem::path lllfzp("/home/bfr/devel/ats_data/three_fgs/indi/ts/S25f/meas_2017-04-17_07-34-36/295_ADU-07e_C001_R000_TEy_16s");
-
-
-
-    std::vector<std::filesystem::path> files;
-    files.push_back(lllf);
-    files.push_back(llf);
-    files.push_back(lf);
-    files.push_back(lllfl);
-    files.push_back(lllfzp);
-
-
-    std::vector<std::shared_ptr<channel>> channels;
-    std::vector<fftw_plan> plans(files.size());
-    std::vector<std::vector<double>> ins(files.size());
-    std::vector<std::vector<std::complex<double>>> outs(files.size());
-    std::vector<std::vector<std::complex<double>>> ress(files.size());
-    std::vector<std::vector<double>> ampls(files.size());
-
 
     size_t i;
-    size_t lw = 3;
-    size_t zp = 4;
+    size_t lw = 3;  // long window
+    size_t zp = 4;  // zero padded ... last file
+    fs::path home_dir(getenv("HOME"));
+    auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/three_fgs/indi");
+    auto station_26 = survey->get_station("S26"); // that is a shared pointer from survey
+
+    // standard windows 512 x 4
+    auto run_002 = station_26->get_run(2);
+    auto run_003 = station_26->get_run(3);
+    auto run_004 = station_26->get_run(4);
+
+    std::vector<std::shared_ptr<channel>> channels;
+    std::string channel_type("Ey");
+
+    // shared pointer from survey
+    try {
+        channels.emplace_back(run_004->get_channel(channel_type));
+        channels.emplace_back(run_003->get_channel(channel_type));
+        channels.emplace_back(run_002->get_channel(channel_type));
 
 
-    for (const auto &file : files) {
-        channels.emplace_back(std::make_shared<channel>(file));
+        // a new instance - not a copy/link; the readbuffer is inside the class
+        channels.emplace_back(std::make_shared<channel>(run_003->get_channel(channel_type)));
+        channels.emplace_back(std::make_shared<channel>(run_003->get_channel(channel_type)));
     }
+    catch (const std::string &error) {
 
+        std::cerr << error << std::endl;
+        return EXIT_FAILURE;
+
+    }
     std::vector<std::shared_ptr<fftw_freqs>> fft_freqs;
+    std::vector<std::shared_ptr<raw_spectra>> raws;
 
     i = 0;
-    size_t wl = 1024;
-    for (const auto &chan : channels) {
-        if (i == lw) wl = 4096;
-        if (i == zp) wl = 2048;
-        fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), wl));
+    size_t wl = 1024, fixwl;
+    fixwl = 1024;
+    // create the fftw interface with individual window length and read length
+    for (auto &chan : channels) {
+        if (i == lw)  fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), fixwl, fixwl));
+        else if (i == zp) fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), 4096, fixwl)); // first 4096
+        else fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), wl, wl));
         wl *= 4;
         ++i;
+        chan->set_fftw_plan(fft_freqs.back());
+        // here each channel is treated as single result - by default it would contain 5 channels
+        raws.emplace_back(std::make_shared<raw_spectra>(fft_freqs.back()));
 
     }
+
 
     double f_or_s;
     std::string unit;
 
+    // example usage  fft with auto & channels
     auto fft_res_iter = fft_freqs.begin();
     for (const auto &chan : channels) {
         auto fft_fres = *fft_res_iter++;
         mstr::sample_rate_to_str(chan->get_sample_rate(), f_or_s, unit);
-        std::cout << "use sample rates of " << f_or_s << " " << unit <<  " wl:" << fft_fres->get_wl() << std::endl;
+        std::cout << "use sample rates of " << f_or_s << " " << unit <<  " wl:" << fft_fres->get_wl() << "  read length:" << fft_fres->get_rl() <<  std::endl;
+        chan->set_fftw_plan(fft_fres);
 
 
     }
 
+    try {
+        std::vector<std::jthread> threads;
+        for (auto &chan : channels) {
+            //chan->read_all_fftw();
+            threads.emplace_back(std::jthread (&channel::read_all_fftw, chan, false, nullptr));
+        }
 
 
-    i = 0;
-    for (const auto &freqs : fft_freqs) {
-        std::cout << std::endl;
-        ins[i].resize(freqs->get_wl());
-        outs[i].resize(freqs->get_fl());
-        plans[i] = fftw_plan_dft_r2c_1d(ins[i].size(), &ins[i][0], reinterpret_cast<fftw_complex*>(&outs[i][0]) , FFTW_ESTIMATE);
-        freqs->set_lower_upper_f(1.0/8192.0, 0.011, true);
-        freqs->vplot(freqs->get_frequencies(), 12, 12, true);
-        std::cout << std::endl;
-        ++i;
+    }
+    catch(...) {
+        std::cerr << "could not fft atss files" << std::endl;
+        return EXIT_FAILURE;
 
     }
 
-    i = 0;
-    for (const auto &chan : channels) {
-        std::ifstream ifile;
-        chan->prepare_read_atss(ifile);
-        chan->read_data(ins[i], ifile, true);
-        if (ins[i].size()) std::cout << "read " << ins[i].size() << std::endl;
-        detrend_and_hanning<double>(ins[i].begin(), ins[i].end());
-        ++i;
-    }
 
-    for (const auto &p : plans) {
-        fftw_execute(p);
+    fft_res_iter = fft_freqs.begin();
+    for (auto &chan : channels) {
+        auto fft_fres = *fft_res_iter++;
+        // set the range of fft spectra to use here
+        fft_fres->set_lower_upper_f(1.0/2048.0, 0.011, true); // cut off spectra
+        chan->prepare_to_raw_spc(fft_fres, false);
     }
 
     i = 0;
-    size_t j;
-    for (const auto &freqs : fft_freqs) {
-        ress[i] = freqs->trim_fftw_result(outs[i]);
-        std::cout << "xamps" << std::endl;
-
-//        j = 0;
-//        std::vector<double> dt(ress[i].size());
-//        for (const auto v : ress[i]) dt[j++] = std::abs(v);
-//        freqs->vplot(dt, 12, 12, true);
-
-        freqs->scale(ress[i]);
-        j = 0;
-        ampls[i].resize(ress[i].size());
-        for (const auto v : ress[i]) ampls[i][j++] = std::abs(v);
-
-       // freqs->vplot(ampls[i], 12, 12, true);
-
-        ++i;
+    for (auto &chan : channels) {
+        raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->is_remote, chan->is_emap);
     }
+
     std::cout << std::endl;
 
+    //std::vector<double> target_freqs {1./1024.};
+    std::vector<double> target_freqs;
+
+    for (size_t j = 1; j < fft_freqs[0]->get_frequencies().size()-9;  ) {
+        target_freqs.push_back(fft_freqs[0]->get_frequencies().at(j));
+        j += 8;
+    }
+
+    try {
+        for (auto &fftr : fft_freqs) {
+            fftr->set_target_freqs(target_freqs, 0.15);
+
+            fftr->create_parzen_vectors();
+
+
+        }
+        for (auto &fftr : fft_freqs) {
+            std::vector<std::jthread> threads;
+            threads.emplace_back(std::jthread (&fftw_freqs::create_parzen_vectors, fftr));
+           // fftr->create_parzen_vectors();
+
+        }
+
+        i = 0;
+        for (auto &rw : raws) {
+            rw->advanced_stack_all(0.7);
+            ++i;
+        }
+
+        i = 0;
+        for (auto &rw : raws) {
+            rw->parzen_stack_all();
+            ++i;
+        }
+    }
+
+
+    //   fft_freqs[0]->set_target_freqs(target_freqs, 0.15);
+
+    //    try {
+    //        fft_freqs[0]->create_parzen_vectors();
+    //        raws[0]->parzen_stack_all();
+    //    }
+
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+        return EXIT_FAILURE;
+    }
+
+
+
+    plt::title("FFT Zero Padding");
+
+    //    plt::named_loglog("zero padded", fft_freqs[zp]->get_frequencies(), raws.at(zp)->get_abs_sa_spectra(channel_type),  "bo");
+    //    plt::loglog(fft_freqs[lw]->get_frequencies(), raws.at(lw)->get_abs_sa_spectra(channel_type), "r+");
+
+
+    //    plt::loglog(fft_freqs[0]->get_frequencies(), raws.at(0)->get_abs_sa_spectra(channel_type));
+    //    plt::loglog(fft_freqs[1]->get_frequencies(), raws.at(1)->get_abs_sa_spectra(channel_type));
+    //    plt::loglog(fft_freqs[2]->get_frequencies(), raws.at(2)->get_abs_sa_spectra(channel_type));
+
     i = 0;
-    for (const auto &freqs : fft_freqs) {
-        std::cout << "amplitudes:" << std::endl;
-        freqs->vplot(ampls[i++], 12, 12, true);
-        std::cout << std::endl;
+    std::vector<std::string> marks{"b-", "r-", "g-", "c-", "m-"};
+    for (const auto &rws : raws) {
+
+        std::string lab =  "fs: " +  std::to_string(rws->fft_freqs->get_sample_rate()) + " wl:" + std::to_string((int)rws->fft_freqs->get_wl()) + " rl:" + std::to_string((int)rws->fft_freqs->get_rl());
+        if (i == zp) lab += " zp";
+        //if (i == lw) lab += " lw";
+        //plt::named_loglog(lab, rws->fft_freqs->get_selected_frequencies(), rws->get_abs_sa_prz_spectra(channel_type), marks.at(i));
+        plt::named_loglog(lab, rws->fft_freqs->get_frequencies(), rws->get_abs_sa_spectra(channel_type), marks.at(i));
+
+        ++i;
 
     }
-//    for (auto &v : ampls[lw]) v /= 4096;
-//    for (auto &v : ampls[zp]) v /= 8192;
-//    for (auto &v : ampls[0]) v /= 1024;
-    fft_freqs[lw]->vplot(ampls[lw], 12, 12, true);
-    plt::title("Sample figure");
-    plt::loglog(fft_freqs[0]->get_frequencies(), ampls[0]);
-    plt::loglog(fft_freqs[lw]->get_frequencies(), ampls[lw]);
-    plt::loglog(fft_freqs[zp]->get_frequencies(), ampls[zp]);
 
+    std::vector<std::string> marks2{"b--", "r--", "g--", "c--", "m--"};
+    i = 0;
+    for (const auto &rws : raws) {
+
+        std::string lab =  "pz fs: " +  std::to_string(rws->fft_freqs->get_sample_rate()) + " wl:" + std::to_string((int)rws->fft_freqs->get_wl()) + " rl:" + std::to_string((int)rws->fft_freqs->get_rl());
+        if (i == zp) lab += " zp";
+        //if (i == lw) lab += " lw";
+        plt::named_loglog(lab, rws->fft_freqs->get_selected_frequencies(), rws->get_abs_sa_prz_spectra(channel_type), marks2.at(i));
+        //plt::named_loglog(lab, rws->fft_freqs->get_frequencies(), rws->get_abs_sa_spectra(channel_type), marks2.at(i));
+
+        ++i;
+
+    }
+
+
+    plt::ylabel("x / Sqrt(Hz)");
+    plt::xlabel("f [Hz]");
+    plt::legend();
     plt::show();
+
+
+    //std::cin.get();
 
     /*
 
@@ -182,7 +228,7 @@ int main()
     if (sample_rate < 4) invert = true;
     fftw_freqs freqs(sample_rate, 8192);
 
-    std::filesystem::path fileex("/survey-master/indi/ts/S25f/meas_2017-04-17_07-34-36/295_ADU-07e_C000_R000_TEx_16s.json");
+    std::filesystem::path fileex("/survey-master/indi/stations/S26/run_004/295_ADU-07e_C000_TEx_16s.json");
     channel ex(fileex);
 
     std::vector<double> f;
@@ -294,8 +340,8 @@ int main()
         std::cout << val << std::endl;
     }
     */
-            std::cout << std::endl;
+        // std::cout << std::endl;
 
 
-    return 0;
+        return 0;
 }

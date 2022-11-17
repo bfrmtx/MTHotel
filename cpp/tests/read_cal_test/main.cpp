@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     }
 
     if (cal != nullptr) {
-        cal->write_file("/home/bfr");
+        cal->write_file(fs::path(getenv("HOME")));
     }
 
     std::cout  << endl << "finish write " << endl;

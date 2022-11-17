@@ -5,18 +5,23 @@
 #include <iomanip>
 #include <list>
 #include <vector>
+#include <queue>
+#include <bitset>
 #include <string>
+#include <string_view>
 #include <cstddef>
 #include <cstdlib>
 #include <fstream>
 #include <mutex>
 #include <shared_mutex>
-#include "atsheader.h"
-#include "files_dirs.h"
 #include "json.h"
 #include "cal_base.h"
 #include "strings_etc.h"
 #include <filesystem>
+#include <atmm.h>
+#include <freqs.h>
+
+#include <fftw3.h>
 
 
 using jsn = nlohmann::ordered_json;
@@ -173,6 +178,8 @@ public:
 
 
     bool operator == (const p_timer& rhs) const {
+        if (this->sample_rate != rhs.sample_rate) return false;
+        if (this->samples != rhs.samples) return false;
         return ((this->tt == rhs.tt) && (this->fracs == rhs.fracs) );
     }
 
@@ -263,6 +270,14 @@ public:
 class channel {
 
 public:
+
+    /*!
+     * \brief channel create an empty (unusable) channel
+     */
+    channel() {
+
+    }
+
     /*!
      * \brief channel most common mimimum constructor
      * \param channel_type like Ex, Ex, ... Hx ..
@@ -434,11 +449,9 @@ public:
     }
 
 
-
-
     // simple set and get
 
-    void set_serial(const std::integral auto& ser) {
+    void set_serial(const auto& ser) {
         this->serial = size_t(std::abs(ser));
     }
 
@@ -468,18 +481,20 @@ public:
         return this->filepath_wo_ext;
     }
 
-    bool set_run(const std::integral auto& run) {
+    bool set_run(const auto& run) {
 
         bool success = false;
         std::filesystem::path newrun = this->filepath_wo_ext.parent_path().parent_path();
         if (newrun == filepath_wo_ext.root_path()) {
             std::string err_str = std::string("channel::") + __func__;
-            err_str += "::can not create run, I am a root dir";
+            err_str += "::can not create run, I am a root dir" ;
             throw err_str;
             return success;
         }
         newrun /=  mstr::run2string(run);
-        if (!std::filesystem::exists(newrun)) success =  std::filesystem::create_directory(newrun);
+        if (!std::filesystem::exists(newrun)) {
+            success =  std::filesystem::create_directory(newrun);
+        }
         else success = true;
 
         if (!success) {
@@ -500,7 +515,7 @@ public:
         return mstr::string2run(srun.filename().c_str());
     }
 
-    void set_channel_no(const std::integral auto& channel_no) {
+    void set_channel_no(const auto& channel_no) {
         this->channel_no = size_t(std::abs(channel_no));
     }
 
@@ -582,6 +597,19 @@ public:
     double tmp_lsb = 1.0;
     std::filesystem::path tmp_orgin;
 
+    std::vector<double> ts_slice;                       //!< data slice in time domain
+    std::vector<double> ts_slice_padded;                //!< data slice in time domain with zero padding
+    std::vector<std::complex<double>> spc_slice;        //!< data slice in spectral domain
+    std::vector<double> ampl_slice;                     //!< single spectra amplitude slice, e.g. for plotting
+    std::vector<double> ts_slice_inv;                   //!< data slice in time domain after ftt, calibration, inverse fft
+    std::queue<std::vector<std::complex<double>>> qspc; //!< spectra queue
+    std::vector<std::vector<std::complex<double>>> spc; //!< spectra vector
+
+    std::ifstream infile;                               //!< read binary data
+    std::ofstream outfile;                              //!< write binary data
+    fftw_plan plan;
+    bool is_remote = false;
+    bool is_emap = false;
 
     /*!
      * \brief set_lat_lon_elev according to ISO 6709, +/- 90, +/- 180, elevation in meter
@@ -634,7 +662,7 @@ public:
             err_str += "::can not write header, file not open ";
             err_str += filepath.string();
             throw err_str;
-            std::filesystem::path();
+            return std::filesystem::path();
         }
 
         file << std::setw(2) << head << std::endl;
@@ -645,23 +673,6 @@ public:
         //std::cout << std::setw(2) << head << std::endl;
     }
 
-    //    bool prepare_write_atss(const std::filesystem::path &directory_path_only, std::ofstream &file) {
-
-    //        std::filesystem::path filepath(std::filesystem::canonical(directory_path_only));
-    //        filepath /= this->filename(".atss");
-    //        file.open (filepath, std::ios::out | std::ios::trunc | std::ios::binary);
-
-    //        if (!file.is_open()) {
-    //            file.close();
-    //            std::string err_str = __func__;
-    //            err_str += "::file not open ";
-    //            err_str += filepath.string();
-    //            throw err_str;
-    //            return false;
-    //        }
-
-    //        return file.is_open();
-    //    }
 
     bool write_data(const std::vector<double> &data, std::ofstream &file) const {
         // write a slice in case
@@ -691,47 +702,54 @@ public:
 
         return true;
     }
+    // std::copy(ve.begin(), ve.end(), std::ostreambuf_iterator<char>(outfile));
 
-    //    void write_bin(const std::vector<double> &data, std::ofstream &file) {
-
-
-    //        for (auto dat : data) {
-    //            file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
+    //   vector<bool> out_ve((std::istreambuf_iterator<char>(infile)),
+    // std::istreambuf_iterator<char>());
+    // while( !infile.eof() )
+    // out_ve.push_back(infile.get());
+    //    bool write_selection(const std::vector<bool>, std::ofstream &file) {
+    //        if (file.is_open()) {
+    //            for (auto dat : data) {
+    //                file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
+    //            }
+    //            return true;
     //        }
+    //        else {
+    //            std::filesystem::path filepath = this->filepath_wo_ext;
+    //            filepath.replace_extension(".atmm");
+    //            file.open (filepath, std::ios::out | std::ios::trunc | std::ios::binary);
+
+    //            if (!file.is_open()) {
+    //                file.close();
+    //                std::string err_str = __func__;
+    //                err_str += "::file not open ";
+    //                err_str += filepath.string();
+    //                throw err_str;
+    //                return false;
+    //            }
+    //            for (auto dat : data) {
+    //                file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
+    //            }
+    //        }
+
+    //        return true;
     //    }
 
-    bool prepare_read_atss(std::ifstream &file) {
-
-        bool ok = false;
-
-        try {
-            ok = std::filesystem::exists(this->get_atss_filepath());
-        }
-        catch (std::filesystem::filesystem_error& e) {
-            std::string err_str = __func__;
-            std::cerr << err_str << " " << e.what() << std::endl;
-            return false;
-        }
-
-        file.open(this->get_atss_filepath(), std::ios::in | std::ios::binary);
-        if (!file.is_open()) {
-            file.close();
-            std::string err_str = __func__;
-            err_str += "::can not open, file not open ";
-            err_str += this->get_atss_filepath().string();
-            throw err_str;
-            return false;
-        }
-
-        return ok;
-    }
 
 
 
-    size_t read_data(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
 
-        if (file.is_open()) {
-            return this->read_bin(data, file, read_last_chunk);
+    /*!
+     * \brief read_data
+     * \param read_last_chunk
+     * \return file position or -1 in case of fail or unexpected end (-1 should NOT happen when read for fft)
+     */
+
+    int64_t read_data(const bool read_last_chunk = false, const std::shared_ptr<atmm> &sel = nullptr) {
+
+        if (this->infile.is_open()) {
+            return this->read_bin(this->ts_slice, this->infile, read_last_chunk);
         }
 
         else {
@@ -743,24 +761,146 @@ public:
             catch (std::filesystem::filesystem_error& e) {
                 std::string err_str = __func__;
                 std::cerr << err_str << " " << e.what() << std::endl;
-                return 0;
+                return -1;
             }
 
-            file.open(this->get_atss_filepath(), std::ios::in | std::ios::binary);
-            if (!file.is_open()) {
-                file.close();
+            if (!ok) return -1;
+
+            this->infile.open(this->get_atss_filepath(), std::ios::in | std::ios::binary);
+            if (!this->infile.is_open()) {
+                this->infile.close();
                 std::string err_str = __func__;
                 err_str += "::can not open, file not open ";
                 err_str += this->get_atss_filepath().string();
                 throw err_str;
-                return 0;
+                return -1;
             }
             else {
-                return this->read_bin(data, file, read_last_chunk);
+                return this->read_bin(this->ts_slice, this->infile, read_last_chunk);
             }
         }
 
-        return 0;
+        return -1;
+    }
+
+    /*!
+     * \brief read_all_fftw that includes the COMPLETE spectra inclusive DC part and Nyquist
+     * \param read_last_chunk false for MT processing - last chunk has != read length (fft) size
+     * \param sel atmm selection vector 0 = not excluded, 1 excluded from reading / processing
+     */
+    void read_all_fftw(const bool read_last_chunk = false, const std::shared_ptr<atmm> &sel = nullptr) {
+
+        int64_t reads = 0;
+        do {
+
+            reads = this->read_data(read_last_chunk, sel);
+            detrend_and_hanning<double>(this->ts_slice.begin(), this->ts_slice.end());
+            if (this->ts_slice_padded.size()) {
+                //this->ts_slice_padded.insert(this->ts_slice_padded.begin(), this->ts_slice.cbegin(), this->ts_slice.cend());
+                for (size_t i = 0; i < ts_slice.size(); ++i ) {
+                    this->ts_slice_padded[i] = ts_slice[i];
+                }
+            }
+            fftw_execute(this->plan);
+            this->qspc.push(this->spc_slice);
+
+        } while (reads > 0);
+
+
+    }
+
+    void read_all_fftw_gussian_noise(const std::vector<double> double_noise) {
+
+        if (!this->ts_slice.size()) return;
+        if (double_noise.size() < this->ts_slice.size()) return;
+
+        auto itb = double_noise.cbegin();
+        auto ite = double_noise.cbegin();
+        std::advance(ite, this->ts_slice.size());
+        this->ts_slice.assign(itb, ite);
+
+
+        do {
+            detrend_and_hanning<double>(this->ts_slice.begin(), this->ts_slice.end());
+            if (this->ts_slice_padded.size()) {
+                //this->ts_slice_padded.insert(this->ts_slice_padded.begin(), this->ts_slice.cbegin(), this->ts_slice.cend());
+                for (size_t i = 0; i < ts_slice.size(); ++i ) {
+                    this->ts_slice_padded[i] = ts_slice[i];
+                }
+            }
+            fftw_execute(this->plan);
+            this->qspc.push(this->spc_slice);
+            if (std::distance(ite, double_noise.cend()) > (int64_t) (this->ts_slice.size() -1)) {
+                std::advance(itb, this->ts_slice.size());
+                std::advance(ite, this->ts_slice.size());
+                this->ts_slice.assign(itb, ite);
+            }
+            else break;
+
+
+        } while (std::distance(ite, double_noise.cend()));
+
+
+    }
+
+
+    /*!
+     * \brief simple_stack_all
+     * \return non calibrated stacked complex spectra
+     */
+    std::vector<std::complex<double>> simple_stack_all(const std::shared_ptr<fftw_freqs> &fft_freqs) {
+        std::vector<std::complex<double>> sa;
+        sa.resize(this->qspc.front().size());
+        double dn = 0;
+        while (!this->qspc.empty()) {
+            std::vector<std::complex<double>> v = this->qspc.front();
+            size_t i = 0;
+            for (auto &val : v) {
+                sa[i++] += val;
+
+            }
+            this->qspc.pop();
+            dn++;
+        }
+        for (auto &val : sa) val /= dn;
+        fft_freqs->scale(sa);
+        return sa;
+    }
+
+
+    void prepare_to_raw_spc(const std::shared_ptr<fftw_freqs> &fft_freqs, const bool bcal = true ) {
+
+        //this->spc.resize(this->qspc.front().size());
+        size_t j = 0;
+        while (!this->qspc.empty()) {
+            spc.emplace_back(fft_freqs->trim_fftw_result(this->qspc.front()));
+            if (bcal && !j) {
+                // create cal
+            }
+            if (bcal) {
+                // cal
+            }
+            fft_freqs->scale(spc.back());
+            this->qspc.pop();
+            ++j;
+        }
+
+        return;
+    }
+
+
+
+    void set_fftw_plan(const std::shared_ptr<fftw_freqs> &fftwf) {
+        this->ts_slice.resize(fftwf->get_rl());
+        this->spc_slice.resize(fftwf->get_fl());
+        if (fftwf->get_rl() == fftwf->get_wl()) {
+            this->plan = fftw_plan_dft_r2c_1d(fftwf->get_wl(), &this->ts_slice[0], reinterpret_cast<fftw_complex*>(&this->spc_slice[0]) , FFTW_ESTIMATE);
+        }
+        if (fftwf->get_wl() > fftwf->get_rl()) {
+            this->ts_slice_padded.resize(fftwf->get_wl(), 0.0);
+            this->plan = fftw_plan_dft_r2c_1d(fftwf->get_wl(), &this->ts_slice_padded[0], reinterpret_cast<fftw_complex*>(&this->spc_slice[0]) , FFTW_ESTIMATE);
+        }
+
     }
 
     size_t samples(const std::filesystem::path &filepath_wo_ext = "")  {
@@ -776,7 +916,6 @@ public:
         filepath.replace_extension(".atss");
 
         uintmax_t xx =  0;
-
 
         try {
             xx = std::filesystem::file_size(filepath);
@@ -801,12 +940,19 @@ public:
 
 private:
 
-    size_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
+    /*!
+     * \brief read_bin binary core routine
+     * \param data data slice to read
+     * \param file ifstream
+     * \param read_last_chunk - false in case of fft, true incase you want to read all and the last data vector is smaller than the pervious ones
+     * \return -1 in case of failure
+     */
+    int64_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
 
         // too much checking ?
         if (file.peek() == EOF ) {
             data.resize(0);
-            return 0;
+            return -1;
         }
 
         size_t i = 0;
@@ -821,14 +967,34 @@ private:
         }
         else if ((i == 1) || !i) {
             data.resize(0);
+            return -1;
         }
 
-        return data.size();
+        return file.tellg();
     }
 
 };  // end channel class
 
+bool operator == (const std::shared_ptr<channel>& lhs, const std::shared_ptr<channel>& rhs) {
+    if (lhs->latitude != rhs->latitude) return false;
+    if (lhs->longitude != rhs->longitude) return false;
+    if (lhs->elevation != rhs->elevation) return false;
+    if (lhs->angle != rhs->angle) return false;
+    if (lhs->dip != rhs->dip) return false;
+    if (lhs->units != rhs->units) return false;
+    if (lhs->source != rhs->source) return false;
+    if (lhs->serial != rhs->serial) return false;
+    if (lhs->system != rhs->system) return false;
+    if (lhs->channel_no != rhs->channel_no) return false;
+    if (lhs->channel_type != rhs->channel_type) return false;
+    return lhs->pt == rhs->pt;
 
+}
+
+
+auto compare_channel_name_lt  = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+    return lhs->filename() < rhs->filename();
+};
 
 auto compare_channel_start_lt = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
     return lhs->pt < rhs->pt;
@@ -861,9 +1027,6 @@ auto same_run = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<ch
     return ( (lhs->pt == rhs->pt) && (lhs->get_sample_rate() == rhs->get_sample_rate() && (lhs->get_channel_no() != rhs->get_channel_no()) ) );
 
 };
-
-
-
 
 #endif // ATSS_H
 

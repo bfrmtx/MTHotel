@@ -58,7 +58,7 @@ public:
     size_t i = 0;
     for (auto const &fd : this->f) {
             fm[i] = fd;
-            am[i] = (abs(this->cap.at(i)) / 1000.0) / fd;
+        am[i] = (std::fabs(this->cap.at(i)) / 1000.0) / fd;
             pm[i] = std::arg(this->cap.at(i)) * (180.0 / M_PI);
             ++i;
     }

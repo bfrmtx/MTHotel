@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 clear
 PROJ='MTHotel'
 INTSTALLDIR='/usr/local/mthotel'
@@ -14,11 +14,11 @@ BUILD_DIR=$HOME'/build/'$PROJ'_cpp/build'
 #
 mkdir -p $BUILD_DIR
 # GCC
-#cmake -S $SRC_DIR -B $BUILD_DIR -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_COMPILER=g++ -DCMAKE_INSTALL_PREFIX=$INTSTALLDIR -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=RELEASE
+# -DCMAKE_VERBOSE_MAKEFILE=ON
 #
 cmake -S $SRC_DIR -B $BUILD_DIR -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_COMPILER=g++ -DCMAKE_INSTALL_PREFIX=$INTSTALLDIR -DCMAKE_BUILD_TYPE=RELEASE
 #
-# in case make a single thread (maybe facingin dependency errors) remove --parallel 8
+# in case make a single thread (maybe facing dependency errors) remove --parallel 8
 #
 cmake --build $BUILD_DIR --parallel 8
 cmake --install $BUILD_DIR

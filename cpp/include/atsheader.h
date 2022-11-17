@@ -307,6 +307,15 @@ public:
         return ints_doubles.size();
     }
 
+    double calc_lsb_from_dbl_vec_mV(const std::vector<double> &ddata)  {
+        double lsb = 0.0;
+        auto minmax = minmax_element(ddata.cbegin(), ddata.cend());
+        lsb = (2 * (minmax.second - minmax.first)) / pow(2, 32);
+        this->header.lsbval = lsb;
+        return this->header.lsbval;
+
+    }
+
     template <typename T>
     size_t ats_write_ints_doubles(const double &lsbval, const std::vector<T> &ints_doubles, const bool close_after_write = false) {
         if (!this->file.is_open())
@@ -468,17 +477,17 @@ private:
 
 bool compare_ats_pos(const std::shared_ptr<atsheader> &lhs, const std::shared_ptr<atsheader> &rhs) {
     float limit = 0.01;
-    if (std::abs(lhs->header.x1 - rhs->header.x1) > limit)
+    if (std::fabs(lhs->header.x1 - rhs->header.x1) > limit)
         return false;
-    if (std::abs(lhs->header.y1 - rhs->header.y1) > limit)
+    if (std::fabs(lhs->header.y1 - rhs->header.y1) > limit)
         return false;
-    if (std::abs(lhs->header.z1 - rhs->header.z1) > limit)
+    if (std::fabs(lhs->header.z1 - rhs->header.z1) > limit)
         return false;
-    if (std::abs(lhs->header.x2 - rhs->header.x2) > limit)
+    if (std::fabs(lhs->header.x2 - rhs->header.x2) > limit)
         return false;
-    if (std::abs(lhs->header.y2 - rhs->header.y2) > limit)
+    if (std::fabs(lhs->header.y2 - rhs->header.y2) > limit)
         return false;
-    if (std::abs(lhs->header.z2 - rhs->header.z2) > limit)
+    if (std::fabs(lhs->header.z2 - rhs->header.z2) > limit)
         return false;
     return true;
 }

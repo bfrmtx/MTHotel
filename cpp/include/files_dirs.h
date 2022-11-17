@@ -60,7 +60,7 @@ T first_gap( std::vector<T> &v )
 /*!
  * \brief scan_runs returns the firts free number of run_001 ... run_003, run_004
  * \param station_dir
- * \return here would be 2
+ * \return here it would be 2
  */
 size_t scan_runs(const std::filesystem::path& station_dir) {
     std::vector<size_t> iruns;
@@ -111,6 +111,8 @@ void CopyRecursive(const std::filesystem::path& src, const std::filesystem::path
         std::cout << e.what();
     }
 }
+
+
 
 /*
 // https://stackoverflow.com/questions/51431425/how-to-recursively-copy-files-and-directories

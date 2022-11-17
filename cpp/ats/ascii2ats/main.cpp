@@ -23,7 +23,7 @@ namespace fs = std::filesystem;
 // run tests
 // -toasccii -outdir /tmp/aa  /survey-master/Northern_Mining
 // -outdir /tmp/aa -channel_type Ex
-// -channel_type Ex -sample_rate 0.125  -outdir /home/bfr/devel/ats_data/ascii/ascii_out/ /home/bfr/devel/ats_data/ascii/ascii_in/084_V01_C00_R001_TEx_BL_8S.tsdata
+// -channel_type Ex -sample_rate 0.125 -start 1250774616  -outdir /home/bfr/devel/ats_data/ascii/ats_out/ /home/bfr/devel/ats_data/ascii/ascii_in/084_V01_C00_R001_TEx_BL_8S.tsdata
 /*
    string path = "/";
 
@@ -39,13 +39,25 @@ int main(int argc, char* argv[])
     auto atsh = std::make_shared<atsheader>();
     auto atsj = std::make_shared<ats_header_json>(atsh->header, "");
 
-    bool create_measdir = false;
+    bool create_measdir = true;
     fs::path outdir;
     fs::path infile;
     size_t run = 99;
 
     std::string channel_type = "";
     // load the according template
+
+    if (argc < 3) {
+        std::cout << "usage: (example)" << std::endl;
+        std::cout << "-channel_type Ex "  << std::endl;
+        std::cout << "-sample_rate 0.125 "  << std::endl;
+        std::cout << "-start 1250774616  "  << std::endl;
+
+        std::cout << "-outdir /home/bfr/devel/ats_data/ascii/ats_out/ "  << std::endl;
+        std::cout <<"/home/bfr/devel/ats_data/ascii/ascii_in/084_V01_C00_R001_TEx_BL_8S.tsdata"  << std::endl;
+
+        return EXIT_FAILURE;
+    }
 
     // scan the rest
     unsigned l = 1;
@@ -95,6 +107,15 @@ int main(int argc, char* argv[])
         }
 
 
+        if (marg.compare("-lat") == 0) {
+            atsj->set_lat(atof(argv[++l]));
+        }
+        if (marg.compare("-lon") == 0) {
+            atsj->set_lon(atof(argv[++l]));
+        }
+        if (marg.compare("-elev") == 0) {
+            atsj->set_elev(atof(argv[++l]));
+        }
 
 
 
@@ -127,8 +148,6 @@ int main(int argc, char* argv[])
 
     }
 
-
-
     atsj->filename = outdir;
     atsj->set_ats_header();
 
@@ -136,10 +155,26 @@ int main(int argc, char* argv[])
     atsh->header = atsj->atsh;
 
     //std::cout << atsh->gen_xmlfilename() << "  " << atsh->get_ats_filename(run) << std::endl;
-std::cout <<  atsh->get_ats_filename(run) << std::endl;
+    std::cout <<  atsh->get_ats_filename(run) << " " << atsj->measdir() <<  std::endl;
+    auto ddata = read_single_colon_ascii(infile);
+    atsh->header.samples = ddata.size();
+    try {
+        if (create_measdir) {
+            outdir /= atsj->measdir();
+            if (!fs::exists(outdir)) fs::create_directory(outdir);
+            outdir = fs::canonical(outdir);
+        }
+        atsh->set_new_filename(outdir /atsh->get_ats_filename(run) );
+        atsh->calc_lsb_from_dbl_vec_mV(ddata);
+        atsh->write(false);  // CHANGE
+        atsh->ats_write_ints_doubles(atsh->header.lsbval, ddata, true);
+    }
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+    }
 
-    atsh->set_new_filename("/tmp/aa/test.ats");
-    //atsh->write(true);  // CHANGE
+
+
 
 
 

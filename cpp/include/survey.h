@@ -2,20 +2,28 @@
 #define SURVEY_H
 
 #include "atss.h"
+#include "files_dirs.h"
 
 // ************************************************************************  R U N *******************************************************************
 
+static const size_t prep_channels = 12;  //!< assume an amount of channels per run
 
 /*!
  * \brief The run_d class - the main survey class should be in a try block and keep the locks
+ * a run contains ONE ENTETY - so one sampling frequency at one start time ONE LOGGER
  */
 class run_d {
 
 public:
 
+    /*!
+     * \brief run_d
+     * \param run_dir create a dir or...
+     * \param no_create ... scan a dir (default)
+     */
     run_d(const std::filesystem::path &run_dir, const bool no_create = true) : run_dir(run_dir) {
 
-        this->channels.reserve(10);
+        this->channels.reserve(prep_channels);
         if (!no_create) {
             std::filesystem::create_directory(this->run_dir);
         }
@@ -25,11 +33,29 @@ public:
         this->run_dir = std::filesystem::canonical(this->run_dir);
     }
 
+    /*!
+     * \brief run_d constructor as deep copy
+     * \param rhs shared pointer of a run
+     */
+    run_d(const std::shared_ptr<run_d> &rhs) {
+        this->run_dir = std::filesystem::canonical(rhs->run_dir);
+        this->channels.reserve(prep_channels);
+        for (const auto &chan : rhs->channels) {
+            this->channels.emplace_back(std::make_shared<channel>(chan));
+        }
+    }
+
     ~run_d() {
         this->clear();
     }
 
+    /*!
+     * \brief add_channel
+     * \param new_channel
+     * \return run path in case of success - otherwise empty path
+     */
     std::filesystem::path add_channel(std::shared_ptr<channel> &new_channel) {
+
 
         if (!this->channels.size()) {
             new_channel->set_dir(this->run_dir);
@@ -41,6 +67,7 @@ public:
                 if (same_run(chan, new_channel)) {
                     new_channel->set_dir(this->run_dir);
                     this->channels.push_back(new_channel);
+                    std::sort(this->channels.begin(), this->channels.end(), compare_channel_name_lt);
                     return this->run_dir;
                 }
             }
@@ -61,24 +88,25 @@ public:
     }
 
     size_t scan() {
-
         this->clear();
+        this->channels.reserve(prep_channels);
         for (auto const& atssfile : fs::recursive_directory_iterator(this->run_dir)) {
             if (std::filesystem::is_regular_file(atssfile) && atssfile.path().extension() == ".json") {
-                std::filesystem::path atss(atssfile);
+                std::filesystem::path atss(atssfile);           // construct an atss file from json
                 atss.replace_extension(".atss");
-                if (std::filesystem::exists(atss)) {
+                if (std::filesystem::exists(atss)) {            // check the corresponding atss
                     // std::cout << atssfile << " " << atss.filename() << '\n';
-                    this->channels.emplace_back(std::make_shared<channel>(atssfile));
+                    this->channels.emplace_back(std::make_shared<channel>(atssfile)); // add file
                     // if test ..
                 }
             }
+            std::sort(this->channels.begin(), this->channels.end(), compare_channel_name_lt);
         }
 
         return this->channels.size();
     }
 
-    std::shared_ptr<channel> ch_first()  {
+    std::shared_ptr<channel> ch_first() const {
         if (!channels.size()) {
             std::string err_str = __func__;
             err_str += "Station " + this->run_dir.parent_path().filename().string() + " " + this->run_dir.filename().string() +" is empty";
@@ -86,6 +114,33 @@ public:
         }
         return channels.at(0);
     }
+
+    std::shared_ptr<channel> get_channel(const std::string &chtype) const {
+        if (!channels.size()) {
+            std::string err_str = __func__;
+            err_str += "Station " + this->run_dir.parent_path().filename().string() + " " + this->run_dir.filename().string() +" is empty";
+            throw err_str;
+        }
+
+        for (auto &ch : this->channels) {
+            if (ch->get_channel_type() == chtype) return ch;
+        }
+
+        return std::make_shared<channel>();
+
+    }
+
+    std::vector<std::shared_ptr<channel>> get_channels() const {
+        return this->channels;
+    }
+
+    bool check_sample_rate(const double &sample_rate) const {
+        if (!this->channels.size()) return false;
+        if (this->channels.at(0)->get_sample_rate() == sample_rate) return true;
+        return false;
+
+    }
+
 
     void ls() const {
         size_t i = 0;
@@ -105,6 +160,21 @@ public:
 
 
 };
+
+bool operator == (const std::shared_ptr<run_d>& lhs, const std::shared_ptr<run_d>& rhs) {
+    if (lhs->run_dir != rhs->run_dir) return false;
+    if (lhs->channels.size() != rhs->channels.size()) return false;
+    std::vector<std::shared_ptr<channel>> channels_lhs(lhs->channels);
+    std::vector<std::shared_ptr<channel>> channels_rhs(rhs->channels);
+    std::sort(channels_lhs.begin(), channels_lhs.end(), compare_channel_name_lt);
+    std::sort(channels_rhs.begin(), channels_rhs.end(), compare_channel_name_lt);
+
+    for (size_t i = 0; i < channels_lhs.size(); ++i) {
+        if (channels_lhs.at(i) != channels_rhs.at(i)) return false;
+    }
+
+    return true;
+}
 
 
 // ************************************************************************ S T A T I O N *******************************************************************
@@ -129,6 +199,21 @@ public:
             this->scan();
         }
         this->station_dir = std::filesystem::canonical(this->station_dir);
+    }
+
+    /*!
+     * \brief station_d constructor as deep copy
+     * \param rhs
+     */
+    station_d(const std::shared_ptr<station_d> &rhs) {
+
+        this->station_dir = std::filesystem::canonical(rhs->station_dir);
+
+        this->runs.reserve(rhs->runs.size());
+        for (const auto &r : rhs->runs) {
+            this->runs.emplace_back(std::make_shared<run_d>(r));
+        }
+
     }
 
     ~station_d() {
@@ -194,7 +279,7 @@ public:
         std::filesystem::path spath;
         auto srun = mstr::run2string(run_no);
         spath = this->station_dir / srun;
-        std::shared_ptr<run_d> run;
+
 
         if (!std::filesystem::exists(spath)) {
             std::string err_str = __func__;
@@ -206,7 +291,18 @@ public:
                 if (r->get_run_no() == run_no) return r;
             }
         }
+        std::shared_ptr<run_d> run;
         return run;
+    }
+
+    std::vector<std::shared_ptr<run_d>> get_sample_rate(const double &sample_rate) const {
+
+        std::vector<std::shared_ptr<run_d>> runs_s;
+        for (const auto &run : runs) {
+            if (run->check_sample_rate(sample_rate)) runs_s.emplace_back(run);
+        }
+        return runs_s;
+
     }
 
     void ls() const {
@@ -232,6 +328,9 @@ public:
 
 
 };
+
+
+
 
 // ************************************************************************ S U R V E Y *******************************************************************
 
@@ -267,6 +366,23 @@ public:
 
         if (tree_size) this->all_channels.reserve(tree_size);
 
+    }
+
+
+    /*!
+     * \brief survey_d deep copy constructor
+     * \param rhs
+     */
+    survey_d(const std::shared_ptr<survey_d> &rhs) {
+
+        this->survey_dir = std::filesystem::canonical(rhs->survey_dir);
+        this->stations.reserve(rhs->stations.size());
+        for (const auto &s : rhs->stations) {
+            this->stations.emplace_back(std::make_shared<station_d>(s));
+        }
+        for (const auto &chan : rhs->all_channels) {
+            this->all_channels.emplace_back(std::make_shared<channel>(chan));
+        }
     }
 
     void collect(const std::shared_ptr<channel> &chan) {

@@ -13,6 +13,8 @@
 #include <iterator>
 #include <functional>
 
+#include "prz_vector.h"
+
 template <typename T, typename Iterator> void detrend_and_hanning (Iterator first, const Iterator last) {
     // old procmt detrend - adopted by Martin
     // declaration of variables
@@ -95,18 +97,26 @@ class fftw_freqs {
 
 public:
 
-    fftw_freqs(const double &sample_rate, const size_t &wl) : wl(wl), sample_rate(sample_rate){
+    fftw_freqs(const double &sample_rate, const size_t &wl, const size_t &rl) : wl(wl), rl(rl), sample_rate(sample_rate){
 
-            // this indices have a size of 513 - that is the output from fftw
-            this->idx_range.first = 0; // DC part is at [0]
-            this->idx_range.second = this->wl/2 + 1; // if wl = 1024, Nyquist is at [512] which is the 513th element
-            //this->wincal = sqrt(1.0/(this->sample_rate * double(this->wl/2) ) );
-            double fwl = double(wl);
-            this->wincal = sqrt(1.0 / (0.5 * fwl * 0.5) ) * 2.0;
+        if (rl > wl) {
+            std::string err_str = __func__;
+            err_str += ":: read length must be equal or smaller than window length";
+            throw err_str;
+        }
+        // this indices have a size of 513 - that is the output from fftw
+        this->idx_range.first = 0; // DC part is at [0]
+        this->idx_range.second = this->wl/2 + 1; // if wl = 1024, Nyquist is at [512] which is the 513th element
+        double frl = double(rl) / 2.;
+        this->wincal = sqrt(1./(sample_rate * frl) );
     }
 
     size_t get_wl() const {
         return this->wl;
+    }
+
+    size_t get_rl() const {
+        return this->rl;
     }
 
     size_t get_fl() const {
@@ -293,8 +303,8 @@ public:
         // the machine epsilon has to be scaled to the magnitude of the values used
         // and multiplied by the desired precision in ULPs (units in the last place)
         return std::fabs(x-y) <= std::numeric_limits<double>::epsilon() * std::fabs(x+y) * ulp
-               // unless the result is subnormal
-               || std::fabs(x-y) < std::numeric_limits<double>::min();
+                // unless the result is subnormal
+                || std::fabs(x-y) < std::numeric_limits<double>::min();
     }
 
     template<class T>
@@ -317,7 +327,7 @@ public:
         std::cout << std::endl;
     }
 
-    size_t set_target_freqs(const std::vector<double> &fin) {
+    size_t set_target_freqs(const std::vector<double> &fin, const double &prz_radius) {
         double lf =  ( double(this->idx_range.first) * (this->sample_rate/double(this->wl)));
         double hf =  ( double(this->idx_range.second) * (this->sample_rate/double(this->wl)));
         bool lf_set = false;
@@ -331,35 +341,53 @@ public:
                 lf_set = true;
             }
 
-            if (lf_set) this->targets.emplace_back(f);
+            if (lf_set) this->target_freqs.emplace_back(f);
             if (f > hf) break;
         }
 
-        return targets.size();
+        this->prz_radius = prz_radius;
+
+        return target_freqs.size();
 
     }
 
     std::vector<double> get_target_freqs() const {
-        return this->targets;
+        return this->target_freqs;
     }
 
-    void scale(std::vector<std::complex<double>> &fftresult) const {
+    void scale(auto &fftresult) const {
         for (auto &c : fftresult) c *= this->wincal;
 
     }
 
-    void hanning(std::vector<std::complex<double>> &fftresult) const {
+
+    size_t create_parzen_vectors() {
+        return parzen_vector(this->get_frequencies(), this->target_freqs, this->prz_radius,
+                      this->selected_freqs, this->parzendists);
 
     }
 
+    std::vector<double> get_selected_frequencies() const {
+        return this->selected_freqs;
+    }
+
+
+
+    double prz_radius = 0.1;
+    std::vector<double> selected_freqs;
+    std::vector<double> target_freqs;
+    std::vector<std::vector<double>> parzendists;
+
 private:
 
-    std::vector<double> targets;
-    size_t wl = 0;
+    size_t wl = 0;                      //!< window length of fft
+    size_t rl = 0;                      //!< read length of time series data; if same like wl: standard fft, if greater: zero padding
     double sample_rate = 0.0;
 
     std::pair<size_t, size_t> idx_range {0, SIZE_MAX};
     double wincal = 0.0;
+
+
 
 };
 

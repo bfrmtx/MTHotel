@@ -17,30 +17,6 @@ bool is_pow2 (const size_t wl)
     return  ((wl & -wl) == wl);
 }
 
-template<typename Iterator>
-void cleanup(Iterator first, Iterator last, const double treat_as_zero) {
-
-    while (first != last) {
-        if (abs(*first) < treat_as_zero) *first = 0.0;
-        ++first;
-    }
-
-
-}
-
-template<typename Iterator>
-void cleanup_cplx(Iterator first, Iterator last, const double treat_as_zero) {
-
-    while (first != last) {
-        if (abs(real(*first)) < treat_as_zero) *first = complex<double>(0.0, imag(*first));
-        if (abs(imag(*first)) < treat_as_zero) *first = complex<double>(real(*first), 0.0);
-
-        ++first;
-    }
-
-
-}
-
 size_t next_power_of_two(const size_t n){
     size_t target, m;
     if (n > (SIZE_MAX - 1) / 2)
