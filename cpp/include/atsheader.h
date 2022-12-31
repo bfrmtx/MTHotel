@@ -48,11 +48,11 @@ for (const auto& part : pathToShow)
 */
 
 
-
-    /*!
+/*!
  * \brief The atsheader class is a class for reading & writing the BINARY struct ATSHeader_80 and ATSComments_80 <br>
  * It has bee seperated from the binary structs
  */
+
     class atsheader {
 
 public:
@@ -206,8 +206,8 @@ public:
         std::string ct;
 
         if (sizeof(this->header.channel_type) > 1) {
-        atsfile += this->header.channel_type[0];
-        atsfile += this->header.channel_type[1];
+            atsfile += this->header.channel_type[0];
+            atsfile += this->header.channel_type[1];
         }
 
         if (this->header.sample_rate < 4096.5)  atsfile += "_BL_";
@@ -616,9 +616,9 @@ void ats_channel_sort(std::vector<std::shared_ptr<atsheader>> &atsheaders) {
 
 
     new_atsheaders.swap(atsheaders);
-    // do we have unkown channels ?
+    // do we have unknown channels ?
     if (new_atsheaders.size()) {
-         for (auto &atsh : atsheaders) {
+        for (auto &atsh : atsheaders) {
             new_atsheaders.push_back(atsh);
         }
     }

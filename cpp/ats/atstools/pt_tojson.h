@@ -21,13 +21,20 @@
 #include "cal_base.h"
 #include "read_cal.h"
 
-void collect_atsheaders(std::shared_ptr<atsheader> &ats, std::unique_ptr<survey_d> &survey) {
+void collect_atsheaders(const std::shared_ptr<atsheader> &ats, std::unique_ptr<survey_d> &survey, const int64_t &shift_start_time = 0) {
 
     ats->read();            // get the binary data from the header; keep file open
     auto atsj = std::make_shared<ats_header_json>(ats->header,  ats->path());
     atsj->get_ats_header(); // fill the json
     // atsj->header["sensor_type"].get<std::string>())
-    auto chan = std::make_shared<channel>(atsj->header["channel_type"], atsj->header["sample_rate"], atsj->start_datetime(), 0.0);
+    // that seems not to be thread safe - the date int -> string -> int ... may be a problem
+    //auto chan = std::make_shared<channel>(atsj->header["channel_type"], atsj->header["sample_rate"], atsj->start_datetime(), 0.0);
+    //
+    if (shift_start_time) {
+        atsj->header["start"] = int64_t(atsj->header["start"]) + shift_start_time;
+    }
+    auto chan = std::make_shared<channel>();
+    chan->from_ats(atsj->header["channel_type"], atsj->header["sample_rate"], atsj->secs_since_1970(), 0.0);
     chan->set_base_file(atsj->header["SystemType"], atsj->header["serial_number"], atsj->header["channel_number"]);
     chan->set_lat_lon_elev(atsj->get_lat(), atsj->get_lon(), atsj->get_elev());
     chan->angle = atsj->pos2angle();
@@ -76,7 +83,7 @@ void collect_atsheaders(std::shared_ptr<atsheader> &ats, std::unique_ptr<survey_
 }
 
 
-void fill_survey_tree(std::unique_ptr<survey_d> &survey, const size_t &index) {
+void fill_survey_tree(const std::unique_ptr<survey_d> &survey, const size_t &index) {
 
     auto chan = survey->get_channel_from_all(index);
     if (chan->get_atss_filepath().empty()) return;
@@ -132,11 +139,13 @@ void fill_survey_tree(std::unique_ptr<survey_d> &survey, const size_t &index) {
         auto atsj = std::make_shared<ats_header_json>(ats->header,  ats->path());
         atsj->get_ats_header(); // fill the json
         auto meta = atsj->write_meta(meta_run, chan->filename(".json"));
-        auto new_xml = meta_run /= atsj->xml_path().filename();
-        //std::cout << meta << " written" << std::endl;
 
-        std::filesystem::copy_file(atsj->xml_path(), new_xml, std::filesystem::copy_options::skip_existing);
+        if (std::filesystem::exists(atsj->xml_path())) {
+            auto new_xml = meta_run /= atsj->xml_path().filename();
+            //std::cout << meta << " written" << std::endl;
 
+            std::filesystem::copy_file(atsj->xml_path(), new_xml, std::filesystem::copy_options::skip_existing);
+        }
     }
 
 }

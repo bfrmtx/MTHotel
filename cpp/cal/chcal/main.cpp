@@ -67,14 +67,24 @@ int main(int argc, char **argv)
 
         if (marg.compare("-outdir") == 0) {
             outdir = std::string(argv[++l]);
+            try {
+                if (!fs::exists(outdir)) fs::create_directories(outdir);
+            }
+            catch(...) {
+                std::cerr << "could not create outdir " << argv[l-1] << std::endl;
+                return EXIT_FAILURE;
+            }
+            outdir = fs::canonical(outdir);
         }
         if ((marg.compare("-help") == 0) || (marg.compare("--help") == 0)) {
             std::cout << "Sensor and Serial are derived from filename ONLY!" << std::endl;
             std::cout << "-toxml file.txt" << std::endl;
             std::cout << "-toxml *.txt "<< std::endl;
-            std::cout << "-tojson file.txt" << std::endl;
-            std::cout << "-tojson *.txt "<< std::endl;
-            std::cout << " use -outdir /targetdir [options] *txt in order to place the results at a different place" << std::endl;
+            std::cout << "-new_to_old -tojson file.txt" << std::endl;
+            std::cout << "-new_to_old -tojson *.txt "<< std::endl;
+            std::cout << "you may want to call "<< std::endl;
+            std::cout << "-outdir /home/newcal -new_to_old -tojson *.txt "<< std::endl;
+            std::cout << " use -outdir [options] *txt in order to place the results at a different place" << std::endl;
             std::cout << "-keep_name should be active for txt -> xml when using script files ancient style" << std::endl;
             std::cout << "otherwise file name would be " << std::endl;
 
@@ -97,6 +107,17 @@ int main(int argc, char **argv)
             }
             std::cout << outdir << " created" << std::endl;
         }
+    }
+
+    if (tojson && !old_to_new) {
+        std::cout << "  ***************************************************************   "<< std::endl;
+        std::cout << "    "<< std::endl;
+        std::cout << "  YOU MAY WANTED TO CALL  "<< std::endl;
+        std::cout << "-outdir /home/newcal -old_to_new -tojson *.txt "<< std::endl;
+        std::cout << "-old_to_new -tojson file.txt" << std::endl;
+        std::cout << "    "<< std::endl;
+        std::cout << "  ***************************************************************   "<< std::endl;
+
     }
 
     std::vector<std::shared_ptr<calibration>> cals;
@@ -286,6 +307,16 @@ int main(int argc, char **argv)
 
 
 
+    if (tojson && !old_to_new) {
+        std::cout << "  ***************************************************************   "<< std::endl;
+        std::cout << "    "<< std::endl;
+        std::cout << "  YOU MAY WANTED TO CALL  "<< std::endl;
+        std::cout << "-outdir /home/newcal -old_to_new -tojson *.txt "<< std::endl;
+        std::cout << "-old_to_new -tojson file.txt" << std::endl;
+        std::cout << "    "<< std::endl;
+        std::cout << "  ***************************************************************   "<< std::endl;
+
+    }
 
     std::cout  << endl << "finish write " << endl;
 

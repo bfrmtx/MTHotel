@@ -12,10 +12,10 @@
 #include "about_system.h"
 #include "atsheader_def.h"
 #include "atsheader.h"
-#include "atmheader.h"
 #include "atsheader_xml.h"
 #include "cal_base.h"
 #include "../xml/tinyxmlwriter/tinyxmlwriter.h"
+#include "../cal/read_cal/read_cal.h"
 
 // std::vector<std::shared_ptr<calibration>> calibs;       //!< all JSON style calibrations
 // std::multimap<std::string, fs::path> xmls_and_files;    //!< create a multimap which ats files belong to the same XML
@@ -43,6 +43,8 @@ void xml_from_ats (std::multimap<std::string, fs::path> &xmls_and_files, const s
     }
 
     std::cout << std::endl;
+    auto rd = std::make_shared<read_cal>();
+    std::string old_sensor_type;
     for (size_t i = 0; i < new_xml_files.size(); ++i) {
         try {
             std::cout << "set " << i << std::endl;
@@ -57,6 +59,8 @@ void xml_from_ats (std::multimap<std::string, fs::path> &xmls_and_files, const s
                 auto atsx = std::make_shared<atsheader>(set->second);
                 json_into_xml.emplace_back(std::make_shared<ats_header_json>(atsx->header, atsx->path()));
                 json_into_xml.back()->get_ats_header();
+                old_sensor_type = json_into_xml.back()->header["sensor_type"];
+                json_into_xml.back()->header["sensor_type"] = rd->get_sensor_name(json_into_xml.back()->header["sensor_type"]);
 
             }
             std::cout << std::endl;
@@ -118,7 +122,7 @@ void xml_from_ats (std::multimap<std::string, fs::path> &xmls_and_files, const s
 
 
                 for (const auto &cal : calibs) {
-                    if ((cal->sensor == atsj->header["sensor_type"].get<std::string>()) && (cal->serial == atsj->header["sensor_serial_number"]) ) {
+                    if (((cal->sensor == atsj->header["sensor_type"].get<std::string>()) || cal->sensor == old_sensor_type) && (cal->serial == atsj->header["sensor_serial_number"]) ) {
                         cal_found = true;
                         if (!cal_head_added) cal->add_to_xml_1_of_3(tix);
                         cal_head_added = true;
@@ -127,6 +131,7 @@ void xml_from_ats (std::multimap<std::string, fs::path> &xmls_and_files, const s
 
                     }
                 }
+                cal_head_added = false;
                 if (cal_found) {
                     // if found we had at least one entry
                     calibs.at(0)->add_to_xml_3_of_3(tix);

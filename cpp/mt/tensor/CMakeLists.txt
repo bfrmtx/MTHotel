@@ -13,7 +13,6 @@ set(HEADERS_INSTALL mt_tensor.h)
 add_library(${PROJECT_NAME} SHARED ${SOURCES}  ${HEADERS_INSTALL})
 
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC SQLITE_HANDLER_LIBRARY)
 target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_INSTALL_PREFIX}/lib )
 target_link_libraries(${PROJECT_NAME} sqlite3)
 

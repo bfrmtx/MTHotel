@@ -40,6 +40,22 @@ struct calibration
         this->clear();
     }
 
+    calibration(const std::string &sensor, const uint64_t &serial, const CalibrationType ct) : sensor(sensor), serial(serial) {
+
+        this->set_format(ct, false);
+    }
+
+    std::string gen_json_filename_from_blank(const ChopperStatus &chopper) {
+        std::string fname(this->sensor);
+        fname += "_" + mstr::zero_fill_field(this->serial, 4);
+        if (chopper == ChopperStatus::on) fname += "_chopper_on.json";
+        else if (chopper == ChopperStatus::off) fname += "_chopper_off.json";
+        else fname += ".json";
+
+        return fname;
+    }
+
+
 
     calibration(const std::shared_ptr<calibration> &rhs) {
 
@@ -353,6 +369,8 @@ struct calibration
 
         return this->f.size();
     }
+
+
 
     /*!
      * \brief read_file JSON format

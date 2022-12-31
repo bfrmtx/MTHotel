@@ -332,6 +332,9 @@ struct ats_header_json {
         int64_t utc = static_cast<int64_t>(this->atsh.start);
         return mstr::iso8601_time_t(utc);
     }
+    int64_t secs_since_1970() const {
+        return static_cast<int64_t>(this->atsh.start);
+    }
 
 
     std::string stop_time() const {
@@ -731,7 +734,7 @@ struct ats_header_json {
             Name = ats_sys_names.at(str1);
         }
         catch (...) {
-            Name = "unkown";
+            Name = "unknown";
         }
         try {
             TypeNo = ats_sys_types.at(Name);
@@ -825,7 +828,15 @@ struct ats_header_json {
         this->atsh.channel_number       = static_cast<uint8_t>(this->header["channel_number"]);
         this->atsh.chopper              = static_cast<uint8_t>(this->header["chopper"]);
         strncpy(this->atsh.channel_type, this->header["channel_type"].get<std::string>().c_str(), sizeof(this->atsh.channel_type));
-        strncpy(this->atsh.sensor_type, this->header["sensor_type"].get<std::string>().c_str(), sizeof(this->atsh.sensor_type));
+
+        // the header can onöy hold 6 chars here and MFS-06e is stored as MFS06e - so check it
+        std::string tmp_sensor = this->header["sensor_type"].get<std::string>();
+        if ( (mstr::contains(tmp_sensor, "MFS")) || (mstr::contains(tmp_sensor, "SHFT")) || (mstr::contains(tmp_sensor, "FGS")) ) {
+            if (mstr::contains(tmp_sensor, "-"))  tmp_sensor.erase(remove(tmp_sensor.begin(), tmp_sensor.end(), '-'), tmp_sensor.end());
+        }
+        if ((tmp_sensor.size() > 6) && (mstr::contains(tmp_sensor, "-")) ) tmp_sensor.erase(remove(tmp_sensor.begin(), tmp_sensor.end(), '-'), tmp_sensor.end());
+
+        strncpy(this->atsh.sensor_type, tmp_sensor.c_str(), sizeof(this->atsh.sensor_type));
         this->atsh.sensor_serial_number = static_cast<int16_t>(this->header["sensor_serial_number"]);
 
         this->atsh.x1                   = static_cast<float>(this->header["x1"]);

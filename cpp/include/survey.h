@@ -126,7 +126,7 @@ public:
             if (ch->get_channel_type() == chtype) return ch;
         }
 
-        return std::make_shared<channel>();
+        return nullptr;
 
     }
 
@@ -291,8 +291,8 @@ public:
                 if (r->get_run_no() == run_no) return r;
             }
         }
-        std::shared_ptr<run_d> run;
-        return run;
+
+        return nullptr;
     }
 
     std::vector<std::shared_ptr<run_d>> get_sample_rate(const double &sample_rate) const {
@@ -395,7 +395,9 @@ public:
 
         std::sort(this->all_channels.begin(), this->all_channels.end(), compare_channel_start_lt);
         if (!std::filesystem::exists(this->survey_dir)) {
-
+            std::string err_str = __func__;
+            err_str += "Survey dir " + this->survey_dir.string() + " does not exists";
+            throw err_str;
         }
         std::map<std::string, int> all_stations;
         int i = 0;
@@ -421,6 +423,11 @@ public:
     std::shared_ptr<channel> get_channel_from_all(const size_t &index) const {
         std::shared_lock lock(this->station_lock);
         return this->all_channels.at(index);
+    }
+
+    std::vector<std::shared_ptr<channel>> get_all_channels() const {
+        std::shared_lock lock(this->station_lock);
+        return this->all_channels;
     }
 
     ~survey_d() {

@@ -11,13 +11,10 @@
 #include <mutex>
 #include <shared_mutex>
 
-#include "xml_from_ats.h"
 
 #include "atsheader_def.h"
 #include "atsheader.h"
 #include "atmheader.h"
-#include "atsheader_xml.h"
-#include "cal_base.h"
 
 void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std::filesystem::path &outdir_base, std::multimap<std::string, std::filesystem::path> &xmls_and_files, std::vector<std::filesystem::path> &xml_files,
                    std::mutex &mtx_dir, std::mutex &mtx_xml, std::mutex &mtx_xml_files) {

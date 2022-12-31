@@ -29,7 +29,7 @@ int main()
     auto run = station->get_run(1);
 
     std::vector<std::shared_ptr<channel>> channels;
-    std::string channel_type("Hy");
+    std::string channel_type("Ex");
 
     // shared pointer from survey
     try {
@@ -114,13 +114,13 @@ int main()
         raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->is_remote, chan->is_emap);
     }
 
-//    for (auto &raw : raws) {
-//        raw->simple_stack_all();
-//    }
-
     for (auto &raw : raws) {
-        raw->advanced_stack_all(0.8);
+        raw->simple_stack_all();
     }
+
+//    for (auto &raw : raws) {
+//        raw->advanced_stack_all(0.8);
+//    }
 
 
 

@@ -27,6 +27,8 @@ int main()
     size_t i;
     size_t lw = 3;  // long window
     size_t zp = 4;  // zero padded ... last file
+    const double median_limit = 0.7;
+
     fs::path home_dir(getenv("HOME"));
     auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/three_fgs/indi");
     auto station_26 = survey->get_station("S26"); // that is a shared pointer from survey
@@ -79,7 +81,7 @@ int main()
     double f_or_s;
     std::string unit;
 
-    // example usage  fft with auto & channels
+    // example iterator usage  fft with auto & channels
     auto fft_res_iter = fft_freqs.begin();
     for (const auto &chan : channels) {
         auto fft_fres = *fft_res_iter++;
@@ -90,20 +92,30 @@ int main()
 
     }
 
+    // ******************************** read all fft *******************************************************************************
+
+
     try {
         std::vector<std::jthread> threads;
         for (auto &chan : channels) {
             //chan->read_all_fftw();
             threads.emplace_back(std::jthread (&channel::read_all_fftw, chan, false, nullptr));
         }
-
-
     }
-    catch(...) {
-        std::cerr << "could not fft atss files" << std::endl;
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
         return EXIT_FAILURE;
-
     }
+    catch (const std::exception &e) {
+        std::cerr << "error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+    catch (...) {
+        std::cerr << "could not read all channels" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+
 
 
     fft_res_iter = fft_freqs.begin();
@@ -111,8 +123,43 @@ int main()
         auto fft_fres = *fft_res_iter++;
         // set the range of fft spectra to use here
         fft_fres->set_lower_upper_f(1.0/2048.0, 0.011, true); // cut off spectra
-        chan->prepare_to_raw_spc(fft_fres, false);
     }
+
+    // ******************************** queue to vector *******************************************************************************
+
+    try {
+        std::vector<std::jthread> threads;
+
+        fft_res_iter = fft_freqs.begin();
+        for (auto &chan : channels) {
+            auto fft_fres = *fft_res_iter++;
+            //chan->prepare_to_raw_spc(fft_fres, false);
+            // we have a pointer and don't need std::ref
+            threads.emplace_back(std::jthread (&channel::prepare_to_raw_spc, chan, fft_fres, false));
+
+        }
+    }
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+        return EXIT_FAILURE;
+
+    }
+    catch (const std::exception &e) {
+        std::cerr << "error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+
+    }
+    catch (...) {
+        std::cerr << "could not dequeue all channels" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+
+
+
+
+
+
 
     i = 0;
     for (auto &chan : channels) {
@@ -129,47 +176,87 @@ int main()
         j += 8;
     }
 
+    // ******************************** parzen vectors *******************************************************************************
+
     try {
         for (auto &fftr : fft_freqs) {
             fftr->set_target_freqs(target_freqs, 0.15);
-
             fftr->create_parzen_vectors();
-
-
         }
+        std::vector<std::jthread> threads;
+
         for (auto &fftr : fft_freqs) {
-            std::vector<std::jthread> threads;
             threads.emplace_back(std::jthread (&fftw_freqs::create_parzen_vectors, fftr));
-           // fftr->create_parzen_vectors();
+            // fftr->create_parzen_vectors();
 
         }
+    }
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+        return EXIT_FAILURE;
 
-        i = 0;
-        for (auto &rw : raws) {
-            rw->advanced_stack_all(0.7);
-            ++i;
-        }
+    }
+    catch (const std::exception &e) {
+        std::cerr << "error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
 
-        i = 0;
-        for (auto &rw : raws) {
-            rw->parzen_stack_all();
-            ++i;
-        }
+    }
+    catch (...) {
+        std::cerr << "could not allocate all channels" << std::endl;
+        return EXIT_FAILURE;
     }
 
 
-    //   fft_freqs[0]->set_target_freqs(target_freqs, 0.15);
+    // ******************************** stack all *******************************************************************************
 
-    //    try {
-    //        fft_freqs[0]->create_parzen_vectors();
-    //        raws[0]->parzen_stack_all();
-    //    }
+    try {
+        std::vector<std::jthread> threads;
+        for (auto &rw : raws) {
+            threads.emplace_back(std::jthread (&raw_spectra::advanced_stack_all, rw, std::ref(median_limit)));
+            //rw->advanced_stack_all(0.7);
+        }
+    }
+    catch (const std::string &error) {
+        std::cerr << error << std::endl;
+        return EXIT_FAILURE;
+
+    }
+    catch (const std::exception &e) {
+        std::cerr << "error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+
+    }
+    catch (...) {
+        std::cerr << "could not stack all channels" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // ******************************** parzen stack *******************************************************************************
+    try {
+        std::vector<std::jthread> threads;
+        for (auto &rw : raws) {
+            threads.emplace_back(std::jthread (&raw_spectra::parzen_stack_all, rw));
+            //rw->parzen_stack_all();
+        }
+    }
+
 
     catch (const std::string &error) {
         std::cerr << error << std::endl;
         return EXIT_FAILURE;
+
+    }
+    catch (const std::exception &e) {
+        std::cerr << "error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+
+    }
+    catch (...) {
+        std::cerr << "could not allocate all channels" << std::endl;
+        return EXIT_FAILURE;
     }
 
+    // ******************************** cont *******************************************************************************
 
 
     plt::title("FFT Zero Padding");
@@ -183,7 +270,7 @@ int main()
     //    plt::loglog(fft_freqs[2]->get_frequencies(), raws.at(2)->get_abs_sa_spectra(channel_type));
 
     i = 0;
-    std::vector<std::string> marks{"b-", "r-", "g-", "c-", "m-"};
+    std::vector<std::string> marks{"b-", "r-", "g-", "c-", "m-", "b--", "r--", "g--", "c--", "m--"};
     for (const auto &rws : raws) {
 
         std::string lab =  "fs: " +  std::to_string(rws->fft_freqs->get_sample_rate()) + " wl:" + std::to_string((int)rws->fft_freqs->get_wl()) + " rl:" + std::to_string((int)rws->fft_freqs->get_rl());
@@ -193,6 +280,7 @@ int main()
         plt::named_loglog(lab, rws->fft_freqs->get_frequencies(), rws->get_abs_sa_spectra(channel_type), marks.at(i));
 
         ++i;
+        if (i == marks.size()) i = 0;
 
     }
 

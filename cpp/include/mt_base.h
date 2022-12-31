@@ -12,6 +12,7 @@
 // #define _USE_MATH_DEFINES // for C++ and MSVC
 #include <cmath>
 
+#include "base_constants.h"
 
 /*!
  * @file mt_base.h contains all definitions used; all 64bit in order to be comparable with standard variables
@@ -36,7 +37,8 @@
 // I use Capital CamelCase for enums and defines
 // I use lowcase under_score seperated for structs and classes
 
-const double mue0 = 4.0 * M_PI * 1.0E-7;
+
+
 
 
 //!< @enum CalibrationType contains various definitions of calibration FORMATS
@@ -51,7 +53,7 @@ enum class CalibrationType: int {
 
 enum class ChopperStatus: int {
     off = 0,          //!< for all sensors as default, an for metronix HF mode
-    on = 1            //!< that may be true for metronix coils only, LF mode
+    on = 1,           //!< that may be true for metronix coils only, LF mode
 };
 
 

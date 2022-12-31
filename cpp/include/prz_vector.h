@@ -11,6 +11,8 @@
 #include <vector>
 #include <utility>
 
+#include "base_constants.h"
+
 template <typename T, typename S>
 void parzen(const std::vector<T> &data, const std::vector<S> &selected_freqs, const std::vector<std::vector<S>> &parzendists, std::vector<T> &result ) {
 
@@ -177,7 +179,7 @@ size_t parzen_vector(const std::vector<double> &freqs, const std::vector<double>
         //      std::cout << this->mtd->avgfs[i] << this->mcd->get_key_dvalue("sample_freq") << this->mcd->get_key_uivalue("read_samples");
         //      std::cout << distsum << "at" << this->mtd->przfreq_sel.at(i) << *iter_lwr_bnds[i] << *iter_upr_bnds[i] << *iter_upr_bnds[i] - *iter_lwr_bnds[i] << j << "lines";
 
-        if (distsum < 1E-32) {
+        if (distsum < treat_as_null) {
             std::string err_str = __func__;
             err_str += "::distsum too small - can't avarage ";
             throw err_str;

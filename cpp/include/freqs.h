@@ -13,6 +13,7 @@
 #include <iterator>
 #include <functional>
 
+#include "mt_base.h"
 #include "prz_vector.h"
 
 template <typename T, typename Iterator> void detrend_and_hanning (Iterator first, const Iterator last) {
@@ -162,6 +163,27 @@ public:
         return freqs;
     }
 
+    std::pair<double, double> auto_range(const double &rel_lower, const double &rel_upper) {
+
+        if (!this->is_valid()) {
+            return std::make_pair<double, double>(0, DBL_MAX);
+        }
+
+        this->idx_range.first = 0; // DC part is at [0]
+        this->idx_range.second = this->wl/2 + 1; // if wl = 1024, Nyquist is at [512] which is the 513th element
+
+        auto lower = size_t(rel_lower * double(this->wl/2 + 1.));
+        auto upper = (this->wl/2 + 1) - size_t((1.0 - rel_upper) * double(this->wl/2 + 1.));
+
+        if (upper - lower < min_fft_wl) {
+            return std::make_pair<double, double>(0, DBL_MAX);
+        }
+
+        this->idx_range.first = lower;
+        this->idx_range.second = upper;
+        return this->get_frange();
+    }
+
     std::pair<double, double> set_lower_upper_f(const double &lf, const double &hf, const bool include_upper_f) {
 
         if (!this->is_valid()) {
@@ -303,8 +325,8 @@ public:
         // the machine epsilon has to be scaled to the magnitude of the values used
         // and multiplied by the desired precision in ULPs (units in the last place)
         return std::fabs(x-y) <= std::numeric_limits<double>::epsilon() * std::fabs(x+y) * ulp
-                // unless the result is subnormal
-                || std::fabs(x-y) < std::numeric_limits<double>::min();
+               // unless the result is subnormal
+               || std::fabs(x-y) < std::numeric_limits<double>::min();
     }
 
     template<class T>
@@ -363,7 +385,7 @@ public:
 
     size_t create_parzen_vectors() {
         return parzen_vector(this->get_frequencies(), this->target_freqs, this->prz_radius,
-                      this->selected_freqs, this->parzendists);
+                             this->selected_freqs, this->parzendists);
 
     }
 

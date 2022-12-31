@@ -10,7 +10,7 @@ namespace miter {
  * \param treat_as_zero something like 1E-32
  */
 template<typename Iterator>
-void cleanup(Iterator first, Iterator last, const double treat_as_zero) {
+void cleanup(Iterator first, Iterator last, const double &treat_as_zero) {
 
     while (first != last) {
         if (std::fabs(*first) < treat_as_zero) *first = 0.0;
@@ -26,7 +26,7 @@ void cleanup(Iterator first, Iterator last, const double treat_as_zero) {
  * \param treat_as_zero something like 1E-32
  */
 template<typename Iterator>
-void cleanup_cplx(Iterator first, Iterator last, const double treat_as_zero) {
+void cleanup_cplx(Iterator first, Iterator last, const double &treat_as_zero) {
 
     while (first != last) {
         if (std::fabs(real(*first)) < treat_as_zero) *first = complex<double>(0.0, imag(*first));

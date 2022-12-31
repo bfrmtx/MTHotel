@@ -15,8 +15,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_INSTALL_PREFIX}/lib )
 
 target_link_libraries (${PROJECT_NAME}
-    PRIVATE sqlite_handler
     PRIVATE tinyxml2
+    PRIVATE sqlite3
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC READ_CAL_LIBRARY)

@@ -431,6 +431,7 @@ std::string iso_8601_str_d(const std::string& datetime, const double& fracs = 0.
  * \return time_t struct; time_t can NOT hold fractions of seconds
  */
 time_t time_t_iso_8601_str(const std::string& datetime) {
+    // maybe not thread safe?
     struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     double dseconds;
     if (sscanf(datetime.c_str(), "%04d-%02d-%02dT%02d:%02d:%lf",
@@ -447,6 +448,7 @@ time_t time_t_iso_8601_str(const std::string& datetime) {
 }
 
 time_t time_t_iso_8601_str_fracs(const std::string& datetime, double &remaining_fracs) {
+    // maybe not thread safe?
     struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     double dseconds;
     if (sscanf(datetime.c_str(), "%04d-%02d-%02dT%02d:%02d:%lf",
@@ -463,13 +465,14 @@ time_t time_t_iso_8601_str_fracs(const std::string& datetime, double &remaining_
 }
 
 std::string iso8601_time_t(const time_t &ti, const int iso_0_date_1_time_2 = 0, const double& fracs = 0.0) {
+    // maby not thread safe?
     struct tm tt = {0};
     std::string sfracs;
     std::string date;
     std::string time;
     tt = *std::gmtime(&ti);
-    date.clear();
-    time.clear();
+//    date.clear();
+//    time.clear();
     date += std::to_string(tt.tm_year + 1900) + "-";
     date += zero_fill_field(tt.tm_mon + 1, 2) + "-";
     date += zero_fill_field(tt.tm_mday, 2);

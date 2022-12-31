@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     std::unique_ptr<survey_d> survey;
 
     try {
-        // create a survey with existin data
+        // create a survey with existing data
         survey  = std::make_unique<survey_d>(argv[1]);
         survey->ls();
 
@@ -56,9 +56,6 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
 
     }
-
-
-
 
 
 

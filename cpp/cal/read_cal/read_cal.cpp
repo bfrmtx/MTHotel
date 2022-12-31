@@ -24,7 +24,7 @@ read_cal::read_cal()
     }
     this->dbloaded = true;
     // that is a two column db
-    auto table = this->sqldb.sqlite_select(dbfile, "SELECT * FROM sensor_aliases");
+    auto table = this->sqldb.sqlite_select_strs(dbfile, "SELECT * FROM sensor_aliases");
     for (const auto &row : table) {
         //                for (auto &col : row) {
         //                    std::cout << col << " ";
@@ -85,7 +85,7 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
             if (std::isalpha(xcal[0])) ok = false;  // we have a number and not an e
             if (ok) {
                 for (size_t i = 0; i < xcal.size(); i++) {
-                    if (std::isdigit(calfilename[i])) this->fmagser += xcal[i];
+                    if (std::isdigit(xcal[i])) this->fmagser += xcal[i];
                 }
                 break;
             }
@@ -146,7 +146,7 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
                     auto tokens_dt(mstr::split(tokens.at(1), "time"));
                     if (tokens_dt.size() == 2) {
                         this->magtime = mstr::trim(tokens_dt.at(1));
-                        if (this->magtime.at(0) == ':') this->magtime = this->magtime.substr(1);
+                        if (this->magtime.at(0) == ':') this->magtime = mstr::trim(this->magtime.substr(1));
                         this->magdate = mstr::trim(tokens_dt.at(0));
                         this->magdate.erase(remove(this->magdate.begin(), this->magdate.end(), ':'), this->magdate.end());
                     }
@@ -292,6 +292,9 @@ void read_cal::guess_date()
                 y = std::stoi(ymd.at(2)) + 2000;
                 m = std::stoi(ymd.at(1));
                 d = std::stoi(ymd.at(0));
+
+                // at least rescue some hand edited wrong date coils
+                if ((m > 12) && (d < 13)) std::swap(m,d);
             }
             if (date_hint == "YY/mm/DD") {
                 y = std::stoi(ymd.at(0)) + 2000;

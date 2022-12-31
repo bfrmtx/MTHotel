@@ -136,7 +136,7 @@ int main()
     //b.resize(a.size());
 
 
-    for (int i = 0; i < b.size(); ++i) {
+    for (size_t i = 0; i < b.size(); ++i) {
         //std::cout << a.at(i) << " " << b.at(i) << std::endl;
         std::cout << i << " " << b.at(i) << std::endl;
 

@@ -49,6 +49,11 @@ class raw_spectra
 {
 public:
 
+    /*!
+     * \brief raw_spectra
+     * \param fft_freqs copy of a shared pointer
+     */
+
     raw_spectra(std::shared_ptr<fftw_freqs> &fft_freqs);
 
     void get_raw_spectra(std::vector<std::vector<std::complex<double>>> &swapme, const std::string &channel_type, const bool is_remote = false, const bool is_emap = false);

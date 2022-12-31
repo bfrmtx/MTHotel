@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <cfloat>
 #include <iomanip>
+#include <climits>
 
 #include <sqlite3.h>
 

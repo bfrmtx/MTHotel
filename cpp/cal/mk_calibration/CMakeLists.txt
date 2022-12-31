@@ -13,7 +13,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES}  ${HEADERS_INSTALL})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 
-target_link_libraries (${PROJECT_NAME} PRIVATE sqlite_handler read_cal)
+target_link_libraries (${PROJECT_NAME} PRIVATE read_cal)
 target_compile_definitions(${PROJECT_NAME} PRIVATE MK_CALIBRATION_LIBRARY)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

@@ -14,6 +14,7 @@
 #include <fstream>
 #include <mutex>
 #include <shared_mutex>
+#include "base_constants.h"
 #include "json.h"
 #include "cal_base.h"
 #include "strings_etc.h"
@@ -140,13 +141,26 @@ public:
     p_timer operator += (const p_timer &rhs)  {
         this->tt += rhs.tt;
         double f = this->fracs + rhs.fracs;
-        if (f < 1.0) this->fracs = f;
+        if (f < 1.) this->fracs = f;
         else {
             double fullsecs;
             this->fracs = modf (f, &fullsecs);
             this->tt += (uint64_t) fullsecs;
         }
         return *this;
+    }
+
+    p_timer add_secs(const int64_t &secs, const double fracs) {
+        this->tt += secs;
+        double f = this->fracs + fracs;
+        if (f < 1.) this->fracs = f;
+        else {
+            double fullsecs;
+            this->fracs = modf (f, &fullsecs);
+            this->tt += (uint64_t) fullsecs;
+        }
+        return *this;
+
     }
 
 
@@ -162,7 +176,6 @@ public:
         }
         return nt;
     }
-
 
     p_timer operator -= (const p_timer &rhs)  {
         this->tt -= rhs.tt;
@@ -194,6 +207,15 @@ public:
         return nt;
     }
 
+    int64_t duration_to_samples(const p_timer &dur) {
+        double pos1 = double(dur.tt) * this->sample_rate;
+        double pos2 = 0;
+        if (dur.fracs > treat_as_null) {
+            pos2 = dur.fracs * this->sample_rate;
+        }
+
+        return (int64_t)pos1 + (int64_t)pos2;
+    }
 
     p_timer p_start() const {
         return this->sample_time(0);
@@ -278,6 +300,11 @@ public:
 
     }
 
+    ~channel() {
+        if (this->infile.is_open()) this->infile.close();
+        if (this->outfile.is_open()) this->outfile.close();
+    }
+
     /*!
      * \brief channel most common mimimum constructor
      * \param channel_type like Ex, Ex, ... Hx ..
@@ -287,6 +314,13 @@ public:
         this->set_channel_type(channel_type);
         this->set_sample_rate(sample_rate);
         this->set_datetime(datetime, fracs);
+    }
+
+    void from_ats(const std::string &channel_type, const double& sample_rate, const int64_t utc = 0, const double& fracs = 0.0) {
+        this->set_channel_type(channel_type);
+        this->set_sample_rate(sample_rate);
+        this->pt.tt = utc;
+        this->pt.fracs = fracs;
     }
 
     channel(const std::shared_ptr<channel> &rhs) {
@@ -354,6 +388,11 @@ public:
     void set_datetime(const std::string &datetime = "1970-01-01T00:00:00", const double& fracs = 0.0) {
 
         this->pt.tt = mstr::time_t_iso_8601_str(datetime);
+        this->pt.fracs = fracs;
+    }
+
+    void set_unix_timestamp(const time_t tt, const double& fracs = 0) {
+        this->pt.tt = tt;
         this->pt.fracs = fracs;
     }
 
@@ -452,7 +491,7 @@ public:
     // simple set and get
 
     void set_serial(const auto& ser) {
-        this->serial = size_t(std::abs(ser));
+        this->serial = size_t(ser);
     }
 
     size_t get_serial() const {
@@ -516,7 +555,7 @@ public:
     }
 
     void set_channel_no(const auto& channel_no) {
-        this->channel_no = size_t(std::abs(channel_no));
+        this->channel_no = size_t(channel_no);
     }
 
     size_t get_channel_no() const {
@@ -545,7 +584,7 @@ public:
      */
     std::string filename(const std::string& extension_with_dot = "") const {
 
-        if (this->pt.sample_rate < this->treat_as_null) {
+        if (this->pt.sample_rate < treat_as_null) {
             std::string err_str = std::string("channel::") + __func__;
             err_str += "::you can not have NULL or negative frequencies";
             throw err_str;
@@ -560,7 +599,7 @@ public:
         std::string unit;
         double diff_s = mstr::sample_rate_to_str(this->pt.sample_rate, f_or_s, unit, true);
         // can we make an int?
-        if ( ((floor(f_or_s) - f_or_s) < this->treat_as_null) && (diff_s < this->treat_as_null)) str += std::to_string(int(f_or_s)) + unit;
+        if ( ((floor(f_or_s) - f_or_s) < treat_as_null) && (diff_s < treat_as_null)) str += std::to_string(int(f_or_s)) + unit;
         else str += std::to_string(f_or_s) + unit;
         if (extension_with_dot.size()) str += extension_with_dot;
         return str;
@@ -591,7 +630,6 @@ public:
      * a "." in the FILENAME is possible on modern systems, 16.6666Hz is possible
      */
 
-    double treat_as_null = 1E-32;
 
     std::string tmp_station;
     double tmp_lsb = 1.0;
@@ -702,6 +740,35 @@ public:
 
         return true;
     }
+
+    bool write_all_data(const std::vector<double> &data) const {
+        // write all data at once
+        std::ofstream file;
+
+        std::filesystem::path filepath = this->filepath_wo_ext;
+        filepath.replace_extension(".atss");
+        file.open (filepath, std::ios::out | std::ios::trunc | std::ios::binary);
+
+        if (!file.is_open()) {
+            file.close();
+            std::string err_str = __func__;
+            err_str += "::file not open ";
+            err_str += filepath.string();
+            throw err_str;
+            return false;
+        }
+        for (auto dat : data) {
+            file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
+        }
+
+        file.close();
+
+
+
+        return true;
+    }
+
+
     // std::copy(ve.begin(), ve.end(), std::ostreambuf_iterator<char>(outfile));
 
     //   vector<bool> out_ve((std::istreambuf_iterator<char>(infile)),
@@ -737,7 +804,69 @@ public:
     //    }
 
 
+    int64_t open_atss_read() {
+        bool ok = false;
 
+        try {
+            ok = std::filesystem::exists(this->get_atss_filepath());
+        }
+        catch (std::filesystem::filesystem_error& e) {
+            std::string err_str = __func__;
+            std::cerr << err_str << " " << e.what() << std::endl;
+            return -1;
+        }
+
+        if (!ok) return -1;
+        this->infile.open(this->get_atss_filepath(), std::ios::in | std::ios::binary);
+        if (!this->infile.is_open()) {
+            this->infile.close();
+            std::string err_str = __func__;
+            err_str += "::can not open, file not open ";
+            err_str += this->get_atss_filepath().string();
+            throw err_str;
+            return -1;
+        }
+
+        return 0;
+    }
+
+    int64_t skip_samples(const int64_t &samples) {
+        if (!this->infile.is_open()) {
+            std::string err_str = __func__;
+            err_str += "::file is NOT open! ";
+            err_str += this->get_atss_filepath().string();
+            throw err_str;
+            return -1;
+        }
+
+        this->infile.seekg(samples * sizeof(double), this->infile.cur);
+        return this->infile.tellg();
+    }
+
+    int64_t shift_to_read_time(const p_timer &new_tt) {
+        if (!this->infile.is_open()) {
+            std::string err_str = __func__;
+            err_str += "::file is NOT open! ";
+            err_str += this->get_atss_filepath().string();
+            throw err_str;
+            return -1;
+        }
+
+        if (new_tt < this->pt) {
+            std::string err_str = __func__;
+            err_str += "::new time is earlier than start time ";
+            err_str += this->get_atss_filepath().string();
+            throw err_str;
+            return -1;
+        }
+
+        p_timer diff_time = (new_tt - this->pt);
+        diff_time.sample_rate = this->pt.sample_rate; // we need our sample rate, not from the parent
+        int64_t samples = diff_time.duration_to_samples(diff_time);
+        std::cout << "diff time " << diff_time.tt << " "<<  diff_time.fracs << " , samples: " << samples << " " << mstr::sample_rate_to_str_simple(this->pt.sample_rate);
+        this->infile.seekg(samples * sizeof(double), this->infile.cur);
+        return this->infile.tellg();
+    }
 
 
     /*!
@@ -746,38 +875,44 @@ public:
      * \return file position or -1 in case of fail or unexpected end (-1 should NOT happen when read for fft)
      */
 
-    int64_t read_data(const bool read_last_chunk = false, const std::shared_ptr<atmm> &sel = nullptr) {
+    int64_t read_data(const bool read_last_chunk = false, const std::shared_ptr<atmm> &sel = nullptr){
 
         if (this->infile.is_open()) {
             return this->read_bin(this->ts_slice, this->infile, read_last_chunk);
         }
 
         else {
-            bool ok = false;
+            //            bool ok = false;
 
-            try {
-                ok = std::filesystem::exists(this->get_atss_filepath());
-            }
-            catch (std::filesystem::filesystem_error& e) {
-                std::string err_str = __func__;
-                std::cerr << err_str << " " << e.what() << std::endl;
-                return -1;
-            }
+            //            try {
+            //                ok = std::filesystem::exists(this->get_atss_filepath());
+            //            }
+            //            catch (std::filesystem::filesystem_error& e) {
+            //                std::string err_str = __func__;
+            //                std::cerr << err_str << " " << e.what() << std::endl;
+            //                return -1;
+            //            }
 
-            if (!ok) return -1;
+            //            if (!ok) return -1;
 
-            this->infile.open(this->get_atss_filepath(), std::ios::in | std::ios::binary);
-            if (!this->infile.is_open()) {
-                this->infile.close();
-                std::string err_str = __func__;
-                err_str += "::can not open, file not open ";
-                err_str += this->get_atss_filepath().string();
-                throw err_str;
-                return -1;
-            }
-            else {
+            //            this->infile.open(this->get_atss_filepath(), std::ios::in | std::ios::binary);
+            //            if (!this->infile.is_open()) {
+            //                this->infile.close();
+            //                std::string err_str = __func__;
+            //                err_str += "::can not open, file not open ";
+            //                err_str += this->get_atss_filepath().string();
+            //                throw err_str;
+            //                return -1;
+            //            }
+            //            else {
+            //                return this->read_bin(this->ts_slice, this->infile, read_last_chunk);
+            //            }
+
+            if (this->open_atss_read()) {
                 return this->read_bin(this->ts_slice, this->infile, read_last_chunk);
             }
+            else return -1;
+
         }
 
         return -1;
@@ -925,7 +1060,7 @@ public:
             return 0;
         }
 
-        this->pt.samples = size_t(xx/8);
+        this->pt.samples = size_t(xx/sizeof(double));
 
         return this->pt.samples;
     }
@@ -947,7 +1082,7 @@ private:
      * \param read_last_chunk - false in case of fft, true incase you want to read all and the last data vector is smaller than the pervious ones
      * \return -1 in case of failure
      */
-    int64_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
+    int64_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) const{
 
         // too much checking ?
         if (file.peek() == EOF ) {
