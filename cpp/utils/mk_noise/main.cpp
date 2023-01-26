@@ -50,9 +50,10 @@ int main()
         }
     }
 
+    // create survey
     survey = std::make_shared<survey_d>(filepath, false);
 
-    // for new format
+    // for new format this survey is empty, use create run with number
     auto last_station = survey->create_station("1");
     // this survey is empty, use create run with number
 
@@ -60,7 +61,7 @@ int main()
     std::filesystem::create_directories(filepath / "ts/Site_1");
     std::filesystem::path ats_site_path(filepath / "ts/Site_1");
 
-    std::string datetime = "2022-11-30T12:00:00";
+    std::string datetime = "2022-11-30T12:00:00"; // as in JSON file
     auto tt = mstr::time_t_iso_8601_str(datetime);
 
     std::vector<std::shared_ptr<channel>> channels;
@@ -68,7 +69,7 @@ int main()
     std::vector<std::shared_ptr<ats_header_json>> atsjs;  // the json will push into ats
     double max_freq = 5.2428800E+05;
     double min_freq = 9.7656250E-04; // 1024s
-    std::vector<double> fsamples; // {16384., 1024., 128., 1., 0.25, 3.1250E-02, 3.906250E-03 };
+    std::vector<double> fsamples;
 
     auto act_freq = max_freq;
     do {
@@ -94,23 +95,25 @@ int main()
     std::mt19937 gen{rd()};
     std::normal_distribution<> dist{5,2};
     size_t nstacks = 32;
-    size_t min_size = nstacks * sample_freq;
-    std::vector<double> noise_data(size_t(max_freq) * nstacks);  // at least 64 stacks
+    size_t min_size = nstacks * 1024;
+    std::vector<double> noise_data(size_t(max_freq) * nstacks);  // at least n stacks
     double sin_freq = sample_freq / 4.;
+    double sin_freq2 = sample_freq / 16.;
     double sn = 0;
     // sin(sin_freq * (2 * pi) * i / sample_freq);
     for (auto &nd : noise_data) {
-        nd = dist(gen) + (sin(sin_freq * (2 * M_PI) * sn++ / sample_freq)) / 8.0;
+        //nd = dist(gen) + (sin(sin_freq * (2 * M_PI) * sn++ / sample_freq)) / 8.0;
+        nd = dist(gen) + ((sin(sin_freq * (2 * M_PI) * sn / sample_freq)) / 8.0 )+ ((sin(sin_freq2 * (2 * M_PI) * sn / sample_freq)) / 8.0);
+        ++sn;
     }
 
-    // ****************** loop for frequencies
+    // ****************** loop for sample frequencies range
 
 
     for (size_t k = 0; k < fsamples.size(); ++k) {
 
         std::vector<double> noise_data_sub;
-        size_t act_length = std::distance(noise_data.begin(), noise_data.end());
-        if (k) act_length = act_length / (k * 4);
+        size_t act_length = nstacks * fsamples.at(k);
         if (act_length < min_size) act_length = min_size;
         noise_data_sub.assign(noise_data.begin(), (noise_data.begin() + act_length) );
 
@@ -126,6 +129,7 @@ int main()
         }
 
         i = 0;
+        // create new type of channels with new type of calibration
         for (auto &chan : channels) {
             chan->set_channel_no(i);
             chan->set_system("ADU-08e");
@@ -156,7 +160,7 @@ int main()
         }
 
 
-        // push json to ats header
+        // push json to ats header for old data type
         i =0;
         for (auto &atsj : atsjs) {
 
@@ -177,9 +181,11 @@ int main()
                 outdir = fs::canonical(outdir);
 
                 atsh->set_new_filename(outdir /atsh->get_ats_filename(run) );
+                // old data type needs LSB
                 atsh->calc_lsb_from_dbl_vec_mV(noise_data_sub);
                 std::cout << "starting: writer ats for " << fsamples.at(k) << "Hz"  << std::endl;
-                atsh->write(false);  // CHANGE
+                atsh->write(false);  // write header CHANGE
+                // write data
                 atsh->ats_write_ints_doubles(atsh->header.lsbval, noise_data_sub, true);
                 ++i;
             }
@@ -189,13 +195,14 @@ int main()
 
         }
 
+        // for the new file fomat
         i = 0;
         std::filesystem::path last_run_created;
         for (auto &chan : channels) {
             // if (i) last_run_created = survey->add_create_run(last_station, chan);
             // will be added to the same run if same sample rate and different channel number
             survey->add_create_run(last_station, chan);
-            chan->write_header();
+            chan->write_header(); // we have added a calibration already, no external CAL here
             //chan->write_all_data(noise_data);
             ++i;
         }
@@ -225,7 +232,7 @@ int main()
         atsjs.clear();
         channels.clear();
 
-        tt += 1; // add a second for the next job
+        tt += 1; // add a second for the next job - so have different start times
 
     }
 

@@ -283,7 +283,7 @@ public:
 
         if (!std::filesystem::exists(spath)) {
             std::string err_str = __func__;
-            err_str += ":: run does not exists! " + this->station_dir.filename().string();
+            err_str += ":: run does not exists! " + this->station_dir.filename().string() + " wanted: " + srun;
             throw err_str;
         }
         else {
@@ -351,7 +351,7 @@ public:
         std::unique_lock lock(this->station_lock);
         if (!no_create) {
             if (!std::filesystem::exists(this->survey_dir)) {
-                std::filesystem::create_directory(this->survey_dir);
+                std::filesystem::create_directories(this->survey_dir);
                 this->survey_dir = std::filesystem::canonical(this->survey_dir);
                 create_survey_dirs(this->survey_dir, survey_dirs());
             }

@@ -83,7 +83,7 @@ int main(int argc, char **argv)
             std::cout << "-new_to_old -tojson file.txt" << std::endl;
             std::cout << "-new_to_old -tojson *.txt "<< std::endl;
             std::cout << "you may want to call "<< std::endl;
-            std::cout << "-outdir /home/newcal -new_to_old -tojson *.txt "<< std::endl;
+            std::cout << "-outdir /home/newcal -old_to_new -tojson *.txt "<< std::endl;
             std::cout << " use -outdir [options] *txt in order to place the results at a different place" << std::endl;
             std::cout << "-keep_name should be active for txt -> xml when using script files ancient style" << std::endl;
             std::cout << "otherwise file name would be " << std::endl;

@@ -804,7 +804,13 @@ public:
     //    }
 
 
-    int64_t open_atss_read() {
+
+
+    /*!
+     * \brief open_atss_read
+     * \return true in case of success, false else
+     */
+    bool open_atss_read() {
         bool ok = false;
 
         try {
@@ -816,7 +822,7 @@ public:
             return -1;
         }
 
-        if (!ok) return -1;
+        if (!ok) return false;
         this->infile.open(this->get_atss_filepath(), std::ios::in | std::ios::binary);
         if (!this->infile.is_open()) {
             this->infile.close();
@@ -824,10 +830,10 @@ public:
             err_str += "::can not open, file not open ";
             err_str += this->get_atss_filepath().string();
             throw err_str;
-            return -1;
+            return false;
         }
 
-        return 0;
+        return true;
     }
 
     int64_t skip_samples(const int64_t &samples) {
@@ -1003,19 +1009,24 @@ public:
     }
 
 
+    /*!
+     * \brief prepare_to_raw_spc converts the local queue to a vector AND scales with the window wincal
+     * \param fft_freqs where the fft settings are stored;
+     * \param bcal
+     */
     void prepare_to_raw_spc(const std::shared_ptr<fftw_freqs> &fft_freqs, const bool bcal = true ) {
 
-        //this->spc.resize(this->qspc.front().size());
+        this->spc.reserve(this->qspc.size());
         size_t j = 0;
         while (!this->qspc.empty()) {
-            spc.emplace_back(fft_freqs->trim_fftw_result(this->qspc.front()));
+            this->spc.emplace_back(fft_freqs->trim_fftw_result(this->qspc.front()));
             if (bcal && !j) {
                 // create cal
             }
             if (bcal) {
                 // cal
             }
-            fft_freqs->scale(spc.back());
+            fft_freqs->scale(this->spc.back());
             this->qspc.pop();
             ++j;
         }

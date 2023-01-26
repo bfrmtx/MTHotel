@@ -102,7 +102,7 @@ public:
 
         if (rl > wl) {
             std::string err_str = __func__;
-            err_str += ":: read length must be equal or smaller than window length";
+            err_str += ":: read length must be equal or smaller than window length, rl: " + std::to_string(rl) + " wl: " + std::to_string(wl) ;
             throw err_str;
         }
         // this indices have a size of 513 - that is the output from fftw
@@ -379,7 +379,14 @@ public:
 
     void scale(auto &fftresult) const {
         for (auto &c : fftresult) c *= this->wincal;
+    }
 
+    /*!
+     * \brief unscale for testing purpose
+     * \param fftresult
+     */
+    auto unscale(auto &fftresult) const {
+        for (auto &c : fftresult) c /= this->wincal;
     }
 
 

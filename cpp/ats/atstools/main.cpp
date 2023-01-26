@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
             std::cout << "  removes 32 samples at the beginning WITHOUT shifting start time: my be used for old ADU-06 data, HF board" << std::endl;
             std::cout << "-chats_shift_samples_lf 30 [31] " << std::endl;
             std::cout << "  removes 30 (or 31) samples at the beginning WITHOUT shifting start time: my be used for old ADU-06 data, LF board" << std::endl;
-            std::cout << "  ATTENTION: do NOT use for down filterd data!, It is a RUNTIME coreection for old boards" << std::endl;
+            std::cout << "  ATTENTION: do NOT use for down filtered data!, It is a RUNTIME correction for old boards" << std::endl;
             std::cout << "- shift_start_time -1 [3599, 3600, -3600, ...] " << std::endl;
             std::cout << "  changes the start time by -1 seconds; old ADU-06 data can be affected by untracked leap seconds, summer/winter time " << std::endl;
             std::cout << " " << std::endl;

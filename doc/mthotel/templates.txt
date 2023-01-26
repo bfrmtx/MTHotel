@@ -1,0 +1,39 @@
+$$
+(\mathcal{F}(f)(y)
+ = \frac{1}{\sqrt{2\pi}^{\ n}}
+   \int_{\mathbb{R}^n} f(x)\,
+   e^{-\mathrm{i} y \cdot x} \,\mathrm{d} x.
+$$
+
+
+
+
+$$
+\begin{align*}
+y = y(x,t) &= A e^{i\theta} \\
+&= A (\cos \theta + i \sin \theta) \\
+&= A (\cos(kx - \omega t) + i \sin(kx - \omega t)) \\
+&= A\cos(kx - \omega t) + i A\sin(kx - \omega t)  \\
+&= A\cos \Big(\frac{2\pi}{\lambda}x - \frac{2\pi v}{\lambda} t \Big) + i A\sin \Big(\frac{2\pi}{\lambda}x - \frac{2\pi v}{\lambda} t \Big)  \\
+&= A\cos \frac{2\pi}{\lambda} (x - v t) + i A\sin \frac{2\pi}{\lambda} (x - v t)
+\end{align*}
+$$
+
+
+
+
+
+
+
+usage:
+---------
+
+#. you create a file ``readme.md`` - that is now only on your disk
+#. you ``git add readme.md`` and this file is now *prepared to be tracked* in .git |br|
+   this file is **NOT versioned** yet! |br|
+   call ``git add -A`` to add *all files recursively*
+#. call ``git add -A -v -n`` to make a verbose dry run to see what *would* happen
+#. you continue to work on your files until you are satisfied
+#. you call ``git commit -m "message"`` to **finally** track and *version* **all** added / staged files 
+#. **unless** you did not call the command above you can *not rewind* you changes.
+
