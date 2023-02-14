@@ -1,5 +1,6 @@
 #include "fir_filter.h"
 
+#include "about_system.h"
 
 fir_filter::fir_filter()
 {

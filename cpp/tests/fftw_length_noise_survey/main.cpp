@@ -160,7 +160,7 @@ int main()
 
     i = 0;
     for (auto &chan : channels) {
-        raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->is_remote, chan->is_emap);
+        raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->bw, chan->is_remote, chan->is_emap);
     }
 
     for (auto &raw : raws) {

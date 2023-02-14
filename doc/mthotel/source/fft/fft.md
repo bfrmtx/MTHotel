@@ -1,31 +1,27 @@
 # FFT / DFT
 
-```{eval-rst}
-.. csv-table::
- :header: "name", "alt", "symbol", "unit"
- :delim: ;
+Symbols
 
- sample rate; sample frequency; f\ :sub:`s`; **Hz** or 1/s
- discretization quantity;bin size; Δt = 1/f\ :sub:`s`; **s**
- samples;; **N**; (no dimension)
- window length;; wl = T = N * Δt; **s**
-
+```{include} ../sqltables/fft_abbrev.md
 ```
 
-N corresponds to time measured/recorded or used
+N corresponds to time measured/recorded or used; for a sampling rate of 1024 Hz and different
+window length you get a corresponding time:
 
 2048 pts @1024Hz = 2s = N/fs <br>
 1024 pts @1024Hz = 1s <br>
 1024 pts @0.0625 (16s) = 16384s <br>
+
+Definitions
 
 ```{eval-rst}
 .. csv-table::
  :header: "time Domain", "symbol", "frequency domain", "symbol"
  :delim: ;
 
- sampling rate; f\ :sub:`s` = 1/Δt; bandwidth; bw = f\ :sub:`s` /2
+ sampling rate; f\ :sub:`s` = 1/Δt; (sampling) bandwidth; bw = f\ :sub:`s` /2
  samples; N; spectral lines; N/2 + 1 (+1 == DC part)
- window length;wl = T = N * Δt; frequency resolution [Hz]; :math:`Δf = \frac{bw}{N/2} = \frac{ f_s }{N}`
+ window length;wl = T = N * Δt; frequency resolution [Hz] (bandwith); :math:`Δf = \frac{bw}{N/2} = \frac{ f_s }{N}`
 ```
 
 
@@ -34,7 +30,9 @@ Almost everywhere the DC part (or N+1) is not included. <br>
 The **FFTW** returns the DC part as 1<sup>st</sup> element. <br>
 You need the DC part only for the *inverse* transform. <br>
 For MT and noise analysis you *detrend* the data (DC part is removed). And here only
-you have the symmetry of (for example) 1024 real input and 512 complex output
+you have the symmetry of (for example) 1024 real input and 512 (511) complex output <br>
+The **FFTW** returns the Nyquist frequency (which is a real number) as last element. You
+can not use the Nyquist frequency in your analysis.
 ```
 
 ```{note}
@@ -53,7 +51,7 @@ weiter
 When you change the bandwidth the amplitude also changes.
 
 For a sample rate of 1024 we use 1024 samples and 4096 samples, according to 1 s and 4 s data. <br>
-The bin size in the frequency domain has changed now $Δf = \frac{bw}{N/2}`$ == 1 Hz and 0.25 Hz
+The bin size in the frequency domain has changed now $Δf = \frac{bw}{N/2}$ == 1 Hz and 0.25 Hz
 frequency resolution, respectively bin sizes. So *each bin or bucket* of the 4096 window contain 4 times less data.
 
 On <https://community.sw.siemens.com/s/article/what-is-a-power-spectral-density-psd> you find a genius picture for that:

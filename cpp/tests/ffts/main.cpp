@@ -6,6 +6,7 @@
 #include <complex>
 #include <chrono>
 #include <fftw3.h>
+#include <freqs.h>
 
 #include "../../../oss/fftreal/FFTReal.h"
 #include "../../../oss/highfive/H5File.hpp"
@@ -80,6 +81,42 @@ int main()
         std::cout << v << " ";
     }
     std::cout << std::endl;
+
+
+    for (const auto v : out) {
+        std::cout << std::abs(v) << " ";
+    }
+    std::cout << std::endl;
+
+    for (auto &v : out) {
+        v = std::complex<double>(0.0, 0.0);
+    }
+    p = fftw_plan_dft_r2c_1d(in.size(), &in[0], reinterpret_cast<fftw_complex*>(&out[0]) , FFTW_ESTIMATE);
+
+    detrend<double>(in.begin(), in.end());
+    fftw_execute(p);
+
+
+    for (const auto v : in) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+
+    for (const auto v : out) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+
+
+    for (const auto v : out) {
+        std::cout << std::abs(v) << " ";
+    }
+
+    std::cout << std::endl;
+
+
+
+
 
 //    ffft::FFTReal <double> fft_object(in.size());
 //    start = std::chrono::steady_clock::now();

@@ -8,6 +8,7 @@
 #include <thread>
 #include <mutex>
 #include <shared_mutex>
+#include "bthread.h"
 
 // using std::filesystem::directory_iterator;
 namespace fs = std::filesystem;

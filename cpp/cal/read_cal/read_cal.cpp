@@ -1,4 +1,9 @@
 #include "read_cal.h"
+#include "../../include/base_xml.h"
+#include "../../include/strings_etc.h"
+#include "../../include/about_system.h"
+#include "sqlite_handler.h"
+#include "../../xml/tinyxml2/tinyxml2.h"
 
 read_cal::read_cal()
 {

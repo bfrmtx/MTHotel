@@ -135,7 +135,7 @@ int main()
             auto fft_fres = *fft_res_iter++;
             //chan->prepare_to_raw_spc(fft_fres, false);
             // we have a pointer and don't need std::ref
-            threads.emplace_back(std::jthread (&channel::prepare_to_raw_spc, chan, fft_fres, false));
+            threads.emplace_back(std::jthread (&channel::prepare_to_raw_spc, chan, fft_fres, false, true));
 
         }
     }
@@ -163,7 +163,7 @@ int main()
 
     i = 0;
     for (auto &chan : channels) {
-        raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->is_remote, chan->is_emap);
+        raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->bw, chan->is_remote, chan->is_emap);
     }
 
     std::cout << std::endl;

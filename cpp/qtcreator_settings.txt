@@ -1,0 +1,8 @@
+ 
+current configuration debug
+
+build shared libs
+
+cmake --build /home/bfr/build/MTHotel/debug --target all
+
+cmake --build /home/bfr/build/MTHotel/debug --target clean

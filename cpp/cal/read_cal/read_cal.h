@@ -14,17 +14,14 @@
 #include <memory>
 #include <cfloat>
 
+#include "sqlite_handler.h"
+
 namespace fs = std::filesystem;
 
 
 #include "../../include/mt_base.h"
 #include "../../include/cal_base.h"
-#include "../../include/base_xml.h"
-#include "../../include/strings_etc.h"
-#include "../../include/about_system.h"
-#include "sqlite_handler.h"
-#include "../../xml/tinyxmlwriter/tinyxmlwriter.h"
-#include "../../xml/tinyxml2/tinyxml2.h"
+
 
 class read_cal
 {

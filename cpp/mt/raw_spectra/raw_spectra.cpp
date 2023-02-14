@@ -5,8 +5,10 @@ raw_spectra::raw_spectra(std::shared_ptr<fftw_freqs> &fft_freqs)
     this->fft_freqs = fft_freqs;
 }
 
-void raw_spectra::get_raw_spectra(std::vector<std::vector<std::complex<double> > > &swapme, const std::string &channel_type, const bool is_remote, const bool is_emap)
+void raw_spectra::get_raw_spectra(std::vector<std::vector<std::complex<double> > > &swapme, const std::string &channel_type,
+                                  const double &bw, const bool is_remote, const bool is_emap)
 {
+    this->bw = bw;
     if (channel_type == "Ex") {
         if (!is_emap && !is_remote) std::swap(swapme, this->ex);
         else if (is_emap && !is_remote) std::swap(swapme, this->eex);
@@ -228,6 +230,18 @@ std::vector<double> raw_spectra::get_abs_sa_spectra(const std::string &channel_t
     }
 
     return  std::vector<double>();
+
+}
+
+std::pair<double, double> raw_spectra::get_abs_sa_spectra_min_max(const std::string &channel_type, const bool is_remote, const bool is_emap) const
+{
+    std::pair<double, double> result(DBL_MIN, DBL_MAX);
+    auto v = this->get_abs_sa_spectra(channel_type, is_remote, is_emap);
+    auto xmm = std::minmax_element(v.cbegin(), v.cend());
+    result.first = *xmm.first;
+    result.second = *xmm.second;
+
+    return result;
 
 }
 

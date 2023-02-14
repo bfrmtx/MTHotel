@@ -7,6 +7,7 @@
 #include <vector>
 #include <queue>
 #include <complex>
+#include <algorithm>
 
 
 #include "freqs.h"
@@ -56,7 +57,8 @@ public:
 
     raw_spectra(std::shared_ptr<fftw_freqs> &fft_freqs);
 
-    void get_raw_spectra(std::vector<std::vector<std::complex<double>>> &swapme, const std::string &channel_type, const bool is_remote = false, const bool is_emap = false);
+    void get_raw_spectra(std::vector<std::vector<std::complex<double>>> &swapme, const std::string &channel_type,
+                         const double &bw, const bool is_remote = false, const bool is_emap = false);
 
 
     void simple_stack_all();
@@ -67,6 +69,7 @@ public:
 
 
     std::vector<double> get_abs_sa_spectra(const std::string &channel_type, const bool is_remote = false, const bool is_emap = false) const;
+    std::pair<double, double> get_abs_sa_spectra_min_max(const std::string &channel_type, const bool is_remote = false, const bool is_emap = false) const;
     std::vector<double> get_abs_sa_prz_spectra(const std::string &channel_type, const bool is_remote = false, const bool is_emap = false) const;
     std::vector<double> get_abs_spectra(const std::string &channel_type, const size_t nstack = 0, const bool is_remote = false, const bool is_emap = false) const;
 
@@ -88,6 +91,7 @@ public:
     std::vector<std::vector<std::complex<double>>> eey;  //!< spectra from fft, emap site
 
     std::shared_ptr<fftw_freqs> fft_freqs;
+    double bw = 0; // bandwidth of fft
 
 private:
 
@@ -124,5 +128,22 @@ private:
     std::vector<double> sa_prz_eey;  //!< stack all spectra smoothed from fft, emap site
 
 };
+
+
+std::pair<double, double> max_min_sa_spc(const std::vector<std::shared_ptr<raw_spectra>> &raws, const std::string &channel_type,
+                                         const bool is_remote = false, const bool is_emap = false) {
+
+    std::pair<double, double> result(DBL_MIN, DBL_MAX);
+    std::vector<double> ampl_max_mins;
+    for (const auto &raw : raws) {
+        auto mm  = raw->get_abs_sa_spectra_min_max(channel_type, is_remote, is_emap);
+        ampl_max_mins.push_back(mm.first);
+        ampl_max_mins.push_back(mm.second);
+    }
+    auto r1 = std::minmax_element(ampl_max_mins.begin(), ampl_max_mins.end());
+    result.first = *r1.first;
+    result.second = *r1.second;
+    return result;
+}
 
 #endif // RAW_SPECTRA_H

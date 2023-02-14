@@ -141,8 +141,9 @@ T median_range_mean(const std::vector<T> &v, const double &fraction_to_use) {
         std::advance(e, use+1);
     }
     if ((std::distance(w.cbegin(), b) >= 0) && (std::distance(e, w.cend()) >= 0) && (std::distance(b, e) > 0) ) {
-        sum = accumulate(b, e, T(0));
-        sum /= T(v.size());
+        sum = std::accumulate(b, e, T(0));
+        T divm = (T)(std::distance(b,e));
+        sum /= T(divm);
     }
     return sum;
 

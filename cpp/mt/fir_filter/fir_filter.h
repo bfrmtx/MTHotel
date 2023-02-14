@@ -6,8 +6,6 @@
 #include <vector>
 
 #include "atss.h"
-#include "base_constants.h"
-#include "about_system.h"
 #include "sqlite_handler.h"
 
 #define db_sql_file "filter.sql3"

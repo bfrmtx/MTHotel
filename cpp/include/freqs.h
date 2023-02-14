@@ -12,10 +12,54 @@
 #include <vector>
 #include <iterator>
 #include <functional>
+#include <sstream>
 
 #include "mt_base.h"
 #include "prz_vector.h"
 
+template <typename T, typename Iterator> void detrend(Iterator first, const Iterator last) {
+    T dBias       = 0.0;
+    T dTrend      = 0.0;
+    T dTrendPart1 = 0.0;
+    T dTrendPart2 = 0.0;
+    T dWindowLen  = 0.0;
+
+    T dCounter;
+
+    // determine the window length
+    dWindowLen = (last - first);
+
+    // determine trend
+    Iterator iterMidth = first + ( (std::size_t(dWindowLen) / 2));
+    dTrendPart1        = accumulate (iterMidth, last,  0.0);
+    dTrendPart2        = accumulate (first, iterMidth, 0.0);
+    dTrend             = (4.0 / (dWindowLen * dWindowLen)) * (dTrendPart1 - dTrendPart2);
+
+    // detrend
+    dCounter = 0.0;
+    Iterator iterBegin = first;
+    Iterator iterEnd   = last;
+    while (iterBegin != iterEnd)
+    {
+        (*iterBegin) -= (dCounter * dTrend);
+        ++dCounter;
+        ++iterBegin;
+    }
+    // determine Bias value
+    dBias  = accumulate (first, last, 0.0);
+    dBias /= dWindowLen;
+
+    // remove bias
+    iterBegin = first;
+    iterEnd   = last;
+    while (iterBegin != iterEnd)
+    {
+        (*iterBegin) -= dBias;
+        ++iterBegin;
+    }
+
+
+}
 template <typename T, typename Iterator> void detrend_and_hanning (Iterator first, const Iterator last) {
     // old procmt detrend - adopted by Martin
     // declaration of variables
@@ -94,6 +138,9 @@ size_t next_power_of_two(const size_t &n){
 }
 
 
+/*!
+ * \brief The fftw_freqs class stores the FFT parameters for FFTW; the fftw plan is INSIDE the channel as well as the result of the FFTW
+ */
 class fftw_freqs {
 
 public:
@@ -108,20 +155,40 @@ public:
         // this indices have a size of 513 - that is the output from fftw
         this->idx_range.first = 0; // DC part is at [0]
         this->idx_range.second = this->wl/2 + 1; // if wl = 1024, Nyquist is at [512] which is the 513th element
-        double frl = double(rl) / 2.;
+        double frl = double(rl) / 2;
         this->wincal = sqrt(1./(sample_rate * frl) );
     }
 
+    double get_bw() const {
+        return this->sample_rate/(double)this->rl;
+    }
+
+    double get_wincal() const {
+        return this->wincal;
+    }
+
+    /*!
+     * \brief get_wl obsolete function in case of ZERO PADDING
+     * \return
+     */
     size_t get_wl() const {
         return this->wl;
     }
 
+    /*!
+     * \brief get_rl get the read length - that is the TRUE corresponding time series segment
+     * \return
+     */
     size_t get_rl() const {
         return this->rl;
     }
 
+    /*!
+     * \brief get_fl get frequency length of spectral lines of the REMAINING SHORTENED FFT and/or ZERO PADDED FFT
+     * \return
+     */
     size_t get_fl() const {
-        return this->idx_range.second -this->idx_range.first;
+        return this->idx_range.second - this->idx_range.first;
     }
 
     double get_sample_rate() const {
@@ -136,6 +203,15 @@ public:
     std::pair<size_t, size_t> index_range() const {
         return this->idx_range;
     }
+
+    void set_raw_stacks(const size_t &raw_stacks) {
+        this->raw_stacks = raw_stacks;
+    }
+
+    size_t get_raw_stacks() const {
+       return this->raw_stacks;
+    }
+
 
 
     bool is_valid() const {
@@ -163,6 +239,12 @@ public:
         return freqs;
     }
 
+    /*!
+     * \brief auto_range
+     * \param rel_lower like 0.1
+     * \param rel_upper like 0.5 (1.0 == all)
+     * \return
+     */
     std::pair<double, double> auto_range(const double &rel_lower, const double &rel_upper) {
 
         if (!this->is_valid()) {
@@ -175,9 +257,9 @@ public:
         auto lower = size_t(rel_lower * double(this->wl/2 + 1.));
         auto upper = (this->wl/2 + 1) - size_t((1.0 - rel_upper) * double(this->wl/2 + 1.));
 
-        if (upper - lower < min_fft_wl) {
-            return std::make_pair<double, double>(0, DBL_MAX);
-        }
+//        if (upper - lower < min_fft_wl) {
+//            return std::make_pair<double, double>(0, DBL_MAX);
+//        }
 
         this->idx_range.first = lower;
         this->idx_range.second = upper;
@@ -415,10 +497,30 @@ private:
 
     std::pair<size_t, size_t> idx_range {0, SIZE_MAX};
     double wincal = 0.0;
+    size_t raw_stacks = 0;              //!< to amount of received ffts
 
 
 
 };
+
+/*!
+ * \brief field_width get the max frequency and the witdth of this double number as string - used for gnuplot
+ * \param fftws
+ * \return 4 for number like 1024
+ */
+size_t field_width(const std::vector<std::shared_ptr<fftw_freqs>> &fftws) {
+
+    std::vector<double> maxf;
+    // rl is always <= wl !
+    for (auto const &fs : fftws) {
+        maxf.push_back(fs->get_wl());
+    }
+
+    std::ostringstream xw;
+    xw << std::setprecision(0) << *std::max_element(maxf.begin(), maxf.end());
+    return xw.str().size();
+
+}
 
 /*
 

@@ -642,6 +642,7 @@ public:
     std::vector<double> ts_slice_inv;                   //!< data slice in time domain after ftt, calibration, inverse fft
     std::queue<std::vector<std::complex<double>>> qspc; //!< spectra queue
     std::vector<std::vector<std::complex<double>>> spc; //!< spectra vector
+    double bw = 0.0;                                    //!< bandwidth of FFT
 
     std::ifstream infile;                               //!< read binary data
     std::ofstream outfile;                              //!< write binary data
@@ -888,31 +889,6 @@ public:
         }
 
         else {
-            //            bool ok = false;
-
-            //            try {
-            //                ok = std::filesystem::exists(this->get_atss_filepath());
-            //            }
-            //            catch (std::filesystem::filesystem_error& e) {
-            //                std::string err_str = __func__;
-            //                std::cerr << err_str << " " << e.what() << std::endl;
-            //                return -1;
-            //            }
-
-            //            if (!ok) return -1;
-
-            //            this->infile.open(this->get_atss_filepath(), std::ios::in | std::ios::binary);
-            //            if (!this->infile.is_open()) {
-            //                this->infile.close();
-            //                std::string err_str = __func__;
-            //                err_str += "::can not open, file not open ";
-            //                err_str += this->get_atss_filepath().string();
-            //                throw err_str;
-            //                return -1;
-            //            }
-            //            else {
-            //                return this->read_bin(this->ts_slice, this->infile, read_last_chunk);
-            //            }
 
             if (this->open_atss_read()) {
                 return this->read_bin(this->ts_slice, this->infile, read_last_chunk);
@@ -925,7 +901,7 @@ public:
     }
 
     /*!
-     * \brief read_all_fftw that includes the COMPLETE spectra inclusive DC part and Nyquist
+     * \brief read_all_fftw that includes the COMPLETE spectra inclusive DC part and Nyquist; executes this->plan and stores INSIDE channel
      * \param read_last_chunk false for MT processing - last chunk has != read length (fft) size
      * \param sel atmm selection vector 0 = not excluded, 1 excluded from reading / processing
      */
@@ -950,7 +926,7 @@ public:
 
     }
 
-    void read_all_fftw_gussian_noise(const std::vector<double> double_noise) {
+    void read_all_fftw_gussian_noise(const std::vector<double> double_noise, const bool bdetrend_hanning = true) {
 
         if (!this->ts_slice.size()) return;
         if (double_noise.size() < this->ts_slice.size()) return;
@@ -960,9 +936,8 @@ public:
         std::advance(ite, this->ts_slice.size());
         this->ts_slice.assign(itb, ite);
 
-
         do {
-            detrend_and_hanning<double>(this->ts_slice.begin(), this->ts_slice.end());
+            if (bdetrend_hanning) detrend_and_hanning<double>(this->ts_slice.begin(), this->ts_slice.end());
             if (this->ts_slice_padded.size()) {
                 //this->ts_slice_padded.insert(this->ts_slice_padded.begin(), this->ts_slice.cbegin(), this->ts_slice.cend());
                 for (size_t i = 0; i < ts_slice.size(); ++i ) {
@@ -980,21 +955,19 @@ public:
 
 
         } while (std::distance(ite, double_noise.cend()));
-
-
     }
 
 
     /*!
-     * \brief simple_stack_all
+     * \brief ats_simple_stack_all
      * \return non calibrated stacked complex spectra
      */
-    std::vector<std::complex<double>> simple_stack_all(const std::shared_ptr<fftw_freqs> &fft_freqs) {
+    std::vector<std::complex<double>> ats_simple_stack_all(const std::shared_ptr<fftw_freqs> &fft_freqs, const bool bwincal = true) {
         std::vector<std::complex<double>> sa;
         sa.resize(this->qspc.front().size());
         double dn = 0;
         while (!this->qspc.empty()) {
-            std::vector<std::complex<double>> v = this->qspc.front();
+            std::vector<std::complex<double>> &v = this->qspc.front();
             size_t i = 0;
             for (auto &val : v) {
                 sa[i++] += val;
@@ -1004,7 +977,7 @@ public:
             dn++;
         }
         for (auto &val : sa) val /= dn;
-        fft_freqs->scale(sa);
+        if (bwincal) fft_freqs->scale(sa);
         return sa;
     }
 
@@ -1014,7 +987,7 @@ public:
      * \param fft_freqs where the fft settings are stored;
      * \param bcal
      */
-    void prepare_to_raw_spc(const std::shared_ptr<fftw_freqs> &fft_freqs, const bool bcal = true ) {
+    void prepare_to_raw_spc(const std::shared_ptr<fftw_freqs> &fft_freqs, const bool bcal = true, const bool bwincal = true ) {
 
         this->spc.reserve(this->qspc.size());
         size_t j = 0;
@@ -1026,10 +999,12 @@ public:
             if (bcal) {
                 // cal
             }
-            fft_freqs->scale(this->spc.back());
+            if (bwincal) fft_freqs->scale(this->spc.back());
             this->qspc.pop();
             ++j;
         }
+
+        fft_freqs->set_raw_stacks(j);
 
         return;
     }
@@ -1046,6 +1021,8 @@ public:
             this->ts_slice_padded.resize(fftwf->get_wl(), 0.0);
             this->plan = fftw_plan_dft_r2c_1d(fftwf->get_wl(), &this->ts_slice_padded[0], reinterpret_cast<fftw_complex*>(&this->spc_slice[0]) , FFTW_ESTIMATE);
         }
+
+        this->bw = fftwf->get_bw();
 
     }
 
