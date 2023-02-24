@@ -97,7 +97,7 @@ int main()
     std::mt19937 gen{rd()};
     std::normal_distribution<> dist{5,2};
     std::vector<double> noise_data(16385 * 512);
-    double sin_freq = 180;
+    double sin_freq = 60;
     double sn = 0;
 
     //        for (auto &nd : noise_data) {
@@ -110,7 +110,7 @@ int main()
 
     // **** here I do the FFT
     for (auto &chan : channels) {
-        chan->read_all_fftw_gussian_noise(noise_data, false);
+        chan->read_all_fftw_gussian_noise(noise_data, true);
         std::cout << chan->qspc.size() << " readings" << std::endl;
 
     }
@@ -132,7 +132,7 @@ int main()
         v = noise_data[i++];
     }
 
-    gplt_ts->cmd << "set terminal qt size 2048,1600" << std::endl;
+    gplt_ts->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
     gplt_ts->cmd << "set title 'TS Data'" << std::endl;
     //gplt->cmd << "set key off" << std::endl;
     gplt_ts->cmd << "set xlabel 'ts'" << std::endl;
@@ -167,7 +167,7 @@ int main()
         raw->simple_stack_all();
     }
 
-    auto ampl_max_min = max_min_sa_spc(raws, channel_type);
+    auto ampl_max_min = min_max_sa_spc(raws, channel_type);
     //
     std::string init_err;
     auto gplt = std::make_unique<gnuplotter<double, double>>(init_err);
@@ -192,18 +192,18 @@ int main()
         ++i;
     }
 
-    gplt->cmd << "set terminal qt size 2048,1600" << std::endl;
+    gplt->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
     gplt->cmd << "set title 'FFT length'" << std::endl;
     //gplt->cmd << "set key off" << std::endl;
     gplt->cmd << "set xlabel 'frequency [Hz]'" << std::endl;
     gplt->cmd << "set ylabel 'amplitude [mV/√Hz]'" << std::endl;
-                                                          gplt->cmd << "set grid" << std::endl;
+    gplt->cmd << "set grid" << std::endl;
     gplt->cmd << "set key font \"Hack, 10\"" << std::endl;
     //  gplt->cmd << "set xtics (170, 180, 190)" << std::endl;
 
     //gplt->cmd << "set logscale xy" << std::endl;
     //gplt->set_x_range(max_mins.front(), max_mins.back());
-    gplt->set_x_range(sin_freq * 0.5, sin_freq * 2);
+    gplt->set_x_range(sin_freq - 20., sin_freq + 20);
     // gplt->set_y_range(0 , 2);
     // gplt->set_y_range(ampl_max_min.first * 0.8, ampl_max_min.second * 1.2);
 
@@ -221,7 +221,7 @@ int main()
 
 
         if (delta_f == 1 && !i) gplt->set_xy_points(fft_freqs.at(i)->get_frequencies(), vs[i], label.str(), 2, "pt 6");
-        else if (delta_f == 1 && i) gplt->set_xy_linespoints(fft_freqs.at(i)->get_frequencies(), vs[i], label.str(), 2, "pt 9");
+        else if (delta_f == 1 && i) gplt->set_xy_linespoints(fft_freqs.at(i)->get_frequencies(), vs[i], label.str(), 2, 2, "pt 9");
         else gplt->set_xy_lines(fft_freqs.at(i)->get_frequencies(), vs[i], label.str(), 1);
     }
 

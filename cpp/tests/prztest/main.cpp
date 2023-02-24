@@ -29,7 +29,7 @@ int main()
     size_t zp = 4;  // zero padded ... last file
     const double median_limit = 0.7;
 
-    fs::path home_dir(getenv("HOME"));
+    std::filesystem::path home_dir(getenv("HOME"));
     auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/three_fgs/indi");
     auto station_26 = survey->get_station("S26"); // that is a shared pointer from survey
 

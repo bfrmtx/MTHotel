@@ -39,17 +39,17 @@ public:
      *
      * make a script file
      *   auto gplt_mm = std::make_unique<gnuplotter<double, double>>(init_err_mm, "/tmp/x.bgp");
-     *   gplt_mm->cmd << "set terminal qt size 2048,1600" << std::endl;
+     *   gplt_mm->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
      *
      *   later you can use it as gnuplot -persist /tmp/x.bgp
      *
      * make a plot on screen - leave the filename empty
      *    auto gplt_mm = std::make_unique<gnuplotter<double, double>>(init_err_mm);
-     *    gplt_mm->cmd << "set terminal qt size 2048,1600" << std::endl;
+     *    gplt_mm->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
      *
      * make a plot into file - leave the filename empty but use the output option
      *    auto gplt_mm = std::make_unique<gnuplotter<double, double>>(init_err_mm);
-     *    gplt_mm->cmd << "set terminal svg size 2048,1600" << std::endl;
+     *    gplt_mm->cmd << "set terminal svg size 2048,1600 enhanced" << std::endl;
      *    gplt_mm->cmd << "set output '/tmp/spectra.svg'" << std::endl;
      */
     gnuplotter(std::string &err_str, const std::string outfile_ = "") {
@@ -151,31 +151,52 @@ public:
         this->cmd << "set yrange [" << ymin << ":" << ymax << "]" << std::endl;
     }
 
-    void set_xy_points(const std::vector<T> &x, const std::vector<S> &y, const std::string title, const std::uint64_t size, const std::string formats ="") {
+    void set_qt_terminal(const std::string &name = "", const size_t &file_count = 0) {
+        this->cmd << "set terminal qt size 2048,1536 enhanced font 'Noto Sans, 10'";
+        if (name.size()) this->cmd << " title '" << name;
+        if (file_count)  this->cmd << "_" << file_count;
+        else this->cmd<< "'";
+        this->cmd << std::endl;
+    }
+
+    void set_svg_terminal(const std::filesystem::path &path, const std::string &name, const size_t &max_sizes, const size_t &file_count = 0) {
+        std::ostringstream nam;
+
+        this->cmd << "set terminal svg size 1024,768 dynamic enhanced font 'Noto Sans, 14' name '" << name << "'"  << std::endl;
+        if (!file_count) nam << "set output '" <<  path.string() << "/" << name <<  ".svg'";
+        else nam << "set output '" <<  path.string() << "/" << name << "_" << file_count << ".svg'";
+        this->cmd << nam.str() << std::endl;
+
+        this->max_sizes = max_sizes;  // take 1 for svg - lines and symbol thickness are bad
+    }
+
+
+
+    void set_xy_points(const std::vector<T> &x, const std::vector<S> &y, const std::string title, const std::uint64_t ps, const std::string formats ="") {
 
         this->set_data(x,y);
-        std::stringstream tmp;
-        tmp << "'-' binary record=(" << x.size() << ") " << this->data_format.str() << " with points pointsize " << size;
+        std::ostringstream tmp;
+        tmp << "'-' binary record=(" << x.size() << ") " << this->data_format.str() << " with points ps " << ps;
         if (formats.size()) tmp << " " << formats;
         if (title.size())  tmp << " title '" << title << "'";
         this->plt.push_back(this->trim(tmp.str()));
     }
 
-    void set_xy_lines(const std::vector<T> &x, const std::vector<S> &y, const std::string title, const std::uint64_t size, const std::string formats ="") {
+    void set_xy_lines(const std::vector<T> &x, const std::vector<S> &y, const std::string title, const std::uint64_t lw, const std::string formats ="") {
 
         this->set_data(x,y);
-        std::stringstream tmp;
-        tmp << "'-' binary record=(" << x.size() << ") " << this->data_format.str() << " with lines linewidth " << size;
+        std::ostringstream tmp;
+        tmp << "'-' binary record=(" << x.size() << ") " << this->data_format.str() << " with lines" << this->set_lw(lw);
         if (formats.size()) tmp << " " << formats;
         if (title.size())  tmp << " title '" << title << "'";
         this->plt.push_back(this->trim(tmp.str()));
     }
 
-    void set_xy_linespoints(const std::vector<T> &x, const std::vector<S> &y, const std::string title, const std::uint64_t size, const std::string formats ="") {
+    void set_xy_linespoints(const std::vector<T> &x, const std::vector<S> &y, const std::string &title, const std::uint64_t &lw, const std::uint64_t &ps, const std::string &formats ="") {
 
         this->set_data(x,y);
-        std::stringstream tmp;
-        tmp << "'-' binary record=(" << x.size() << ") " << this->data_format.str() << " with linespoints linewidth " << size;
+        std::ostringstream tmp;
+        tmp << "'-' binary record=(" << x.size() << ") " << this->data_format.str() << " with linespoints" << this->set_lw(lw) << this->set_ps(ps);
         if (formats.size()) tmp << " " << formats;
         if (title.size())  tmp << " title '" << title << "'";
         this->plt.push_back(this->trim(tmp.str()));
@@ -191,10 +212,28 @@ public:
 
 
 
+
+
 private:
 
     FILE *plotHandle = nullptr;
     std::filesystem::path outfile;
+
+    uint64_t max_sizes = 100;
+
+    std::string set_lw(const uint64_t &lw) {
+        std::ostringstream tmp;
+        if (lw > this->max_sizes) tmp << " lw " << max_sizes;
+        else tmp  << " lw " << lw;
+        return tmp.str();
+    }
+
+    std::string set_ps(const uint64_t &ps) {
+        std::ostringstream tmp;
+        if (ps > this->max_sizes) tmp << " ps " << max_sizes;
+        else tmp  << " ps " << ps;
+        return tmp.str();
+    }
 
     void set_data(const std::vector<T> &x, const std::vector<S> &y) {
 

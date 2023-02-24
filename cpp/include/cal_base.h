@@ -58,19 +58,20 @@ struct calibration
 
 
     calibration(const std::shared_ptr<calibration> &rhs) {
-
-        this->sensor = rhs->sensor;
-        this->serial = rhs->serial;
-        this->chopper = rhs->chopper;
-        this->units_frequency = rhs->units_frequency;
-        this->units_amplitude = rhs->units_amplitude;
-        this->units_phase = rhs->units_phase;
-        this->datetime = rhs->datetime;
-        this->Operator = rhs->Operator;
-        this->f = rhs->f;
-        this->a = rhs->a;
-        this->p = rhs->p;
-        this->ct = rhs->ct;
+        if (rhs != nullptr) {
+            this->sensor = rhs->sensor;
+            this->serial = rhs->serial;
+            this->chopper = rhs->chopper;
+            this->units_frequency = rhs->units_frequency;
+            this->units_amplitude = rhs->units_amplitude;
+            this->units_phase = rhs->units_phase;
+            this->datetime = rhs->datetime;
+            this->Operator = rhs->Operator;
+            this->f = rhs->f;
+            this->a = rhs->a;
+            this->p = rhs->p;
+            this->ct = rhs->ct;
+        }
     }
 
 

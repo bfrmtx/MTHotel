@@ -132,6 +132,79 @@ void raw_spectra::advanced_stack_all(const double &fraction_to_use)
 
 }
 
+size_t raw_spectra::advanced_ampl_stack_t(const std::vector<std::vector<std::complex<double> > > &in, std::vector<double> &out, const double &fraction_to_use) {
+    size_t n = in.at(0).size();  // n = f size
+    out.resize(n, 0.0);             // f size
+
+
+    for (size_t i = 0; i < n; ++i) {  //   for frequencies
+
+        auto ff = bvec::absv(bvec::get_fslice(in, i)); // get all stacks
+        //        two_pass_variance var;
+        //        var.variance(ff.cbegin(), ff.cend());
+        //        out[i] = var.d_mean;
+        out[i] = bvec::median_range_mean(ff, fraction_to_use);
+        //out[i] = bvec::mean(ff);
+    }
+
+    return out.size();
+}
+
+
+std::future<size_t> raw_spectra::advanced_stack_all_t(std::shared_ptr<BS::thread_pool> &pool, const double &fraction_to_use)
+{
+    // pool.push_task(&raw_spectra::simple_stack_all, raw);
+
+
+    if (this->ex.size()) {
+       return  pool->submit(&raw_spectra::advanced_ampl_stack_t, std::ref(*this), std::ref(this->ex), std::ref(this->sa_ex), std::ref(fraction_to_use));
+        //this->advanced_ampl_stack_t(this->ex, this->sa_ex, fraction_to_use);
+        //threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->ex), std::ref(this->sa_ex), std::ref(fraction_to_use)));
+    }
+
+
+/*    if (this->ey.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->ey), std::ref(this->sa_ey), std::ref(fraction_to_use)));
+    }
+    if (this->hx.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->hx), std::ref(this->sa_hx), std::ref(fraction_to_use)));
+    }
+    if (this->hy.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->hy), std::ref(this->sa_hy), std::ref(fraction_to_use)));
+    }
+    if (this->hz.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->hz), std::ref(this->sa_hz), std::ref(fraction_to_use)));
+    }
+
+
+    if (this->rex.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rex), std::ref(this->sa_rex), std::ref(fraction_to_use)));
+    }
+    if (this->rey.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rey), std::ref(this->sa_rey), std::ref(fraction_to_use)));
+    }
+    if (this->rhx.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rhx), std::ref(this->sa_rhx), std::ref(fraction_to_use)));
+    }
+    if (this->rhy.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rhy), std::ref(this->sa_rhy), std::ref(fraction_to_use)));
+    }
+    if (this->rhz.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rhz), std::ref(this->sa_rhz), std::ref(fraction_to_use)));
+    }
+
+    if (this->eex.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->eex), std::ref(this->sa_eex), std::ref(fraction_to_use)));
+    }
+    if (this->eey.size()) {
+        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->eey), std::ref(this->sa_eey), std::ref(fraction_to_use)));
+    }
+    */
+
+    return std::future<size_t>();
+}
+
+
 void raw_spectra::parzen_stack_all()
 {
     std::vector<std::jthread> threads;

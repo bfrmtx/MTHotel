@@ -82,11 +82,13 @@ public:
      * \param rhs
      */
     p_timer(const std::shared_ptr<p_timer> &rhs) {
-        this->tt = rhs->tt;
-        this->fracs = rhs->fracs;
-        this->sample_rate = rhs->sample_rate;
-        this->samples = rhs->samples;
-        this->spos = rhs->spos;
+        if (rhs != nullptr) {
+            this->tt = rhs->tt;
+            this->fracs = rhs->fracs;
+            this->sample_rate = rhs->sample_rate;
+            this->samples = rhs->samples;
+            this->spos = rhs->spos;
+        }
     }
 
     void clear() {
@@ -324,23 +326,27 @@ public:
     }
 
     channel(const std::shared_ptr<channel> &rhs) {
-        this->pt = rhs->pt;
-        this->filepath_wo_ext = rhs->filepath_wo_ext;
 
-        this->cal = std::make_shared<calibration>(rhs->cal);
+        if (rhs != nullptr) {
 
-        this->latitude = rhs->latitude;
-        this->longitude = rhs->longitude;
-        this->elevation = rhs->elevation;
-        this->angle = rhs->angle;
-        this->dip = rhs->dip;
-        this->units = rhs->units;
-        this->source = rhs->source;
+            this->pt = rhs->pt;
+            this->filepath_wo_ext = rhs->filepath_wo_ext;
 
-        this->serial = rhs->serial;
-        this->system = rhs->system;
-        this->channel_no = rhs->channel_no;
-        this->channel_type = rhs->channel_type;
+            this->cal = std::make_shared<calibration>(rhs->cal);
+
+            this->latitude = rhs->latitude;
+            this->longitude = rhs->longitude;
+            this->elevation = rhs->elevation;
+            this->angle = rhs->angle;
+            this->dip = rhs->dip;
+            this->units = rhs->units;
+            this->source = rhs->source;
+
+            this->serial = rhs->serial;
+            this->system = rhs->system;
+            this->channel_no = rhs->channel_no;
+            this->channel_type = rhs->channel_type;
+        }
     }
 
     /*!
@@ -934,9 +940,10 @@ public:
         auto itb = double_noise.cbegin();
         auto ite = double_noise.cbegin();
         std::advance(ite, this->ts_slice.size());
-        this->ts_slice.assign(itb, ite);
 
-        do {
+
+        for (;;) {
+            this->ts_slice.assign(itb, ite);
             if (bdetrend_hanning) detrend_and_hanning<double>(this->ts_slice.begin(), this->ts_slice.end());
             if (this->ts_slice_padded.size()) {
                 //this->ts_slice_padded.insert(this->ts_slice_padded.begin(), this->ts_slice.cbegin(), this->ts_slice.cend());
@@ -949,12 +956,9 @@ public:
             if (std::distance(ite, double_noise.cend()) > (int64_t) (this->ts_slice.size() -1)) {
                 std::advance(itb, this->ts_slice.size());
                 std::advance(ite, this->ts_slice.size());
-                this->ts_slice.assign(itb, ite);
             }
             else break;
-
-
-        } while (std::distance(ite, double_noise.cend()));
+        }
     }
 
 

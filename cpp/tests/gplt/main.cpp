@@ -46,11 +46,11 @@ int main() {
     gplt->cmd << "set ylabel 'Amplitude'" << std::endl;
     gplt->cmd << "set grid" << std::endl;
     gplt->set_x_range(a.front(), a.back());
-    gplt->set_xy_linespoints(a, b, "in", 1, "lc rgb 'red' lt 5 pt 14 ps 2 pi -1");
+    gplt->set_xy_linespoints(a, b, "in", 1, 2, "lc rgb 'red' lt 5 pt 14 pi -1");
     //gplt->set_xy_linespoints(a, c, "out", 1, "lc rgb 'red' lt 5 pt 14 ps 2");
 
     // plot '084_ADU-07e_C000_TEx_8s.atss' binary array=(64) format='%float64'
-    gplt->set_xy_linespoints(a, d, "bin", 1, "lc rgb 'blue' lt 5 pt 14 ps 2  ");
+    gplt->set_xy_linespoints(a, d, "bin", 1, 2, "lc rgb 'blue' lt 5 pt 14 ");
     gplt->plot();
 
     for (i = 0; i < sz; ++i) {

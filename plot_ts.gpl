@@ -1,0 +1,5 @@
+set term qt size 1024,768
+set title 'timeseries'
+set xlabel 'time'
+set ylabel 'a [mV]'
+plot '084_ADU-07e_C000_TEx_2Hz.atss' binary record=64 format="%float64" using 0:1 with lines title "Ex" , '084_ADU-07e_C000_TEx_2Hz.atss' binary skip=16 record=64 format="%float64" using 0:1 with lines title "shift Ex"

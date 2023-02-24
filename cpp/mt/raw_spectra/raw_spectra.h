@@ -13,6 +13,7 @@
 #include "freqs.h"
 #include "prz_vector.h"
 #include "vector_math.h"
+#include "BS_thread_pool.h"
 
 
 void simple_ampl_stack(const std::vector<std::vector<std::complex<double>>> &in, std::vector<double> &out) {
@@ -65,6 +66,8 @@ public:
 
     void advanced_stack_all(const double &fraction_to_use);
 
+    std::future<size_t> advanced_stack_all_t(std::shared_ptr<BS::thread_pool> &pool, const double &fraction_to_use);
+
     void parzen_stack_all();
 
 
@@ -92,6 +95,8 @@ public:
 
     std::shared_ptr<fftw_freqs> fft_freqs;
     double bw = 0; // bandwidth of fft
+
+    size_t advanced_ampl_stack_t(const std::vector<std::vector<std::complex<double>>> &in, std::vector<double> &out, const double &fraction_to_use);
 
 private:
 
@@ -130,7 +135,7 @@ private:
 };
 
 
-std::pair<double, double> max_min_sa_spc(const std::vector<std::shared_ptr<raw_spectra>> &raws, const std::string &channel_type,
+std::pair<double, double> min_max_sa_spc(const std::vector<std::shared_ptr<raw_spectra>> &raws, const std::string &channel_type,
                                          const bool is_remote = false, const bool is_emap = false) {
 
     std::pair<double, double> result(DBL_MIN, DBL_MAX);

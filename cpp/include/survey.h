@@ -90,7 +90,7 @@ public:
     size_t scan() {
         this->clear();
         this->channels.reserve(prep_channels);
-        for (auto const& atssfile : fs::recursive_directory_iterator(this->run_dir)) {
+        for (auto const& atssfile : std::filesystem::recursive_directory_iterator(this->run_dir)) {
             if (std::filesystem::is_regular_file(atssfile) && atssfile.path().extension() == ".json") {
                 std::filesystem::path atss(atssfile);           // construct an atss file from json
                 atss.replace_extension(".atss");

@@ -108,7 +108,7 @@ template <typename T, typename Iterator> void detrend_and_hanning (Iterator firs
 
     T h_period = M_PI/ ((T)(last - first)), hc = (T)0., hw = (T)0.;
 
-    T h_scale = (T)2.;
+    T h_scale = (T)2.;  // scale of Hanning is 2 for amplitudes (1.63 for Engergy - not used)
     while (first != last) {
         hc = cos(i * h_period);
         hw = h_scale * (1. - hc * hc);
@@ -156,11 +156,11 @@ public:
         this->idx_range.first = 0; // DC part is at [0]
         this->idx_range.second = this->wl/2 + 1; // if wl = 1024, Nyquist is at [512] which is the 513th element
         double frl = double(rl) / 2;
-        this->wincal = sqrt(1./(sample_rate * frl) );
+        this->wincal = sqrt(1./(sample_rate * frl) );   // zero padding does not count, take the read length
     }
 
     double get_bw() const {
-        return this->sample_rate/(double)this->rl;
+        return this->sample_rate/2.;
     }
 
     double get_wincal() const {
@@ -168,7 +168,7 @@ public:
     }
 
     /*!
-     * \brief get_wl obsolete function in case of ZERO PADDING
+     * \brief get_wl window length
      * \return
      */
     size_t get_wl() const {
@@ -184,6 +184,14 @@ public:
     }
 
     /*!
+     * \brief get_fftw_scale the FFTW scales (multiplies!) in case to get from a +/- sine wave spectral peak of 1 @ f
+     * \return
+     */
+    double get_fftw_scale() const {
+        return 2.0 / (double(this->rl));
+    }
+
+    /*!
      * \brief get_fl get frequency length of spectral lines of the REMAINING SHORTENED FFT and/or ZERO PADDED FFT
      * \return
      */
@@ -193,6 +201,14 @@ public:
 
     double get_sample_rate() const {
         return this->sample_rate;
+    }
+
+    /*!
+     * \brief get_delta_f frequency resolution
+     * \return
+     */
+    double get_delta_f() const {
+        return this->sample_rate / (double(this->wl));
     }
 
     std::pair<double, double> get_frange() const {

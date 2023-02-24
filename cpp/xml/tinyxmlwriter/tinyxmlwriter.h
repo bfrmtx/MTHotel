@@ -9,11 +9,10 @@
 #include <string>
 #include <vector>
 
-namespace fs = std::filesystem;
 
 class tinyxmlwriter {
 public:
-    tinyxmlwriter(const bool write_header = false, const fs::path &filename = "") {
+    tinyxmlwriter(const bool write_header = false, const std::filesystem::path &filename = "") {
         if (write_header) {
             this->header();
         }
@@ -165,13 +164,13 @@ public:
         this->stack.push_back("caldata");
     }
 
-    bool snatch_cal_from_xml(const fs::path &parent, const fs::path &xml_filename) {
+    bool snatch_cal_from_xml(const std::filesystem::path &parent, const std::filesystem::path &xml_filename) {
         if (xml_filename.empty())
             return false;
 
         if (parent.empty())
             return false;
-        fs::path name(parent);
+        std::filesystem::path name(parent);
         name /= xml_filename;
         std::fstream xmlfile;
         xmlfile.open(name, std::ios::in);
@@ -216,7 +215,7 @@ public:
     std::vector<std::string> stack; //!< contains the stack of indententaion (levels)
 private:
     std::fstream file;
-    fs::path filename;
+    std::filesystem::path filename;
 };
 
 #endif // TINYXMLWRITER_H

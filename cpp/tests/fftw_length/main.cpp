@@ -261,31 +261,43 @@ int main(int argc, char* argv[])
 
 //    }
 
+    auto pool = std::make_shared<BS::thread_pool>(4);
     thread_index = 0;
+    std::vector<std::jthread> threads;
+    std::vector<std::future<size_t>> futures;
     try{
-        for (const auto &ex : execs) {
-            std::vector<std::jthread> threads;
-            for (size_t j = 0; j < ex; ++j) {
-                std::cout << "emplacing thread " << j << std::endl;
-                threads.emplace_back(std::jthread (&raw_spectra::advanced_stack_all, raws[thread_index++], 0.8));
-                //raws[thread_index++]->advanced_stack_all(0.8);
-
-            }
+        for (auto &raw : raws) {
+            std::cout << "push thread " << thread_index++ << std::endl;
+            futures.emplace_back(raw->advanced_stack_all_t(pool, 0.8));
         }
+//        for (const auto &ex : execs) {
+//            std::vector<std::jthread> threads;
+//            for (size_t j = 0; j < ex; ++j) {
+//                std::cout << "emplacing thread " << j << std::endl;
+//                threads.emplace_back(std::jthread (&raw_spectra::advanced_stack_all, raws[thread_index++], 0.8));
+//                //raws[thread_index++]->advanced_stack_all(0.8);
+
+//            }
+//        }
 
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;
-        std::cerr << "could not execute fftw" << std::endl;
+        std::cerr << "could not execute advanced_stack_all" << std::endl;
         return EXIT_FAILURE;
     }
     catch(...) {
-        std::cerr << "could not execute fftw" << std::endl;
+        std::cerr << "could not execute advanced_stack_all" << std::endl;
         return EXIT_FAILURE;
 
     }
     std::cout << "done" << std::endl;
 
+    for (auto &f : futures) {
+        std::cout << "sz:" << f.get();
+    }
+
+   // pool->wait_for_tasks();
 
     std::string init_err;
 
@@ -296,7 +308,7 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    gplt->cmd << "set terminal qt size 2048,1600" << std::endl;
+    gplt->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
     gplt->cmd << "set title 'FFT length'" << std::endl;
     //gplt->cmd << "set key off" << std::endl;
 

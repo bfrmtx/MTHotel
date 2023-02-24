@@ -76,7 +76,7 @@ int main()
 //    for (const auto v: coeff) {
 //        std::cout << i++ << ": " << v << std::endl;
 //    }
-    fs::path home_dir(getenv("HOME"));
+    std::filesystem::path home_dir(getenv("HOME"));
     auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/Northern_Mining");
     auto station = survey->get_station("Sarıçam"); // that is a shared pointer from survey
     auto run = station->get_run(5);
