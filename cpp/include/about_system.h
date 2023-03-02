@@ -123,7 +123,7 @@ std::filesystem::path working_dir(const std::string subdir, const std::string fi
         }
     }
 
-    return exec_dir;
+    return std::filesystem::canonical(exec_dir);
 }
 
 /*!
@@ -163,5 +163,6 @@ void sort_xml_and_files(std::multimap<std::string, std::filesystem::path> &xmls_
     std::swap(xmls_and_files, new_xmls_and_files);
 
 }
+
 
 #endif

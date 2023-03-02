@@ -12,7 +12,6 @@
 // #define _USE_MATH_DEFINES // for C++ and MSVC
 #include <cmath>
 
-#include "base_constants.h"
 
 /*!
  * @file mt_base.h contains all definitions used; all 64bit in order to be comparable with standard variables
@@ -133,7 +132,6 @@ bool create_survey_dirs(const std::filesystem::path survey, std::vector<std::str
             auto svd = survey;
             std::filesystem::create_directory((svd /= str));
         }
-
     }
     catch (...) {
         std::string err_str = __func__;

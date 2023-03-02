@@ -15,7 +15,6 @@
 
 #include <random>
 #include "raw_spectra.h"
-#include "bthread.h"
 
 
 namespace fs = std::filesystem;
@@ -41,6 +40,8 @@ int main(int argc, char* argv[])
     std::shared_ptr<survey_d> survey;
     std::shared_ptr<station_d> station;
     std::vector<std::shared_ptr<run_d>> runs;
+    auto pool = std::make_shared<BS::thread_pool>();
+
     unsigned l = 1;
     try {
 
@@ -144,14 +145,14 @@ int main(int argc, char* argv[])
             if (wl < min_wl) wl = min_wl;                          // min is rl 256, wl 256
             fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), wl, wl));
             channels.back()->set_fftw_plan(fft_freqs.back());
-            raws.emplace_back(std::make_shared<raw_spectra>(fft_freqs.back()));
+            raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
 
             // want that for zero padding
             if (channels.back()->get_sample_rate() < 1024) {        // min is rl 256, wl 1024
                 channels.emplace_back(std::make_shared<channel>(run->get_channel(channel_type)));
                 fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), padded, wl));
                 channels.back()->set_fftw_plan(fft_freqs.back());
-                raws.emplace_back(std::make_shared<raw_spectra>(fft_freqs.back()));
+                raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
             }
 
             wl *= 4;  // sharper fft, at least 1024                  min is rl 1024, wl 1024
@@ -159,7 +160,7 @@ int main(int argc, char* argv[])
             channels.emplace_back(std::make_shared<channel>(run->get_channel(channel_type)));
             fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), wl, wl));
             channels.back()->set_fftw_plan(fft_freqs.back());
-            raws.emplace_back(std::make_shared<raw_spectra>(fft_freqs.back()));
+            raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
         }
         catch (const std::string &error) {
             std::cerr << error << std::endl;
@@ -194,20 +195,18 @@ int main(int argc, char* argv[])
 
 
 
-    std::vector<size_t> execs = mk_mini_threads(0, channels.size());
     size_t thread_index = 0;
 
     std::cout << "FFT" << std::endl;
 
     try {
-        for (const auto &ex : execs) {
-            std::vector<std::jthread> threads;
-            for (size_t j = 0; j < ex; ++j) {
-                std::cout << "emplacing thread " << j << std::endl;
-                threads.emplace_back(std::jthread (&channel::read_all_fftw, channels[thread_index++], false, nullptr));
 
-            }
+        for (auto &chan : channels) {
+            std::cout << "emplacing thread " << thread_index++ << std::endl;
+            pool->push_task(&channel::read_all_fftw, chan, false, nullptr);
         }
+        pool->wait_for_tasks();
+
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;
@@ -221,11 +220,6 @@ int main(int argc, char* argv[])
     }
     std::cout << "done" << std::endl;
 
-
-
-    //    for (auto &chan : channels) {
-    //        chan->read_all_fftw();
-    //    }
 
     auto fs = fft_freqs.at(0)->get_frequencies();
 
@@ -248,38 +242,14 @@ int main(int argc, char* argv[])
     }
 
     std::cout << "stacking" << std::endl;
-//    thread_index = 0;
-//    try{
-//        for (const auto &ex : execs) {
-//            std::vector<std::jthread> threads;
-//            for (size_t j = 0; j < ex; ++j) {
-//                std::cout << "emplacing thread" << j << std::endl;
-//                threads.emplace_back(std::jthread (&raw_spectra::advanced_stack_all, raws[thread_index++], 0.8));
-
-//            }
-//        }
-
-//    }
-
-    auto pool = std::make_shared<BS::thread_pool>(4);
     thread_index = 0;
-    std::vector<std::jthread> threads;
-    std::vector<std::future<size_t>> futures;
+
     try{
         for (auto &raw : raws) {
             std::cout << "push thread " << thread_index++ << std::endl;
-            futures.emplace_back(raw->advanced_stack_all_t(pool, 0.8));
+            raw->advanced_stack_all(0.8);
         }
-//        for (const auto &ex : execs) {
-//            std::vector<std::jthread> threads;
-//            for (size_t j = 0; j < ex; ++j) {
-//                std::cout << "emplacing thread " << j << std::endl;
-//                threads.emplace_back(std::jthread (&raw_spectra::advanced_stack_all, raws[thread_index++], 0.8));
-//                //raws[thread_index++]->advanced_stack_all(0.8);
-
-//            }
-//        }
-
+        pool->wait_for_tasks();
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;
@@ -291,13 +261,9 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
 
     }
+
     std::cout << "done" << std::endl;
 
-    for (auto &f : futures) {
-        std::cout << "sz:" << f.get();
-    }
-
-   // pool->wait_for_tasks();
 
     std::string init_err;
 

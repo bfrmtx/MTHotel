@@ -32,18 +32,18 @@ int sqlite3_exec(
 
 
 // does nothing - a prototype (not used)
-    static int sqlite_handler_create_callback(void* ptr, int argc, char** argv, char** col_name) {
+//    static int sqlite_handler_create_callback(void* ptr, int argc, char** argv, char** col_name) {
 
-    for (int i = 0; i < argc; i++) {
-        printf("%s = %s\n", col_name[i], argv[i] ? argv[i] : "NULL");
-        // condition ? result_if_true : result_if_false
-    }
+//    for (int i = 0; i < argc; i++) {
+//        printf("%s = %s\n", col_name[i], argv[i] ? argv[i] : "NULL");
+//        // condition ? result_if_true : result_if_false
+//    }
 
-    return SQLITE_OK;
+//    return SQLITE_OK;
 
-}
+//}
 
-    /*!
+/*!
  * \brief sqlite_handler_str_callback
  * \param ptr std::vector<std::vector<std::string>> aka a table of strings
  * \param argc
@@ -175,178 +175,95 @@ class sqlite_handler
 public:
 
     /*!
-     * \brief sqlite_handler empty contructor
+     * \brief sqlite_handler constructor
      */
-    sqlite_handler() {;};
+    sqlite_handler(const std::filesystem::path &db_name) {
+        this->db_name = db_name;
+    };
 
     /*!
-     * \brief sqlite_handler empty destructor, no members, nothing to do
+     * \brief sqlite_handler destructor
      */
-    ~sqlite_handler() {;};
+    ~sqlite_handler() {
+        if (this->DB != nullptr) sqlite3_close_v2(DB);
+    };
 
 
-    void create_table(const std::filesystem::path &db_name, const std::string query) {
-        sqlite3* DB = nullptr;
-        int exit = 0;
-        exit = sqlite3_open_v2(db_name.string().c_str(), &DB, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
-        if (exit) {
-            std::cerr << "Error open DB for CREATE TABLE " << db_name << " " << sqlite3_errmsg(DB) << std::endl;
-            std::string err_str = __func__;
-            err_str += std::string(sqlite3_errmsg(DB));
-            if (DB != nullptr) sqlite3_close(DB);
-            throw err_str;
+    void create_table(const std::string query, const bool close_after_read = true) {
+
+        if (this->open_mode != SQLITE_OPEN_CREATE) {
+            this->close();
+            this->open(SQLITE_OPEN_CREATE);
         }
 
-        int rc = sqlite3_exec(DB, query.c_str(), NULL, NULL, NULL);
-        if (rc != SQLITE_OK) {
-            sqlite3_close(DB);
-            std::string err_str = __func__;
-            err_str += "::Error CREATE ->";
-            err_str += std::filesystem::absolute(db_name).string();
-            throw err_str;
-        }
+        this->exec_query_error(sqlite3_exec(this->DB, query.c_str(), NULL, NULL, NULL));
+        if (close_after_read) this->close();
 
-        sqlite3_close(DB);
-        if (!std::filesystem::exists(db_name)) {
-            std::string err_str = __func__;
-            err_str += ":: file not CREATED? -> ";
-            err_str += std::filesystem::absolute(db_name).string();
-            throw err_str;
-        }
 
     }
 
-    std::vector<std::vector<std::string>> sqlite_select_strs(const std::filesystem::path &db_name, const std::string query) {
+    void insert(const std::string query, const bool close_after_read = true) {
 
-        if (!std::filesystem::exists(db_name)) {
-            std::string err_str = __func__;
-            err_str += ":: file not found -> ";
-            err_str += std::filesystem::absolute(db_name).string();
-            throw err_str;
+        if (this->open_mode != SQLITE_OPEN_READWRITE) {
+            this->close();
+            this->open(SQLITE_OPEN_READWRITE);
         }
 
-        sqlite3* DB = nullptr;
-        int exit = 0;
-        exit = sqlite3_open_v2(db_name.string().c_str(), &DB, SQLITE_OPEN_READONLY, NULL);
-        if (exit) {
-            std::cerr << "Error open DB " << db_name << " " << sqlite3_errmsg(DB) << std::endl;
-            std::string err_str = __func__;
-            err_str += std::string(sqlite3_errmsg(DB));
-            if (DB != nullptr) sqlite3_close(DB);
-            throw err_str;
+        this->exec_query_error(sqlite3_exec(this->DB, query.c_str(), NULL, NULL, NULL));
+        if (close_after_read) this->close();
+    }
+
+
+    std::vector<std::vector<std::string>> sqlite_select_strs(const std::string query, const bool close_after_read = true) {
+
+        if (this->open_mode != SQLITE_OPEN_READONLY) {
+            this->close();
+            this->open(SQLITE_OPEN_READONLY);
         }
         std::vector<std::vector<std::string>> stable;
 
-        int rc = sqlite3_exec(DB, query.c_str(), sqlite_handler_str_callback, &stable, NULL);
-        if (rc != SQLITE_OK) {
-            sqlite3_close(DB);
-            std::string err_str = __func__;
-            err_str += "::Error SELECT -> ";
-            err_str += std::filesystem::absolute(db_name).string();
-            throw err_str;
-        }
-        sqlite3_close(DB);
+        this->exec_query_error(sqlite3_exec(this->DB, query.c_str(), sqlite_handler_str_callback, &stable, NULL));
 
+        if (close_after_read) this->close();
         return stable;
     }
 
-    std::vector<double> sqlite_vector_double(const std::filesystem::path &db_name, const std::string query) {
+    std::vector<double> sqlite_vector_double(const std::string query, const bool close_after_read = true) {
 
-        if (!std::filesystem::exists(db_name)) {
-            std::string err_str = __func__;
-            err_str += ":: file not found -> ";
-            err_str += std::filesystem::absolute(db_name).string();
-            throw err_str;
-        }
-
-
-        sqlite3* DB = nullptr;
-        int exit = 0;
-        exit = sqlite3_open_v2(db_name.string().c_str(), &DB, SQLITE_OPEN_READONLY, NULL);
-        if (exit) {
-            std::cerr << "Error open DB " << db_name << " " << sqlite3_errmsg(DB) << std::endl;
-            std::string err_str = __func__;
-            err_str += std::string(sqlite3_errmsg(DB));
-            if (DB != nullptr) sqlite3_close(DB);
-            throw err_str;
+        if (this->open_mode != SQLITE_OPEN_READONLY) {
+            this->close();
+            this->open(SQLITE_OPEN_READONLY);
         }
         std::vector<double> data;
 
-        int rc = sqlite3_exec(DB, query.c_str(), sqlite_handler_scolumn_double_callback, &data, NULL);
-        if (rc != SQLITE_OK) {
-            sqlite3_close(DB);
-            std::string err_str = __func__;
-            err_str += "::Error SELECT ->";
-            err_str += std::filesystem::absolute(db_name).string();
-            throw err_str;
-        }
-        sqlite3_close(DB);
+        this->exec_query_error(sqlite3_exec(this->DB, query.c_str(), sqlite_handler_scolumn_double_callback, &data, NULL));
+        if (close_after_read) this->close();
         return data;
     }
 
-    std::vector<int64_t> sqlite_vector_int64_t(const std::filesystem::path &db_name, const std::string query) {
+    std::vector<int64_t> sqlite_vector_int64_t(const std::string query, const bool close_after_read = true ) {
 
-        if (!std::filesystem::exists(db_name)) {
-            std::string err_str = __func__;
-            err_str += ":: file not found ->";
-            err_str += std::filesystem::absolute(db_name).string();
-            throw err_str;
-        }
-
-        sqlite3* DB = nullptr;
-        int exit = 0;
-        exit = sqlite3_open_v2(db_name.string().c_str(), &DB, SQLITE_OPEN_READONLY, NULL);
-        if (exit) {
-            std::cerr << "Error open DB " << db_name << " " << sqlite3_errmsg(DB) << std::endl;
-            std::string err_str = __func__;
-            err_str += std::string(sqlite3_errmsg(DB));
-            if (DB != nullptr) sqlite3_close(DB);
-            throw err_str;
+        if (this->open_mode != SQLITE_OPEN_READONLY) {
+            this->close();
+            this->open(SQLITE_OPEN_READONLY);
         }
         std::vector<int64_t> data;
 
-        int rc = sqlite3_exec(DB, query.c_str(), sqlite_handler_scolumn_int64_t_callback, &data, NULL);
-        if (rc != SQLITE_OK) {
-            sqlite3_close(DB);
-            std::string err_str = __func__;
-            err_str += "::Error SELECT ->";
-            err_str += std::filesystem::absolute(db_name).string();
-            throw err_str;
-        }
-        sqlite3_close(DB);
+        this->exec_query_error(sqlite3_exec(this->DB, query.c_str(), sqlite_handler_scolumn_int64_t_callback, &data, NULL));
+        if (close_after_read) this->close();
         return data;
     }
 
-    std::vector<uint64_t> sqlite_vector_uint64_t(const std::filesystem::path &db_name, const std::string query) {
+    std::vector<uint64_t> sqlite_vector_uint64_t(const std::string query, const bool close_after_read = true) {
 
-        if (!std::filesystem::exists(db_name)) {
-            std::string err_str = __func__;
-            err_str += ":: file not found ->";
-            err_str += std::filesystem::absolute(db_name).string();
-            throw err_str;
-        }
-
-        sqlite3* DB = nullptr;
-        int exit = 0;
-        exit = sqlite3_open_v2(db_name.string().c_str(), &DB, SQLITE_OPEN_READONLY, NULL);
-        if (exit) {
-            std::cerr << "Error open DB " << db_name << " " << sqlite3_errmsg(DB) << std::endl;
-            std::string err_str = __func__;
-            err_str += std::string(sqlite3_errmsg(DB));
-            if (DB != nullptr) sqlite3_close(DB);
-            throw err_str;
+        if (this->open_mode != SQLITE_OPEN_READONLY) {
+            this->close();
+            this->open(SQLITE_OPEN_READONLY);
         }
         std::vector<uint64_t> data;
 
-        int rc = sqlite3_exec(DB, query.c_str(), sqlite_handler_scolumn_uint64_t_callback, &data, NULL);
-        if (rc != SQLITE_OK) {
-            sqlite3_close(DB);
-            std::string err_str = __func__;
-            err_str += "::Error SELECT ->";
-            err_str += std::filesystem::absolute(db_name).string();
-            throw err_str;
-        }
-        sqlite3_close(DB);
+        this->exec_query_error(sqlite3_exec(this->DB, query.c_str(), sqlite_handler_scolumn_uint64_t_callback, &data, NULL));
+        if (close_after_read) this->close();
         return data;
     }
 
@@ -363,7 +280,98 @@ public:
 
     }
 
+    void close() {
+        if (this->DB != nullptr) sqlite3_close_v2(DB);
+        this->open_mode = -1;
+        this->exit = SQLITE_ERROR;
+    }
 
+    void exec_query_error(const int &rc) {
+        if (rc != SQLITE_OK) {
+            std::string err_str = __func__;
+            err_str += " ";
+            err_str += "::Error SELECT / INSERT ->";
+            err_str += this->db_name.string();
+            err_str += " ";
+            if (this->DB != nullptr) err_str += std::string(sqlite3_errmsg(this->DB));
+            this->close();
+            throw err_str;
+        }
+    }
+
+
+    void open(const int &open_mode) {
+
+        this->open_mode = open_mode;
+        if (this->open_mode == SQLITE_OPEN_READONLY) {
+            if (!std::filesystem::exists(this->db_name)) {
+                std::string err_str = __func__;
+                err_str += ":: DB RO file not found ->";
+                err_str += std::filesystem::absolute(db_name).string();
+                throw err_str;
+            }
+            this->exit = sqlite3_open_v2(this->db_name.string().c_str(), &this->DB, SQLITE_OPEN_READONLY, NULL);
+            if (this->exit) {
+                std::cerr << "Error open DB RO" << this->db_name << " " << sqlite3_errmsg(this->DB) << std::endl;
+                std::string err_str = __func__;
+                err_str += " ";
+                err_str += this->db_name.string();
+                err_str += " ";
+                if (this->DB != nullptr) err_str += std::string(sqlite3_errmsg(this->DB));
+                this->close();
+                throw err_str;
+            }
+
+        }
+        if (this->open_mode == SQLITE_OPEN_READWRITE) {
+            if (!std::filesystem::exists(this->db_name)) {
+                std::string err_str = __func__;
+                err_str += ":: DB RW file not found ->";
+                err_str += std::filesystem::absolute(db_name).string();
+                throw err_str;
+            }
+            this->exit = sqlite3_open_v2(this->db_name.string().c_str(), &this->DB, SQLITE_OPEN_READWRITE, NULL);
+            if (this->exit) {
+                std::cerr << "Error open DB RW" << this->db_name << " " << sqlite3_errmsg(this->DB) << std::endl;
+                std::string err_str = __func__;
+                err_str += " ";
+                err_str += this->db_name.string();
+                err_str += " ";
+                if (this->DB != nullptr) err_str += std::string(sqlite3_errmsg(this->DB));
+                this->close();
+                throw err_str;
+            }
+        }
+
+        if (this->open_mode == SQLITE_OPEN_CREATE) {
+
+            this->exit = sqlite3_open_v2(this->db_name.string().c_str(), &this->DB, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+            if (this->exit) {
+                std::cerr << "Error open DB / Create " << this->db_name << " " << sqlite3_errmsg(this->DB) << std::endl;
+                std::string err_str = __func__;
+                err_str += " ";
+                err_str += this->db_name.string();
+                err_str += " ";
+                err_str += std::string(sqlite3_errmsg(this->DB));
+                if (this->DB != nullptr) err_str += std::string(sqlite3_errmsg(this->DB));
+                this->close();
+                throw err_str;
+            }
+        }
+
+
+
+    }
+
+    void vacuum() {
+        sqlite3_exec(this->DB, "VACUUM", 0, 0, 0);
+    }
+
+
+    sqlite3* DB = nullptr;                  //!< the database
+    int exit = SQLITE_ERROR;                //!< sqlite return open value
+    int open_mode = -1;                     //!< SQLITE_OPEN_READONLY 1, SQLITE_OPEN_READWRITE 2, SQLITE_OPEN_CREATE 4
+    std::filesystem::path db_name;          //!< database file
 
 
 };

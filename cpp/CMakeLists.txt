@@ -131,5 +131,7 @@ add_subdirectory(tests/all_runs)
 add_subdirectory(tests/filtertest)
 add_subdirectory(tests/gplt)
 add_subdirectory(tests/fftw_length_noise_timeser)
+add_subdirectory(tests/sqlite_threads)
+
 
 

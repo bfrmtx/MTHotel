@@ -14,7 +14,7 @@ int main()
 
 
     std::filesystem::path sqlfile("/home/bfr/number_test.sql3");
-    auto sql_info = std::make_unique<sqlite_handler>();
+    auto sql_info = std::make_unique<sqlite_handler>(sqlfile);
 
     //std::filesystem::path sqlfile("/usr/local/procmt/bin/info.sql3");
     std::vector<std::vector<std::string>> table, table2;
@@ -27,7 +27,7 @@ int main()
 
     string sql_query("SELECT * FROM uints;");
     try {
-        table = sql_info->sqlite_select_strs(sqlfile, sql_query);
+        table = sql_info->sqlite_select_strs(sql_query);
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;
@@ -39,7 +39,7 @@ int main()
 
     sql_query = "SELECT value FROM uints";
     try {
-        vui = sql_info->sqlite_vector_uint64_t(sqlfile, sql_query);
+        vui = sql_info->sqlite_vector_uint64_t(sql_query);
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;
@@ -55,7 +55,7 @@ int main()
     sql_query = "CREATE TABLE IF NOT EXISTS `uuints` ( `key` TEXT, `value` UNSIGNED INTEGER)";
 
     try {
-        sql_info->create_table(sqlfile, sql_query);
+        sql_info->create_table(sql_query);
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl << std::endl;

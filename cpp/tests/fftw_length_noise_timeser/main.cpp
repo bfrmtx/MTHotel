@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
         noise_data.emplace_back(std::vector<double>(dat_sz));
     }
 
-    BS::thread_pool pool(channels.size() + 2);
+    auto pool = std::make_shared<BS::thread_pool>();
 
 
     // I add 1% noise floor
@@ -186,24 +186,32 @@ int main(int argc, char* argv[])
                 if (i == channels.size()-1) fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), wl*4, rl));
                 else fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), wl, rl));
                 chan->set_fftw_plan(fft_freqs.back());
-                raws.emplace_back(std::make_shared<raw_spectra>(fft_freqs.back()));
+                raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
                 ++i;
 
             }
 
             // **** here I do the FFT of a single vector - e.g. a noise vector
             i = 0;
+
+
+
+
             for (auto &chan : channels) {
                 // const bool bdetrend_hanning = true
                 //                if (pl == 0) chan->read_all_fftw_gussian_noise(noise_data[i++], false);  // could be a thread
                 //                else chan->read_all_fftw_gussian_noise(noise_data[i++], true);
 
-                if (pl == 0) pool.push_task(&channel::read_all_fftw_gussian_noise, chan, noise_data[i++], false);
-                else pool.push_task(&channel::read_all_fftw_gussian_noise, chan, noise_data[i++], true);
+                if (pl == 0) pool->push_task(&channel::read_all_fftw_gussian_noise, chan, noise_data[i++], false);
+                else pool->push_task(&channel::read_all_fftw_gussian_noise, chan, noise_data[i++], true);
 
                 //std::cout << chan->qspc.size() << " readings" << std::endl;
             }
-            pool.wait_for_tasks();
+            pool->wait_for_tasks();
+
+
+
+
 
             for (auto &chan : channels) {
                 std::cout << chan->qspc.size() << " readings" << std::endl;
@@ -226,10 +234,9 @@ int main(int argc, char* argv[])
             std::sort(max_mins.begin(), max_mins.end()); // of x-axis frequencies
 
             for (auto &raw : raws) {
-                // raw->simple_stack_all();
-                pool.push_task(&raw_spectra::simple_stack_all, raw);
+                raw->simple_stack_all();
             }
-            pool.wait_for_tasks();
+            pool->wait_for_tasks();
 
 
             auto ampl_min_max = min_max_sa_spc(raws, channel_type);
@@ -302,11 +309,11 @@ int main(int argc, char* argv[])
                 //else gplt->set_xy_lines(fft_freqs.at(i)->get_frequencies(), vs[i], label.str(), 1);
             }
 
-            pool.push_task(&gnuplotter<double, double>::plot, gplt);
+            pool->push_task(&gnuplotter<double, double>::plot, gplt);
 
         }
     }
-    pool.wait_for_tasks();
+    pool->wait_for_tasks();
 
     auto stop_time = std::chrono::high_resolution_clock::now();
 

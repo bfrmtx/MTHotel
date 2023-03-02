@@ -29,7 +29,11 @@ read_cal::read_cal()
     }
     this->dbloaded = true;
     // that is a two column db
-    auto table = this->sqldb.sqlite_select_strs(dbfile, "SELECT * FROM sensor_aliases");
+
+    this->sqldb = std::make_unique<sqlite_handler>(dbfile);
+
+    auto table = this->sqldb->sqlite_select_strs("SELECT * FROM sensor_aliases");
+
     for (const auto &row : table) {
         //                for (auto &col : row) {
         //                    std::cout << col << " ";

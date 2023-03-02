@@ -64,11 +64,11 @@ int main(int argc, char* argv[])
 
 
     std::filesystem::path sqlfile("/home/bfr/data.sql3");
-    auto sql_data = std::make_unique<sqlite_handler>();
+    auto sql_data = std::make_unique<sqlite_handler>(sqlfile);
     std::vector<double> coeff;
     std::string sql_query = "SELECT value FROM mtx_9x";
     try {
-        coeff = sql_data->sqlite_vector_double(sqlfile, sql_query);
+        coeff = sql_data->sqlite_vector_double(sql_query);
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;

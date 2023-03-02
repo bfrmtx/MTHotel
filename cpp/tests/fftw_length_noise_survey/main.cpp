@@ -43,6 +43,8 @@ int main()
 
     // fetch the Ex channel of each
     std::vector<std::shared_ptr<run_d>> runs;
+    auto pool = std::make_shared<BS::thread_pool>();
+
 
     try {
         for (j = start_run; j < start_run + nruns; ++j) {
@@ -106,7 +108,7 @@ int main()
             }
             fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), wl, rl));
             chan->set_fftw_plan(fft_freqs.back());
-            raws.emplace_back(std::make_shared<raw_spectra>(fft_freqs.back()));
+            raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
 
         }
     }

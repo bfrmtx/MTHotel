@@ -11,6 +11,7 @@ atstools/atstools
 chcal/chcal
 fft/fft
 downloads/downloads
+developers/developers
 ```
 
 # Indices and tables

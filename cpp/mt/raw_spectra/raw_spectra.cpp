@@ -1,9 +1,5 @@
 #include "raw_spectra.h"
 
-raw_spectra::raw_spectra(std::shared_ptr<fftw_freqs> &fft_freqs)
-{
-    this->fft_freqs = fft_freqs;
-}
 
 void raw_spectra::get_raw_spectra(std::vector<std::vector<std::complex<double> > > &swapme, const std::string &channel_type,
                                   const double &bw, const bool is_remote, const bool is_emap)
@@ -42,208 +38,130 @@ void raw_spectra::get_raw_spectra(std::vector<std::vector<std::complex<double> >
 
 void raw_spectra::simple_stack_all()
 {
-    std::vector<std::jthread> threads;
-
     if (this->ex.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->ex), std::ref(this->sa_ex));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->ex), std::ref(this->sa_ex));
     }
     if (this->ey.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->ey), std::ref(this->sa_ey));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->ey), std::ref(this->sa_ey));
     }
     if (this->hx.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->hx), std::ref(this->sa_hx));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->hx), std::ref(this->sa_hx));
     }
     if (this->hy.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->hy), std::ref(this->sa_hy));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->hy), std::ref(this->sa_hy));
     }
     if (this->hz.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->hz), std::ref(this->sa_hz));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->hz), std::ref(this->sa_hz));
     }
 
 
     if (this->rex.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->rex), std::ref(this->sa_rex));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->rex), std::ref(this->sa_rex));
     }
     if (this->rey.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->rey), std::ref(this->sa_rey));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->rey), std::ref(this->sa_rey));
     }
     if (this->rhx.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->rhx), std::ref(this->sa_rhx));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->rhx), std::ref(this->sa_rhx));
     }
     if (this->rhy.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->rhy), std::ref(this->sa_rhy));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->rhy), std::ref(this->sa_rhy));
     }
     if (this->rhz.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->rhz), std::ref(this->sa_rhz));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->rhz), std::ref(this->sa_rhz));
     }
 
     if (this->eex.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->eex), std::ref(this->sa_eex));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->eex), std::ref(this->sa_eex));
     }
     if (this->eey.size()) {
-        threads.emplace_back(simple_ampl_stack, std::ref(this->eey), std::ref(this->sa_eey));
+        this->pool->push_task(simple_ampl_stack, std::ref(this->eey), std::ref(this->sa_eey));
     }
 
 }
 
 void raw_spectra::advanced_stack_all(const double &fraction_to_use)
 {
-    std::vector<std::jthread> threads;
-
     if (this->ex.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->ex), std::ref(this->sa_ex), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->ex), std::ref(this->sa_ex), std::ref(fraction_to_use));
     }
     if (this->ey.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->ey), std::ref(this->sa_ey), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->ey), std::ref(this->sa_ey), std::ref(fraction_to_use));
     }
     if (this->hx.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->hx), std::ref(this->sa_hx), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->hx), std::ref(this->sa_hx), std::ref(fraction_to_use));
     }
     if (this->hy.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->hy), std::ref(this->sa_hy), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->hy), std::ref(this->sa_hy), std::ref(fraction_to_use));
     }
     if (this->hz.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->hz), std::ref(this->sa_hz), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->hz), std::ref(this->sa_hz), std::ref(fraction_to_use));
     }
 
 
     if (this->rex.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rex), std::ref(this->sa_rex), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->rex), std::ref(this->sa_rex), std::ref(fraction_to_use));
     }
     if (this->rey.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rey), std::ref(this->sa_rey), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->rey), std::ref(this->sa_rey), std::ref(fraction_to_use));
     }
     if (this->rhx.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rhx), std::ref(this->sa_rhx), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->rhx), std::ref(this->sa_rhx), std::ref(fraction_to_use));
     }
     if (this->rhy.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rhy), std::ref(this->sa_rhy), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->rhy), std::ref(this->sa_rhy), std::ref(fraction_to_use));
     }
     if (this->rhz.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rhz), std::ref(this->sa_rhz), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->rhz), std::ref(this->sa_rhz), std::ref(fraction_to_use));
     }
 
     if (this->eex.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->eex), std::ref(this->sa_eex), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->eex), std::ref(this->sa_eex), std::ref(fraction_to_use));
     }
     if (this->eey.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->eey), std::ref(this->sa_eey), std::ref(fraction_to_use)));
+        this->pool->push_task(advanced_ampl_stack, std::ref(this->eey), std::ref(this->sa_eey), std::ref(fraction_to_use));
     }
 
 }
-
-size_t raw_spectra::advanced_ampl_stack_t(const std::vector<std::vector<std::complex<double> > > &in, std::vector<double> &out, const double &fraction_to_use) {
-    size_t n = in.at(0).size();  // n = f size
-    out.resize(n, 0.0);             // f size
-
-
-    for (size_t i = 0; i < n; ++i) {  //   for frequencies
-
-        auto ff = bvec::absv(bvec::get_fslice(in, i)); // get all stacks
-        //        two_pass_variance var;
-        //        var.variance(ff.cbegin(), ff.cend());
-        //        out[i] = var.d_mean;
-        out[i] = bvec::median_range_mean(ff, fraction_to_use);
-        //out[i] = bvec::mean(ff);
-    }
-
-    return out.size();
-}
-
-
-std::future<size_t> raw_spectra::advanced_stack_all_t(std::shared_ptr<BS::thread_pool> &pool, const double &fraction_to_use)
-{
-    // pool.push_task(&raw_spectra::simple_stack_all, raw);
-
-
-    if (this->ex.size()) {
-       return  pool->submit(&raw_spectra::advanced_ampl_stack_t, std::ref(*this), std::ref(this->ex), std::ref(this->sa_ex), std::ref(fraction_to_use));
-        //this->advanced_ampl_stack_t(this->ex, this->sa_ex, fraction_to_use);
-        //threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->ex), std::ref(this->sa_ex), std::ref(fraction_to_use)));
-    }
-
-
-/*    if (this->ey.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->ey), std::ref(this->sa_ey), std::ref(fraction_to_use)));
-    }
-    if (this->hx.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->hx), std::ref(this->sa_hx), std::ref(fraction_to_use)));
-    }
-    if (this->hy.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->hy), std::ref(this->sa_hy), std::ref(fraction_to_use)));
-    }
-    if (this->hz.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->hz), std::ref(this->sa_hz), std::ref(fraction_to_use)));
-    }
-
-
-    if (this->rex.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rex), std::ref(this->sa_rex), std::ref(fraction_to_use)));
-    }
-    if (this->rey.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rey), std::ref(this->sa_rey), std::ref(fraction_to_use)));
-    }
-    if (this->rhx.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rhx), std::ref(this->sa_rhx), std::ref(fraction_to_use)));
-    }
-    if (this->rhy.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rhy), std::ref(this->sa_rhy), std::ref(fraction_to_use)));
-    }
-    if (this->rhz.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->rhz), std::ref(this->sa_rhz), std::ref(fraction_to_use)));
-    }
-
-    if (this->eex.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->eex), std::ref(this->sa_eex), std::ref(fraction_to_use)));
-    }
-    if (this->eey.size()) {
-        threads.emplace_back(std::jthread(advanced_ampl_stack, std::ref(this->eey), std::ref(this->sa_eey), std::ref(fraction_to_use)));
-    }
-    */
-
-    return std::future<size_t>();
-}
-
 
 void raw_spectra::parzen_stack_all()
 {
-    std::vector<std::jthread> threads;
     // size_t parzen(const std::vector<T> &data, const std::vector<S> &selected_freqs, const std::vector<std::vector<S>> &parzendists, std::vector<T> &result ) {
     if (this->sa_ex.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_ex), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_ex)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_ex), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_ex));
     }
     if (this->sa_ey.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_ey), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_ey)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_ey), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_ey));
     }
     if (this->sa_hx.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_hx), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_hx)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_hx), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_hx));
     }
     if (this->sa_hy.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_hy), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_hy)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_hy), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_hy));
     }
     if (this->sa_hz.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_hz), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_hz)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_hz), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_hz));
     }
     if (this->sa_rex.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_rex), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_rex)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_rex), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_rex));
     }
     if (this->sa_rey.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_rey), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_rey)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_rey), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_rey));
     }
     if (this->sa_rhx.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_rhx), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_rhx)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_rhx), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_rhx));
     }
     if (this->sa_rhy.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_rhy), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_rhy)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_rhy), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_rhy));
     }
     if (this->sa_rhz.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_rhz), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_rhz)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_rhz), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_rhz));
     }
     if (this->sa_eex.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_eex), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_eex)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_eex), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_eex));
     }
     if (this->sa_eey.size()) {
-        threads.emplace_back(std::jthread(parzen<double, double>, std::ref(this->sa_eey), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_eey)));
+        this->pool->push_task(parzen<double, double>, std::ref(this->sa_eey), std::ref(this->fft_freqs->selected_freqs), std::ref(this->fft_freqs->parzendists), std::ref(this->sa_prz_eey));
     }
 
 }

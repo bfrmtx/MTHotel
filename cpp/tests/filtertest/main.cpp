@@ -13,7 +13,7 @@ int main()
 {
 
     std::filesystem::path sqlfile("/usr/local/mthotel/data/filter.sql3");
-    auto sql_info = std::make_unique<sqlite_handler>();
+    auto sql_info = std::make_unique<sqlite_handler>(sqlfile);
     std::vector<double> coeff;
     std::filesystem::path fileoutpath(std::filesystem::temp_directory_path() / "aa/filter");
 
@@ -65,7 +65,7 @@ int main()
 
     string sql_query("SELECT * FROM mtx4;");
     try {
-        coeff = sql_info->sqlite_vector_double(sqlfile, sql_query);
+        coeff = sql_info->sqlite_vector_double(sql_query);
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;

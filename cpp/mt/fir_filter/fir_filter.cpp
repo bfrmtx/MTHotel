@@ -29,7 +29,7 @@ std::shared_ptr<channel> fir_filter::set_filter(std::shared_ptr<channel> &chan, 
         }
     }
 
-    sql_info = std::make_unique<sqlite_handler>();
+    sql_info = std::make_unique<sqlite_handler>(dbfile);
 
     this->out_chan = std::make_shared<channel>(chan);  // that is a new channel, not a copy
     this->in_chan = chan;
@@ -38,7 +38,7 @@ std::shared_ptr<channel> fir_filter::set_filter(std::shared_ptr<channel> &chan, 
     if (this->filter_type == "mtx4") {
         std::string sql_query("SELECT * FROM mtx4;");
         try {
-            this->coeff = sql_info->sqlite_vector_double(dbfile, sql_query);
+            this->coeff = sql_info->sqlite_vector_double(sql_query);
         }
         catch (const std::string &error) {
             std::cerr << error << std::endl;

@@ -42,6 +42,7 @@ int main(int argc, char* argv[])
     size_t file_count = 0;
     std::string basename ("spc_ts_basic");
 
+    auto pool = std::make_shared<BS::thread_pool>();
 
 
     std::filesystem::path outpath(std::filesystem::temp_directory_path() / "fft_basics");
@@ -93,7 +94,7 @@ int main(int argc, char* argv[])
                 chan->set_fftw_plan(fft_fres);
 
                 // here each channel is treated as single result - by default it would contain 5 channels
-                raws.emplace_back(std::make_shared<raw_spectra>(fft_fres));
+                raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_fres));
                 mstr::sample_rate_to_str(chan->get_sample_rate(), f_or_s, unit);
                 std::cout << "use sample rates of " << f_or_s << " " << unit <<  " wl:" << fft_fres->get_wl() << "  read length:" << fft_fres->get_rl() <<  std::endl;
             }

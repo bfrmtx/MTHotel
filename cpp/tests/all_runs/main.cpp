@@ -53,6 +53,8 @@ int main()
     }
     std::vector<std::shared_ptr<fftw_freqs>> fft_freqs;
     std::vector<std::shared_ptr<raw_spectra>> raws;
+    auto pool = std::make_shared<BS::thread_pool>();
+
 
     try {
         // create the fftw interface with individual window length and read length
@@ -79,7 +81,7 @@ int main()
 
             chan->set_fftw_plan(fft_freqs.back());
             // here each channel is treated as single result - by default it would contain 5 channels
-            raws.emplace_back(std::make_shared<raw_spectra>(fft_freqs.back()));
+            raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
 
         }
 
@@ -117,11 +119,12 @@ int main()
 
 
     try {
-        std::vector<std::jthread> threads;
         for (auto &chan : channels) {
             //chan->read_all_fftw();
-            threads.emplace_back(std::jthread (&channel::read_all_fftw, chan, false, nullptr));
+            pool->push_task(&channel::read_all_fftw, chan, false, nullptr);
         }
+        pool->wait_for_tasks();
+
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;
@@ -132,7 +135,7 @@ int main()
         return EXIT_FAILURE;
     }
     catch (...) {
-        std::cerr << "could not read all channels" << std::endl;
+        std::cerr << "could not read all fft channels" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -146,16 +149,15 @@ int main()
     // ******************************** queue to vector *******************************************************************************
 
     try {
-        std::vector<std::jthread> threads;
 
         fft_res_iter = fft_freqs.begin();
         for (auto &chan : channels) {
             auto fft_fres = *fft_res_iter++;
-            //chan->prepare_to_raw_spc(fft_fres, false);
             // we have a pointer and don't need std::ref
-            threads.emplace_back(std::jthread (&channel::prepare_to_raw_spc, chan, fft_fres, false, false));
-
+            pool->push_task(&channel::prepare_to_raw_spc, chan, fft_fres, false, false);
         }
+        pool->wait_for_tasks();
+
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;
@@ -189,9 +191,10 @@ int main()
     try {
         std::vector<std::jthread> threads;
         for (auto &rw : raws) {
-            threads.emplace_back(std::jthread (&raw_spectra::advanced_stack_all, rw, std::ref(median_limit)));
-            //rw->advanced_stack_all(0.7);
+            rw->advanced_stack_all(0.7);
         }
+        pool->wait_for_tasks();
+
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;

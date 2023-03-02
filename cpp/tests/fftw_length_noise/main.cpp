@@ -38,6 +38,8 @@ int main()
 
     std::vector<std::shared_ptr<fftw_freqs>> fft_freqs;
     std::vector<std::shared_ptr<raw_spectra>> raws;
+    auto pool = std::make_shared<BS::thread_pool>();
+
 
     i = 0;
     size_t rl, wl = 1024;
@@ -51,7 +53,7 @@ int main()
             ++i;
             chan->set_fftw_plan(fft_freqs.back());
             // here each channel is treated as single result - by default it would contain 5 channels
-            raws.emplace_back(std::make_shared<raw_spectra>(fft_freqs.back()));
+            raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
 
         }
         // add a zero padded
@@ -62,7 +64,7 @@ int main()
         fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), wl, rl));
         channels.back()->set_fftw_plan(fft_freqs.back());
         // here each channel is treated as single result - by default it would contain 5 channels
-        raws.emplace_back(std::make_shared<raw_spectra>(fft_freqs.back()));
+        raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;

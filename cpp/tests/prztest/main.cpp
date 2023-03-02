@@ -38,6 +38,8 @@ int main()
     auto run_003 = station_26->get_run(3);
     auto run_004 = station_26->get_run(4);
 
+    auto pool = std::make_shared<BS::thread_pool>();
+
     std::vector<std::shared_ptr<channel>> channels;
     std::string channel_type("Ey");
 
@@ -73,7 +75,7 @@ int main()
         ++i;
         chan->set_fftw_plan(fft_freqs.back());
         // here each channel is treated as single result - by default it would contain 5 channels
-        raws.emplace_back(std::make_shared<raw_spectra>(fft_freqs.back()));
+        raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
 
     }
 

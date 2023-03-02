@@ -58,7 +58,7 @@ private:
     std::string get_units_mtx_old() const;
 
     ChopperStatus chopper = ChopperStatus::off;
-    sqlite_handler sqldb;
+    std::unique_ptr<sqlite_handler> sqldb;
 
     // use for a guess
     std::string magdate;

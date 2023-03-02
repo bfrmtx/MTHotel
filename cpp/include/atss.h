@@ -643,6 +643,7 @@ public:
 
     std::vector<double> ts_slice;                       //!< data slice in time domain
     std::vector<double> ts_slice_padded;                //!< data slice in time domain with zero padding
+    std::vector<double> ts_chunk;                       //!< if wl = 1024 and overlapping is 50%, ts_chunk is 512; when filter 32x wl = 471 and ts_chunk = 32
     std::vector<std::complex<double>> spc_slice;        //!< data slice in spectral domain
     std::vector<double> ampl_slice;                     //!< single spectra amplitude slice, e.g. for plotting
     std::vector<double> ts_slice_inv;                   //!< data slice in time domain after ftt, calibration, inverse fft
@@ -1074,7 +1075,7 @@ private:
      * \param read_last_chunk - false in case of fft, true incase you want to read all and the last data vector is smaller than the pervious ones
      * \return -1 in case of failure
      */
-    int64_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) const{
+    int64_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
 
         // too much checking ?
         if (file.peek() == EOF ) {
@@ -1083,22 +1084,56 @@ private:
         }
 
         size_t i = 0;
-        while (!file.eof() && i < data.size()) {
-            file.read(static_cast<char *>(static_cast<void *>(&data[i++])), 8);
+
+        if (!this->ts_chunk.size()) {
+
+            while (!file.eof() && i < data.size()) {
+                file.read(static_cast<char *>(static_cast<void *>(&data[i++])), 8);
+            }
+
+            // read last chunk in case
+            if ((file.eof() ) && read_last_chunk && (i > 1) ) {
+                --i;
+                data.resize(i);  // keeps the elements; i was incremented BEFORE the while loop above terminated
+            }
+            else if ((i == 1) || !i) {
+                data.resize(0);
+                return -1;
+            }
         }
 
-        // read last chunk in case
-        if ((file.eof() ) && read_last_chunk && (i > 1) ) {
-            --i;
-            data.resize(i);  // keeps the elements; i was incremented BEFORE the while loop above terminated
+        else {
+            while (!file.eof() && i < this->ts_chunk.size()) {
+                file.read(static_cast<char *>(static_cast<void *>(&this->ts_chunk[i++])), 8);
+            }
+
+            // read last chunk in case
+            if ((file.eof() ) && read_last_chunk && (i > 1) ) {
+                --i;
+                this->ts_chunk.resize(i);  // keeps the elements; i was incremented BEFORE the while loop above terminated
+            }
+            else if ((i == 1) || !i) {  // here we can take the original data
+                data.resize(0);
+                return -1;
+            }
+
+            // ******************************** reading chunks means: you already have read one slice at the beginning! so data IS EXISTING
+            if (this->ts_chunk.size() >= data.size()) data = this->ts_chunk;
+            else {
+                size_t j = 0;
+                for (i = ts_chunk.size(); i < data.size(); ++ i) {
+                    data[j++] = data[i];
+                }
+                for (i = 0; i < this->ts_chunk.size(); ++i) {
+                    data[j++] = this->ts_chunk[i];
+                }
+            }
         }
-        else if ((i == 1) || !i) {
-            data.resize(0);
-            return -1;
-        }
+
 
         return file.tellg();
     }
+
 
 };  // end channel class
 

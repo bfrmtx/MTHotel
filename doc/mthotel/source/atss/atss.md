@@ -41,9 +41,17 @@ additional there may appear [atmm](#atmm)  mask files:
 - run_001/084_ADU-08e_C02_THx_2s.atmm  ... the mask file
 - run_002/084_ADU-08e_C02_THx_1024Hz.atmm  ... the mask file
 
+### File Entries
+
+- serial number > 0
+- System Name (without space and underscore)
+- C NN channel number >= 0
+- T channel Type
+- Sample Rate with Unit (can be a double); Units: Hz and s
+
 ### Entries
 
-- datetime: ISO 8601, UTC time, can contain fractions of seconds like 13:22:01.5
+- datetime: ISO 8601, UTC time the stream started, can contain fractions of seconds like 13:22:01.5
 - latitude: ISO 6709, North latitude is positive, decimal fractions
 - longitude: ISO 6709, East longitude is positive, decimal fractions
 - elevation: in meter, e.g. WGS84 referenced
@@ -63,6 +71,15 @@ additional there may appear [atmm](#atmm)  mask files:
 - a: \[\]: amplitude data
 - p: \[\]: phase data
 
+<span style="color:red">... **and where are stop date & samples ???**</span>
+
+It is the common and fatal mistake in programming to have redundant information.
+$$samples == file \ size \ [bytes] \big/ 8$$
+$$stop date == \frac{samples}{sample \ rate} + datetime == \frac{file \ size \ [bytes]}{8 \cdot sample \ rate} + datetime$$
+
+It is obvious that the system can write (append) data to the stream *without* touching the JSON header: a stream has not stop date, he exists as long recorded. 
+
+When the system splits the recording into (for example) hourly segments you simply concatenate the streams and use the *first* header for the newly assembled stream. *Hence* that the system writes *scaled* data, so mV/km for the electric field, and therefore the even the electric field can be concatenated.
 
 ## Header
 
