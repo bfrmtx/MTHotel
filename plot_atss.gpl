@@ -1,0 +1,6 @@
+set term qt size 1024,768
+set title 'timeseries'
+set xlabel 'time'
+set ylabel 'a [mV]'
+plot filename binary record=64 format="%float64" using 0:1 with lines title "Ex"
+pause -1

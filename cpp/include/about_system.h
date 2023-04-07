@@ -123,6 +123,13 @@ std::filesystem::path working_dir(const std::string subdir, const std::string fi
         }
     }
 
+    if (exec_dir.empty()) {
+        std::string err_str = __func__;
+        err_str += "::can not determin working dir // looking for info.sql3? ";
+        throw err_str;
+        return exec_dir;
+    }
+
     return std::filesystem::canonical(exec_dir);
 }
 

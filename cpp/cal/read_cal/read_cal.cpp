@@ -7,25 +7,36 @@
 
 read_cal::read_cal()
 {
-
-    auto dbfile = working_dir("data", "info.sql3");
+    std::filesystem::path dbfile;
 
     try {
-        if (!std::filesystem::exists(dbfile)) {
-            dbfile = getenv("HOME");
-            dbfile /= "devel/github_mthotel/MTHotel/cpp/data/info.sql3";
-
-            if (!std::filesystem::exists(dbfile)) {
-                std::string err_str = __func__;
-                err_str += ":: read_cal() ";
-                err_str += dbfile.string();
-                throw err_str;
-                return;
-            }
-        }
+        dbfile = working_dir("data", "info.sql3");
     }
+
+
     catch (const std::string &error) {
         std::cerr << error << std::endl;
+
+        try {
+            if (!std::filesystem::exists(dbfile)) {
+                dbfile = getenv("HOME");
+                dbfile /= "devel/github_mthotel/MTHotel/cpp/data/info.sql3";
+
+                if (!std::filesystem::exists(dbfile)) {
+                    std::string err_str = __func__;
+                    err_str += ":: read_cal() ";
+                    err_str += dbfile.string();
+                    throw err_str;
+                    return;
+                }
+            }
+        }
+
+        catch (const std::string &error) {
+            std::cerr << error << std::endl;
+            exit;
+        }
+
     }
     this->dbloaded = true;
     // that is a two column db

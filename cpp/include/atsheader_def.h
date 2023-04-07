@@ -449,6 +449,27 @@ struct ats_header_json {
         return ang;
 
     }
+
+    /*!
+     * \brief get_filter
+     * \param init like "ADB" - we may other board names in future
+     * \return
+     */
+    std::string get_filter(const std::string init) const {
+        std::string filter(init);
+        filter += this->header["ADB_board_type"];
+        if (this->header["LF_filters"].get<std::string>().size()) {
+            filter += ",";
+            filter += this->header["LF_filters"];
+        }
+        if (this->header["HF_filters"].get<std::string>().size()) {
+            filter += ",";
+            filter += this->header["HF_filters"];
+        }
+
+
+        return filter;
+    }
     bool can_and_want_scale() const {
 
         if (!this->header.contains("channel_type") ) {
@@ -576,7 +597,7 @@ struct ats_header_json {
         if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF-RF-2"] =     2;  //! 0x02 ADU07/8_LF-RF-2 filter on LF board with capacitor 122pF
         if ((ADU == "ADU-07e"))                         this->LF_Filters["LF-RF-3"] =     4;  //! 0x04 ADU07_LF-RF-3 filter on LF board with capacitor 242pF
         if ((ADU == "ADU-07e"))                         this->LF_Filters["LF-RF-4"] =     8;  //! 0x08 ADU07_LF-RF-4 filter on LF board with capacitor 342pF
-        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF_LP_4HZ"] =   16; //! 0x10 ADU07/8_LF_LP_4HZ filter on LF board with 4 Hz Lowpass characteristic
+        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF_LP_4Hz"] =   16; //! 0x10 ADU07/8_LF_LP_4Hz filter on LF board with 4 Hz Lowpass characteristic
 
         if ((ADU == "ADU-07e"))                         this->LF_Filters["MF-RF-1"] =     32; //! 0x40 ADU07_MF_RF_1 filter on MF board with capacitor 470nF
         if ((ADU == "ADU-07e"))                         this->LF_Filters["MF-RF-2"] =     64; //! 0x20 ADU07_MF_RF_2 filter on MF board with capacitor 4.7nF

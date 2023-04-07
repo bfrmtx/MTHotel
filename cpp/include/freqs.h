@@ -16,6 +16,7 @@
 
 #include "mt_base.h"
 #include "prz_vector.h"
+#include "strings_etc.h"
 
 template <typename T, typename Iterator> void detrend(Iterator first, const Iterator last) {
     T dBias       = 0.0;
@@ -137,6 +138,42 @@ size_t next_power_of_two(const size_t &n){
     return m;
 }
 
+ /*!
+     * \brief gen_equidistant_logvector generate a equally logarithic spaced vector
+     * \param start from start (included)
+     * \param stop   to stop (included)
+     * \param steps_per_decade steps per decade (like 11 for MSF-06e or 7 for MFS-07e)
+     * \return vector of frequencies (or null vector if failed)
+*/
+std::vector<double> gen_equidistant_logvector(const double start, const double stop, const size_t steps_per_decade) {
+
+    // dist would be log_stop - log_start
+    // we calculate per decade
+    std::vector<double> result;
+
+    if ( (start <= 0) || (stop <= 0)) return result;
+    if (stop < start) return result;
+
+    double step = 1.0/ double(steps_per_decade);
+    size_t i= 0;
+    double value = DBL_MAX;
+
+    do {
+        double x = start * pow(10.0, double(i++));
+        double lx = log10(x);
+        for (size_t j = 0; j < steps_per_decade; ++j) {
+            value = pow(10.0, lx + step * double(j));
+            //Fsetting
+            if (value <= stop) result.push_back(value);
+        }
+    } while (value <= stop);
+
+    if ( (result.back() < stop) && result.size() ) result.push_back(stop);
+
+    return result;
+}
+
+
 
 /*!
  * \brief The fftw_freqs class stores the FFT parameters for FFTW; the fftw plan is INSIDE the channel as well as the result of the FFTW
@@ -256,6 +293,64 @@ public:
     }
 
     /*!
+     * \brief get_frequency_slice get a slice of EXISTING frequencies AFTER FFT
+     * \param min_f
+     * \param max_f
+     * \return
+     */
+    std::vector<double> get_frequency_slice(const double &min_f, const double &max_f)  {
+        std::vector<double> freqs;
+
+        if (!this->is_valid()) return freqs;
+         double fwl = double(wl);
+        if (min_f < ( double(this->idx_range.first) * (this->sample_rate/fwl) )) return freqs;
+        if (min_f > ( double(this->idx_range.second) * (this->sample_rate/fwl) )) return freqs;
+
+        auto all_f = this->get_frequencies();
+
+
+        auto l = std::lower_bound(all_f.cbegin(), all_f.cend(), min_f);
+        auto h = std::upper_bound(l, all_f.cend(), max_f);
+
+        if ((l == h) || (l == all_f.cend())) {
+            std::string err_str = __func__;
+            err_str += ":: no frequencies found for slice!";
+            throw err_str;
+            return freqs;
+
+        }
+        this->idx_range_slice.first = size_t(l - all_f.cbegin());
+        this->idx_range_slice.second = size_t(h - all_f.cbegin()); // we need size; and range iter is always < size
+
+
+
+        freqs.resize(this->idx_range_slice.second - this->idx_range_slice.first);
+        size_t j = 0, i = 0;
+        for (i = this->idx_range_slice.first; i < this->idx_range_slice.second; ++i) {
+            freqs[j++] = all_f[i];
+
+        }
+
+        if (!freqs.size()) {
+            std::string err_str = __func__;
+            err_str += ":: no frequencies found for slice!";
+            throw err_str;
+        }
+
+        return freqs;
+    }
+
+    std::vector<double> get_frequency_slice(const std::pair<double, double> &min_max_f)  {
+        return this->get_frequency_slice(min_max_f.first, min_max_f.second);
+    }
+
+
+    std::pair<size_t, size_t> get_index_slice() const  {
+        return this->idx_range_slice;
+    }
+
+
+    /*!
      * \brief auto_range
      * \param rel_lower like 0.1
      * \param rel_upper like 0.5 (1.0 == all)
@@ -276,7 +371,7 @@ public:
 //        if (upper - lower < min_fft_wl) {
 //            return std::make_pair<double, double>(0, DBL_MAX);
 //        }
-
+        if (lower < 1) lower = 1;   // can't take DC
         this->idx_range.first = lower;
         this->idx_range.second = upper;
         return this->get_frange();
@@ -512,6 +607,7 @@ private:
     double sample_rate = 0.0;
 
     std::pair<size_t, size_t> idx_range {0, SIZE_MAX};
+    std::pair<size_t, size_t> idx_range_slice {0, SIZE_MAX};
     double wincal = 0.0;
     size_t raw_stacks = 0;              //!< to amount of received ffts
 
@@ -536,6 +632,64 @@ size_t field_width(const std::vector<std::shared_ptr<fftw_freqs>> &fftws) {
     xw << std::setprecision(0) << *std::max_element(maxf.begin(), maxf.end());
     return xw.str().size();
 
+}
+
+std::vector<std::stringstream> gnuplot_labels(const std::vector<std::shared_ptr<fftw_freqs>> &fftws, const std::shared_ptr<std::vector<double>> in_rmss = nullptr) {
+    std::vector<double> fss(fftws.size());
+    std::vector<size_t> wls(fftws.size());
+    std::vector<size_t> rls(fftws.size());
+    std::vector<double> bws(fftws.size());
+    std::vector<double> dfs(fftws.size());
+    std::vector<double> rmss;
+
+    std::vector<std::stringstream> ssv(fftws.size());
+    size_t i = 0;
+    if (in_rmss != nullptr) {
+        if (in_rmss->size() != fftws.size()) {
+            std::cerr << "gnuplot_labels-> sizes different" << fftws.size() << " " << in_rmss->size() << std::endl;
+            return ssv;
+        }
+        rmss.resize(fftws.size());
+        for (const auto v : *in_rmss) rmss[i++] = v;
+    }
+
+    i = 0;
+    for (const auto &fftw : fftws) {
+        fss[i] = fftw->get_sample_rate();
+        wls[i] = fftw->get_wl();
+        rls[i] = fftw->get_rl();
+        bws[i] = fftw->get_bw();
+        dfs[i] = fftw->get_delta_f();
+        ++i;
+    }
+
+    auto sfss = mstr::field_width_right_adjusted_freqs_periods(fss);
+    auto swls = mstr::field_width_right_adjusted_ints(wls);
+    auto srls = mstr::field_width_right_adjusted_ints(rls);
+    auto sbws = mstr::field_width_right_adjusted_freqs_periods(bws);
+    auto sdfs = mstr::field_width_right_adjusted_freqs_periods(dfs);
+
+
+    i = 0;
+    for (auto &ss : ssv) {
+        ss << "fs: " << sfss.at(i).str();
+        ss << " wl: " << swls.at(i).str();
+        ss << " rl: " << srls.at(i).str();
+        ss << " bw: " << sbws.at(i).str();
+        ss << " Δf/Δp: " << sfss.at(i).str();
+        ++i;
+    }
+
+    if (rmss.size()) {
+        i = 0;
+        auto srmss = mstr::field_width_right_adjusted_doubles(rmss);
+        for (auto &ss : ssv) {
+            ss << "rms: " << srmss.at(i).str();
+            ++i;
+        }
+    }
+
+    return ssv;
 }
 
 /*

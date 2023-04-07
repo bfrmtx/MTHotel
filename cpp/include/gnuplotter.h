@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <queue>
+#include <utility>
 #include <type_traits>
 #include <filesystem>
 
@@ -144,6 +145,16 @@ public:
     void set_x_range(const double &xmin, const double &xmax) {
 
         this->cmd << "set xrange [" << xmin << ":" << xmax << "]" << std::endl;
+    }
+
+    void set_x_range(const std::pair<double, double> &min_max) {
+
+        this->cmd << "set xrange [" << min_max.first << ":" << min_max.second << "]" << std::endl;
+    }
+
+    void set_y_range(const std::pair<double, double> &min_max) {
+
+        this->cmd << "yrange [" << min_max.first << ":" << min_max.second << "]" << std::endl;
     }
 
     void set_y_range(const double &ymin, const double &ymax) {

@@ -30,7 +30,7 @@ namespace fs = std::filesystem;
 // -outdir /tmp -cat /home/bfr/devel/ats_data/cat_ats_data/NGRI/meas_2019-11-20_06-52-49/*ats /home/bfr/devel/ats_data/cat_ats_data/NGRI/meas_2019-11-22_06-22-30/*ats
 // -outdir /tmp -chats /home/bfr/devel/ats_data/zero6/site0199/*ats
 // -tojson -clone -outdir /tmp/aa  /survey-master/Eastern_Mining
-// -tojson -clone -outdir /tmp/aa  /survey-master/Northern_Mining
+// -tojson -clone -outdir /tmp/aa  /survey/Northern_Mining
 // -chats -outdir /tmp/aa/06 -json_caldir /tmp  /home/bfr/devel/ats_data/adu06/
 // -tojson -clone -outdir /tmp/bb -json_caldir /tmp /home/bfr/devel/ats_data/adu06/
 
@@ -408,7 +408,6 @@ int main(int argc, char* argv[])
             auto meas =   fs::path(atsj->measdir()) / fs::path(atsh->get_ats_filename(adu06->run));
             adu08->set_new_filename(outdir / meas); // set a new output
 
-
             adu08s.emplace_back(adu08);
             atsjs.emplace_back(atsj);
 
@@ -498,8 +497,6 @@ int main(int argc, char* argv[])
                 std::cerr << "create SURVEY" << std::endl;
                 return EXIT_FAILURE;
             }
-
-
         }
 
         // ask HW and split threads
@@ -513,7 +510,6 @@ int main(int argc, char* argv[])
                 for (size_t j = 0; j < ex; ++j) {
                     //collect_atsheaders(ats, survey);
                     threads.emplace_back(std::jthread (collect_atsheaders, std::ref(atsheaders[thread_index++]), std::ref(survey), std::ref(shift_start_time)));
-
                 }
             }
             catch( const std::string &error ) {
@@ -523,7 +519,6 @@ int main(int argc, char* argv[])
             catch(std::filesystem::filesystem_error& e) {
                 std::cerr <<  e.what() << std::endl;
                 return EXIT_FAILURE;
-
             }
             catch (...) {
                 std::cerr << "could not execute all threads" << std::endl;
@@ -532,8 +527,6 @@ int main(int argc, char* argv[])
         }
 
         std::cout << "done collecting" << std::endl;
-
-
 
         auto vch = survey->get_all_channels();
 
@@ -545,14 +538,11 @@ int main(int argc, char* argv[])
                     ch->cal->read_file((json_caldir / read_name), false);
                 }
             }
-
         }
 
         std::sort(vch.begin(), vch.end(), compare_channel_start_lt);
 
-        for (const auto &ch : vch) {
-            std::cout << ch->brief() << std::endl;
-        }
+
 
         try {
             survey->mk_tree();
@@ -564,7 +554,6 @@ int main(int argc, char* argv[])
         catch(std::filesystem::filesystem_error& e) {
             std::cerr <<  e.what() << std::endl;
             return EXIT_FAILURE;
-
         }
         catch (...) {
             std::cerr << "could not execute all threads" << std::endl;
@@ -580,7 +569,6 @@ int main(int argc, char* argv[])
                 std::cout << "starting: " << ex << std::endl;
                 for (size_t j = 0; j < ex; ++j) {
                     threads.emplace_back(std::jthread (fill_survey_tree, std::ref(survey), thread_index++) );
-
                 }
             }
             catch( const std::string &error ) {
@@ -608,6 +596,9 @@ int main(int argc, char* argv[])
         catch (std::exception& e)
         {
             std::cerr << e.what();
+        }
+        for (const auto &ch : vch) {
+            std::cout << ch->brief() << std::endl;
         }
         std::cout << "done" << std::endl;
 

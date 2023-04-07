@@ -321,12 +321,12 @@ double sample_rate_to_str(const double& sample_rate, double& f_or_s, std::string
     }
 
     if (round_f_or_s) {
-        f_or_s = round(f_or_s);
+        f_or_s = round(f_or_s);  // round for the nearest integral type; 5.5 -> 6, 5.8 -> 6, 5.001 -> 5
 
     }
     if (!round_f_or_s) return 0.0;
 
-    return f_or_s - diff_s;
+    return f_or_s - diff_s; // would be 0.001 for 5.001 input
 }
 
 double str_to_sample_rate(const std::string &srate) {
@@ -355,7 +355,7 @@ double str_to_sample_rate(const std::string &srate) {
     return rate;
 }
 
-std::string sample_rate_to_str_simple(const double& sample_rate) {
+std::string sample_rate_to_str_simple(const double& sample_rate, bool add_space_for_s = false) {
     double f_or_s;
     std::string unit;
     bool round_f_or_s = true;
@@ -363,7 +363,18 @@ std::string sample_rate_to_str_simple(const double& sample_rate) {
     std::string sval;
     sval = std::to_string(static_cast<std::uint32_t>(f_or_s));
     sval += unit;
+    if (add_space_for_s) {
+        if (unit == "s") sval += " ";
+    }
     return sval;
+}
+
+std::string f_to_string(const double &f, bool add_space_for_s = false) {
+    std::stringstream ss;
+    if ((f < 1) && add_space_for_s) ss << (1./f) << " " << "s ";
+    else if (f < 1) ss << (1./f) << " " << "s";
+    else ss << f << "Hz";
+    return ss.str();
 }
 
 template <class T>
@@ -566,6 +577,112 @@ size_t string2run(const std::string &srun) {
     return size_t(std::stoul(ssrun));
 }
 
+/*!
+ * \brief field_width_right_adjusted_freqs_periods - this is for frequencies wich can be converted to INT!!!!
+ * \param fs
+ * \return field witdth
+ */
+std::vector<std::stringstream> field_width_right_adjusted_freqs_periods(const std::vector<double> &fs ) {
+    std::vector<std::stringstream> sss(fs.size());
+    size_t i = 0;
+    size_t max_l = 0;
+    std::string unit;
+    for (const auto &f : fs) {
+        int add;
+        if (f > 0.99999) {
+            add = int(round(f));
+        }
+        else {
+            add =  int(round(1.0/f));
+        }
+
+        sss[i++] << add << unit;
+    }
+
+    for (const auto &s : sss) {
+        if (s.str().size() > max_l) max_l = s.str().size();
+
+    }
+    sss.clear();
+    sss.resize(fs.size());
+
+
+    i = 0;
+    for (const auto &f : fs) {
+        int add;
+        if (f > 0.99999) {
+            add = int(round(f));
+            unit = "Hz";
+        }
+        else {
+            add =  int(round(1.0/f));
+            unit = "s ";
+        }
+
+        sss[i++] << std::setw(max_l) << add << unit;
+    }
+
+    return sss;
+}
+template<std::integral T>
+std::vector<std::stringstream> field_width_right_adjusted_ints(const std::vector<T> &vals ) {
+    std::vector<std::stringstream> sss(vals.size());
+    size_t i = 0;
+    size_t max_l = 0;
+    for (const auto &v : vals) {
+        sss[i++] << v;
+    }
+
+    for (const auto &s : sss) {
+        if (s.str().size() > max_l) max_l = s.str().size();
+
+    }
+    sss.clear();
+    sss.resize(vals.size());
+
+
+    i = 0;
+    for (const auto &v : vals) {
+        sss[i++]  << std::setw(max_l) << v;
+    }
+
+    return sss;
+}
+
+template<std::floating_point T>
+std::vector<std::stringstream> field_width_right_adjusted_doubles(const std::vector<T> &vals, const double low = 0.01, const double high = 10000, size_t sci_prec = 4) {
+    std::vector<std::stringstream> sss(vals.size());
+
+    bool is_sci = false;
+    auto mima = std::minmax_element(vals.cbegin(), vals.cend());
+
+
+    if (*mima.first < low)   is_sci = true;
+    if (*mima.second < high) is_sci = true;
+
+
+    size_t i = 0;
+    size_t max_l = 0;
+    for (const auto &v : vals) {
+        if (is_sci) sss[i++] << std::scientific  << std::setprecision(sci_prec) << v;
+        else sss[i++] << v;
+    }
+
+    for (const auto &s : sss) {
+        if (s.str().size() > max_l) max_l = s.str().size();
+
+    }
+    sss.clear();
+    sss.resize(vals.size());
+
+    i = 0;
+    for (const auto &v : vals) {
+        if (is_sci) sss[i++] << std::setw(max_l)  << std::scientific  << std::setprecision(sci_prec) << v;
+        else sss[i++]  << std::setw(max_l) << v;
+    }
+
+    return sss;
+}
 
 /*
 time_t parseiso8601utc(const char *date) {

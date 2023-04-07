@@ -4,7 +4,7 @@ project(math_vector  VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/out_of_tree_build.cmake)
-include_directories(${CMAKE_INSTALL_PREFIX}/include ${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_INSTALL_PREFIX}/include)
 
 
 set(SOURCES math_vector.cpp)

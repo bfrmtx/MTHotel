@@ -91,7 +91,7 @@ add_definitions(-DPMTSQLPATH_UNIX="${CMAKE_INSTALL_PREFIX}/bin")
 ## templates FIRST
 add_subdirectory(include)
 add_subdirectory(math_vector)
-# add_subdirectory(cal/mk_calibration)
+add_subdirectory(cal/mk_calibration)
 add_subdirectory(xml/tinyxmlwriter)
 add_subdirectory(xml/tinyxml2)
 add_subdirectory(cal/read_cal)
@@ -107,6 +107,8 @@ add_subdirectory(ats/atmtools)
 add_subdirectory(ats/atstools)
 add_subdirectory(utils/mk_noise)
 add_subdirectory(utils/filter)
+add_subdirectory(utils/rda)
+#
 #
 add_subdirectory(tests/json_test)
 add_subdirectory(tests/ats_read_all)
@@ -131,6 +133,7 @@ add_subdirectory(tests/all_runs)
 add_subdirectory(tests/filtertest)
 add_subdirectory(tests/gplt)
 add_subdirectory(tests/fftw_length_noise_timeser)
+add_subdirectory(tests/fftw_length_noise_timeser_wwo)
 add_subdirectory(tests/sqlite_threads)
 
 

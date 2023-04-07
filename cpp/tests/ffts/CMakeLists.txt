@@ -7,7 +7,7 @@ find_package(HDF5 REQUIRED COMPONENTS CXX)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/rpath.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/out_of_tree_build.cmake)
-include_directories(${CMAKE_INSTALL_PREFIX}/include ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}../oss/highfive)
+include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_INSTALL_PREFIX}/include ${CMAKE_SOURCE_DIR}../oss/highfive)
 
 set(SOURCES main.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES})

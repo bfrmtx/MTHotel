@@ -5,7 +5,7 @@ project(atstools VERSION 1.0.0 LANGUAGES CXX)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/rpath.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/out_of_tree_build.cmake)
-include_directories(${CMAKE_INSTALL_PREFIX}/include ${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_INSTALL_PREFIX}/include)
 
 
 set(PROJECT_SOURCES main.cpp pt_cat.h pt_tojson.h adu06_fname.h chats.h)

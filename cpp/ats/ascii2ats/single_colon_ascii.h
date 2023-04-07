@@ -19,7 +19,6 @@ std::vector<double> read_single_colon_ascii(const std::filesystem::path filename
 
     std::fstream afile;
     std::string str;
-    size_t sz = 0;
 
     afile.open(filename, std::ios::in);
     if (!afile.is_open()) {
@@ -34,7 +33,7 @@ std::vector<double> read_single_colon_ascii(const std::filesystem::path filename
     while (std::getline(afile, str)) {
         data.push_back(std::stod(str));
     }
-
+    data.shrink_to_fit();
     return data;
 }
 

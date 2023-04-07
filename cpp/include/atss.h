@@ -338,10 +338,11 @@ public:
             this->longitude = rhs->longitude;
             this->elevation = rhs->elevation;
             this->angle = rhs->angle;
+            this->filter = rhs->filter;
+            this->resistance = rhs->resistance;
             this->dip = rhs->dip;
             this->units = rhs->units;
             this->source = rhs->source;
-
             this->serial = rhs->serial;
             this->system = rhs->system;
             this->channel_no = rhs->channel_no;
@@ -374,11 +375,11 @@ public:
             this->filepath_wo_ext = json_file;
             this->filepath_wo_ext.replace_extension("");
             this->samples(this->filepath_wo_ext);
-
-
             if (head.contains("angle")) this->angle = head["angle"];
             if (head.contains("dip")) this->dip = head["dip"];
+            if (head.contains("resistance")) this->dip = head["resistance"];
             if (head.contains("units")) this->units = head["units"];
+            if (head.contains("filter")) this->filter = head["filter"];
             if (head.contains("source")) this->source = head["source"];
 
             if(this->cal != nullptr) this->cal.reset();
@@ -622,6 +623,8 @@ public:
     double elevation =  0.0;            //!< elevation in meter
     double angle =  0.0;                //!< orientaion from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
     double dip =  0.0;                  //!< angle positive down 90 = down, 0 = horizontal - in case it had been measured
+    double resistance = 0.0;            //!< e.g. contact resistance of the electrodes
+    std::string filter;                 //!< comma separated string; system board name and filter like ADB-LF_LF-RF-1_LF-LP-4Hz which is the LF board with Radio Filter 1 and 4Hz low pass switched on
     std::string units =  "mV";          //!< for ADUs it will be mV H or whatever or scaled E mV/km
     std::string source =  "";           //!< empty or indicate as, ns, ca, cp, tx or what ever
 
@@ -685,8 +688,10 @@ public:
         head["longitude"] =  this->longitude;
         head["elevation"] =  this->elevation;
         head["angle"] = this->angle;
+        head["resistance"] = this->resistance;
         head["dip"] =  this->dip;
         head["units"] = this->units;
+        head["filter"] = this->filter;
         head["source"] = this->source;
         if (jsn_cal != nullptr) head.update(jsn_cal->toJson_embedd());
         else if (this->cal != nullptr) head.update(this->cal->toJson_embedd());
@@ -1143,6 +1148,8 @@ bool operator == (const std::shared_ptr<channel>& lhs, const std::shared_ptr<cha
     if (lhs->elevation != rhs->elevation) return false;
     if (lhs->angle != rhs->angle) return false;
     if (lhs->dip != rhs->dip) return false;
+    if (lhs->resistance != rhs->resistance) return false;
+    if (lhs->filter != rhs->filter) return false;
     if (lhs->units != rhs->units) return false;
     if (lhs->source != rhs->source) return false;
     if (lhs->serial != rhs->serial) return false;

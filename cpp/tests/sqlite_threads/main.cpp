@@ -11,6 +11,8 @@
 #include "messages.h"
 #include "sqlite_msg_thread.h"
 
+#include "ring_buf_micro.h"
+
 
 
 
@@ -90,6 +92,16 @@ int main() {
     // set format x "%m/%d/%Y %H:%M:%S"
     // plot '< sqlite3 log_test.sql3 "select timestamp, ival_first from logs WHERE sender=\"GPS\" and message like \"Sats tracked\" ";' using 1:2
     // select timestamp, ival_first from logs WHERE sender="GPS" AND message like "Sats tracked";
+
+    auto rbuf = mini_ring_buf_avg<size_t>(6);
+
+    std::cout << " rbuf " << std::endl;
+
+    for (size_t i = 1; i < 10; ++i) {
+       std::cout << rbuf.push_back_avg(i) << " " ;
+    }
+
+    std::cout << " rbuf end " << rbuf.last() <<  std::endl;
 
     return EXIT_SUCCESS;
 

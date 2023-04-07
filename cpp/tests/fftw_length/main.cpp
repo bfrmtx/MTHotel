@@ -228,7 +228,7 @@ int main(int argc, char* argv[])
     fft_res_iter = fft_freqs.begin();
     for (auto &chan : channels) {
         auto fft_fres = *fft_res_iter++;
-        auto mm = fft_fres->auto_range(0.001, 0.6); // cut off spectra
+        auto mm = fft_fres->auto_range(0.001, 0.4); // cut off spectra
         max_mins.push_back(mm.first);
         max_mins.push_back(mm.second);
         chan->prepare_to_raw_spc(fft_fres, false);

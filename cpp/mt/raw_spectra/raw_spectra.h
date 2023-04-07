@@ -54,7 +54,7 @@ public:
 
     /*!
      * \brief raw_spectra
-     * \param fft_freqs copy of a shared pointer
+     * \param fft_freqs copy of a shared pointer; the raw spectra contain trimmed results - so a subset of the complete FFT
      */
 
     raw_spectra(std::shared_ptr<BS::thread_pool> &pool, std::shared_ptr<fftw_freqs> &fft_freqs) {
