@@ -1,5 +1,5 @@
 .wy-nav-content {
-max-width: 100% !important;
+    max-width: 100% !important;
 }
 
 .math {
@@ -8,4 +8,38 @@ max-width: 100% !important;
 .eqno {
     float: right;
 }
+.wy-breadcrumbs {
+    display: none !important;
+}
 
+.wy-side-nav-search {
+    background-color: #d8d8d8;
+}
+
+.wy-side-nav-search input[type=text] {
+    border-color: #787878;
+}
+
+.wy-nav-side {
+    background: #f8f8f8
+}
+
+.wy-menu-vertical a {
+    color: inherit;
+}
+
+.wy-menu-vertical a:hover {
+    background-color: #c8c8c8;
+}
+
+.rst-versions {
+    border-top: solid 10px #d0d0d0;
+}
+
+.rst-versions .rst-current-version {
+    background-color: #e0e0e0;
+}
+
+a:hover {
+    text-decoration: underline !important;
+}

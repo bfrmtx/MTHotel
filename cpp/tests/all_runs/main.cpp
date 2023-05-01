@@ -14,8 +14,25 @@
 
 #include <random>
 #include "raw_spectra.h"
-#include "matplotlibcpp.h"
-namespace plt = matplotlibcpp;
+#include "gnuplotter.h"
+
+std::vector<std::stringstream> ats_filenames_formatted(const std::vector<std::shared_ptr<channel>> channels) {
+
+    std::vector<int> szs;
+    szs.reserve(channels.size());
+
+    for (const auto &ch : channels) {
+        szs.emplace_back(ch->filename().size());
+    }
+    auto max = *std::max_element(szs.begin(), szs.end());
+    std::vector<std::stringstream> names(channels.size());
+    size_t i = 0;
+    for (const auto &ch : channels) {
+        names[i++] << std::setw(max) << ch->filename();
+    }
+
+    return names;
+}
 
 int main()
 {
@@ -23,10 +40,10 @@ int main()
 
     size_t i, j;
     std::filesystem::path home_dir(getenv("HOME"));
-//    auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/Northern_Mining");
-//    auto station = survey->get_station("Sarıçam"); // that is a shared pointer from survey
-//    auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/Eastern_Mining");
-//    auto station = survey->get_station("LH13"); // that is a shared pointer from survey
+    //    auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/Northern_Mining");
+    //    auto station = survey->get_station("Sarıçam"); // that is a shared pointer from survey
+    //    auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/Eastern_Mining");
+    //    auto station = survey->get_station("LH13"); // that is a shared pointer from survey
     auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/theo_noise_mfs06e");
     auto station = survey->get_station("Site_1"); // that is a shared pointer from survey
     std::vector<std::shared_ptr<channel>> channels;
@@ -211,46 +228,39 @@ int main()
         return EXIT_FAILURE;
     }
 
+    std::string init_err;
+    auto gplt = std::make_unique<gnuplotter<double, double>>(init_err);
 
-
-    plt::title("FFT length");
-
-    i = 0;
-    j = 0;
-    std::vector<std::string> marks{"b-", "r-", "g-", "c-", "m-", "b--", "r--", "g--", "c--", "m--"};
-    for (const auto &rws : raws) {
-
-        std::string lab =  "fs: " +  std::to_string(rws->fft_freqs->get_sample_rate()) + " wl:" + std::to_string((int)rws->fft_freqs->get_wl()) + " rl:" + std::to_string((int)rws->fft_freqs->get_rl()) + " " + channels.at(j++)->filename();
-        //if (i == zp) lab += " zp";
-        //if (i == lw) lab += " lw";
-        //plt::named_loglog(lab, rws->fft_freqs->get_selected_frequencies(), rws->get_abs_sa_prz_spectra(channel_type), marks.at(i));
-        plt::named_loglog(lab, rws->fft_freqs->get_frequencies(), rws->get_abs_sa_spectra(channel_type), marks.at(i));
-
-        ++i;
-        if (i == marks.size()) i = 0;
-
+    if (init_err.size()) {
+        std::cout << init_err << std::endl;
+        return EXIT_FAILURE;
     }
-//    for (size_t i = 0; i < channels.size(); ++i) {
 
-//        if ((fft_freqs.at(i)->get_wl() == 4096) && (fft_freqs.at(i)->get_rl() == 1024)) {
-//            plt::named_loglog("padded 1024->4096", fft_freqs.at(i)->get_frequencies(), raws.at(i)->get_abs_sa_spectra(channel_type), "r+");
-//        }
-//        else if ((fft_freqs.at(i)->get_wl() == 1024) && (fft_freqs.at(i)->get_rl() == 1024)) {
-//            plt::named_loglog("1024", fft_freqs.at(i)->get_frequencies(), raws.at(i)->get_abs_sa_spectra(channel_type), "bo");
-//        }
+    gplt->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
+    gplt->cmd << "set title 'FFT length'" << std::endl;
 
-//        else plt::named_loglog(std::to_string(fft_freqs.at(i)->get_wl()),fft_freqs.at(i)->get_frequencies(), raws.at(i)->get_abs_sa_spectra(channel_type));
+    gplt->cmd << "set xlabel 'frequency [Hz]'" << std::endl;
+    gplt->cmd << "set ylabel 'amplitude [mV/√Hz]'" << std::endl;
+    gplt->cmd << "set grid" << std::endl;
+    gplt->cmd << "set key font \"Hack, 10\"" << std::endl;
+    gplt->cmd << "set logscale xy" << std::endl;
 
-//    }
-    plt::xlabel("f [Hz]");
-    plt::legend();
+    auto labels = gnuplot_labels(fft_freqs);
+    auto names = ats_filenames_formatted(channels);
 
-
-    plt::show();
-
-    //std::cout << std::endl;
-
-
+    j = 0;
+    for (const auto &rws : raws) {
+        //std::ostringstream label;
+        //label << "fs:" << rws->fft_freqs->get_sample_rate() << " wl:" << (int)rws->fft_freqs->get_wl() << " rl:" << (int)rws->fft_freqs->get_rl() << " " << mstr::escape_undersorce(channels.at(j)->filename());
+        //label << "fs:" << rws->fft_freqs->get_sample_rate() << " wl:" << (int)rws->fft_freqs->get_wl() << " rl:" << (int)rws->fft_freqs->get_rl() << " " << "file\\_name";
+//        auto label = labels.at(j).str();
+//        label += " " + mstr::escape_undersorce(channels.at(j)->filename());
+        labels[j] << " " << mstr::escape_undersorce(names.at(j).str());
+        //std::cout << channels.at(j)->filename() << std::endl;
+        gplt->set_xy_lines(rws->fft_freqs->get_frequencies(), rws->get_abs_sa_spectra(channel_type), labels[j].str(), 1);
+        ++j;
+    }
+    gplt->plot();
 
 
 

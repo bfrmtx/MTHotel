@@ -9,4 +9,4 @@ The data loggers as "streaming servers" can not directly write into [HDF5](<http
 
 However the [atss](../atss/atss.md#atss) data stream and his JSON descriptor are designed to be pushed into the MTH5 format.
 
-Some operations (like FIR filtering or rotation) may before pushing.
+Some operations (like FIR filtering or rotation) you may want execute before pushing.

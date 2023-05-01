@@ -246,7 +246,8 @@ std::unordered_map<std::string, int> ats_sys_family = {
     {"ADU-08e", 8},
     {"ADU-09u", 9},
     {"ADU-10e", 10},
-    {"ADU-11e", 11}
+    {"ADU-11e", 11},
+    {"ADU-12e", 12}
 };
 
 
@@ -556,8 +557,8 @@ struct ats_header_json {
 
     }
 
-    std::unordered_map<std::string, uint8_t> LF_Filters;
-    std::unordered_map<std::string, uint8_t> HF_Filters;
+    std::unordered_map<std::string, ADU> LF_Filters;
+    std::unordered_map<std::string, ADU> HF_Filters;
 
     std::vector<uint8_t> LFFilter_to_ints() const {
         std::vector<uint8_t> filters(8,0);
@@ -593,22 +594,25 @@ struct ats_header_json {
         this->LF_Filters.clear();
         this->HF_Filters.clear();
 
-        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF-RF-1"] =     1;  //! 0x01 ADU07/8_LF-RF-1 filter on LF board with capacitor 22pF
-        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF-RF-2"] =     2;  //! 0x02 ADU07/8_LF-RF-2 filter on LF board with capacitor 122pF
-        if ((ADU == "ADU-07e"))                         this->LF_Filters["LF-RF-3"] =     4;  //! 0x04 ADU07_LF-RF-3 filter on LF board with capacitor 242pF
-        if ((ADU == "ADU-07e"))                         this->LF_Filters["LF-RF-4"] =     8;  //! 0x08 ADU07_LF-RF-4 filter on LF board with capacitor 342pF
-        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF_LP_4Hz"] =   16; //! 0x10 ADU07/8_LF_LP_4Hz filter on LF board with 4 Hz Lowpass characteristic
+        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF-RF-1"] =     ADU::LF_RF_1;  //! 0x01 ADU07/8 LF-RF-1 filter on LF board with capacitor 22pF
+        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF-RF-2"] =     ADU::LF_RF_2;  //! 0x02 ADU07/8 LF-RF-2 filter on LF board with capacitor 122pF
+        if ((ADU == "ADU-07e"))                         this->LF_Filters["LF-RF-3"] =     ADU::LF_RF_3;  //! 0x04 ADU07   LF-RF-3 filter on LF board with capacitor 242pF
+        if ((ADU == "ADU-07e"))                         this->LF_Filters["LF-RF-4"] =     ADU::LF_RF_4;  //! 0x08 ADU07   LF-RF-4 filter on LF board with capacitor 342pF
+        if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))   this->LF_Filters["LF-LP-4Hz"] =   ADU::LF_LP_4Hz; //! 0x10 ADU07/8 LF-LP-4Hz filter on LF board with 4 Hz Lowpass characteristic
 
-        if ((ADU == "ADU-07e"))                         this->LF_Filters["MF-RF-1"] =     32; //! 0x40 ADU07_MF_RF_1 filter on MF board with capacitor 470nF
-        if ((ADU == "ADU-07e"))                         this->LF_Filters["MF-RF-2"] =     64; //! 0x20 ADU07_MF_RF_2 filter on MF board with capacitor 4.7nF
+        if ((ADU == "ADU-07e"))                         this->LF_Filters["MF-RF-1"] =     ADU::MF_RF_1; //! 0x40 ADU07   MF-RF-1 filter on MF board with capacitor 470nF
+        if ((ADU == "ADU-07e"))                         this->LF_Filters["MF-RF-2"] =     ADU::MF_RF_2; //! 0x20 ADU07   MF-RF-2 filter on MF board with capacitor 4.7nF
 
         // HF Path
         // 1 Hz has been dropped for 08
-        if ((ADU == "ADU-07e"))                         this->HF_Filters["HF-HP-1Hz"] =   1;  //! 0x01 ADU07_HF-HP-1Hz 1Hz filter enable for HF board
+        if ((ADU == "ADU-07e"))                         this->HF_Filters["HF-HP-1Hz"] =   ADU::HF_HP_1Hz;  //! 0x01 ADU07   HF-HP-1Hz 1Hz filter enable for HF board
         // 500Hz is the HP for 08
-        if ((ADU == "ADU-08e"))                         this->HF_Filters["HF-HP-500Hz"] = 2;  //! 0x02 ADU08_HF-HP-500Hz 500Hz filter enable for HF board
+        if ((ADU == "ADU-08e"))                         this->HF_Filters["HF-HP-500Hz"] = ADU::HF_HP_500Hz;  //! 0x02 ADU08   HF-HP-500Hz 500Hz filter enable for HF board
 
         return this->LF_Filters.size() + this->HF_Filters.size();
+
+        // for LF filter may visible above 800 Hz
+        // for HF filter may be visible above 8000 Hz
 
     }
 
@@ -617,16 +621,16 @@ struct ats_header_json {
         std::vector<uint8_t> filters(this->LFFilter_to_ints());
 
         // the header uses only the FIRST int
-        std::map<uint8_t, std::string> rfilters;
+        std::map<ADU, std::string> rfilters;
         for (const auto &it : this->LF_Filters) {
             rfilters[it.second] = it.first;
         }
 
         for (auto it = rfilters.crbegin(); it != rfilters.crend(); ++it) {
-            if (filters[0] >= it->first) {
+            if (filters[0] >= uint8_t(it->first)) {
                 if (sfilter.size()) sfilter += ",";
                 sfilter += it->second;
-                filters[0] -= it->first;
+                filters[0] -= uint8_t(it->first);
             }
         }
 
@@ -639,16 +643,16 @@ struct ats_header_json {
         std::vector<uint8_t> filters(this->HFFilter_to_ints());
 
         // the header uses only the FIRST int
-        std::map<uint8_t, std::string> rfilters;
+        std::map<ADU, std::string> rfilters;
         for (const auto &it : this->HF_Filters) {
             rfilters[it.second] = it.first;
         }
 
         for (auto it = rfilters.crbegin(); it != rfilters.crend(); ++it) {
-            if (filters[0] >= it->first) {
+            if (filters[0] >= uint8_t(it->first)) {
                 if (sfilter.size()) sfilter += ",";
                 sfilter += it->second;
-                filters[0] -= it->first;
+                filters[0] -= uint8_t(it->first);
             }
         }
 
@@ -663,7 +667,7 @@ struct ats_header_json {
         std::vector<uint8_t> filters(8, 0);
 
         for (const auto &it : this->HF_Filters) {
-            if (mstr::contains(cs_string, it.first)) filters[0] += it.second;
+            if (mstr::contains(cs_string, it.first)) filters[0] += uint8_t(it.second);
         }
 
         for (size_t i = 0; i < sizeof(this->atsh.HF_filters); ++i) {
@@ -676,7 +680,7 @@ struct ats_header_json {
         std::vector<uint8_t> filters(8, 0);
 
         for (const auto &it : this->LF_Filters) {
-            if (mstr::contains(cs_string, it.first)) filters[0] += it.second;
+            if (mstr::contains(cs_string, it.first)) filters[0] += uint8_t(it.second);
         }
 
         for (size_t i = 0; i < sizeof(this->atsh.LF_filters); ++i) {

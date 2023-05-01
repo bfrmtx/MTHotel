@@ -41,6 +41,33 @@ void ri2cplx(const std::vector<T>& real, const std::vector<T>& imag,
 }
 
 
+void cplx2ap(const std::vector<std::complex<double>>& cplx, std::vector<double>& ampl, std::vector<double>& phz, const bool deg = false ) {
+    if (!cplx.size()) return;
+    ampl.resize(cplx.size());
+    phz.resize(cplx.size());
+    auto iter_a = ampl.begin();
+    auto iter_p = phz.begin();
+    if (deg) {
+        for (const auto &c : cplx) {
+            *(iter_a++) = std::fabs(c);
+            *(iter_p++) = std::arg(c) * (180.0 / M_PI);
+        }
+    }
+    else {
+        for (const auto &c : cplx) {
+            *(iter_a++) = std::fabs(c);
+            *(iter_p++) = std::arg(c);
+        }
+    }
+}
+
+
+void cplx2_vap(const std::vector<std::complex<double>>& cplx, std::vector<std::vector<double>>& ampls, std::vector<std::vector<double>>& phzs, const bool deg = false  ) {
+    if (!cplx.size()) return;
+    ampls.emplace_back(std::vector<double>(cplx.size()));
+    phzs.emplace_back(std::vector<double>(cplx.size()));
+    cplx2ap(cplx, ampls.back(), phzs.back(), deg);
+}
 
 /*!
  * \brief sort_indices simulates a sort of v; assuming freq, ampl and phase,

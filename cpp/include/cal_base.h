@@ -29,7 +29,7 @@ struct calibration
     std::string units_frequency;
     std::string units_phase;
     std::string datetime;
-    std::string Operator;           //!< the one made the calibration; UPPERCASE because operator is keyword in C++
+    std::string Operator;           //!< the one who made the calibration; UPPERCASE because operator is keyword in C++
 
     std::vector<double> f;
     std::vector<double> a;
@@ -342,22 +342,25 @@ struct calibration
      */
     size_t parse_head(const nlohmann::ordered_json &head, const std::filesystem::path &filepath = "") {
 
-        this->sensor = std::string(head["sensor_calibration"]["sensor"]);
-        this->serial = uint64_t(head["sensor_calibration"]["serial"]);
-        int64_t ch = int64_t(head["sensor_calibration"]["chopper"]);
+        int64_t ch = 0;
+        if (!head.contains("sensor_calibration")) return 0;
+
+        if (head["sensor_calibration"].contains("sensor")) this->sensor = std::string(head["sensor_calibration"]["sensor"]);
+        if (head["sensor_calibration"].contains("serial")) this->serial = uint64_t(head["sensor_calibration"]["serial"]);
+        if (head["sensor_calibration"].contains("chopper")) ch = int64_t(head["sensor_calibration"]["chopper"]);
         if (ch == 1) this->chopper = ChopperStatus::on;
         else this->chopper = ChopperStatus::off;
 
 
-        this->units_frequency = std::string(head["sensor_calibration"]["units_frequency"]);
-        this->units_amplitude = std::string(head["sensor_calibration"]["units_amplitude"]);
-        this->units_phase = std::string(head["sensor_calibration"]["units_phase"]);
-        this->datetime = std::string(head["sensor_calibration"]["datetime"]);
-        this->Operator = std::string(head["sensor_calibration"]["Operator"]);
+        if (head["sensor_calibration"].contains("units_frequency")) this->units_frequency = std::string(head["sensor_calibration"]["units_frequency"]);
+        if (head["sensor_calibration"].contains("units_amplitude")) this->units_amplitude = std::string(head["sensor_calibration"]["units_amplitude"]);
+        if (head["sensor_calibration"].contains("units_phase")) this->units_phase = std::string(head["sensor_calibration"]["units_phase"]);
+        if (head["sensor_calibration"].contains("datetime")) this->datetime = std::string(head["sensor_calibration"]["datetime"]);
+        if (head["sensor_calibration"].contains("Operator")) this->Operator = std::string(head["sensor_calibration"]["Operator"]);
 
-        this->f = std::vector<double>(head["sensor_calibration"]["f"]);
-        this->a = std::vector<double>(head["sensor_calibration"]["a"]);
-        this->p = std::vector<double>(head["sensor_calibration"]["p"]);
+        if (head["sensor_calibration"].contains("f"))this->f = std::vector<double>(head["sensor_calibration"]["f"]);
+        if (head["sensor_calibration"].contains("a"))this->a = std::vector<double>(head["sensor_calibration"]["a"]);
+        if (head["sensor_calibration"].contains("p"))this->p = std::vector<double>(head["sensor_calibration"]["p"]);
 
         if ((this->f.size() != this->a.size()) || (this->f.size() != this->p.size())) {
             this->clear();

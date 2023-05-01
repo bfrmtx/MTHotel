@@ -108,6 +108,7 @@ add_subdirectory(ats/atstools)
 add_subdirectory(utils/mk_noise)
 add_subdirectory(utils/filter)
 add_subdirectory(utils/rda)
+add_subdirectory(utils/show_system_cal)
 #
 #
 add_subdirectory(tests/json_test)
@@ -121,7 +122,6 @@ add_subdirectory(tests/read_cal_test)
 add_subdirectory(tests/thread_pool)
 add_subdirectory(tests/execpts)
 add_subdirectory(tests/times)
-add_subdirectory(tests/ffts)
 add_subdirectory(tests/prztest)
 add_subdirectory(tests/dirtest)
 add_subdirectory(tests/atmm_bin)
@@ -135,6 +135,7 @@ add_subdirectory(tests/gplt)
 add_subdirectory(tests/fftw_length_noise_timeser)
 add_subdirectory(tests/fftw_length_noise_timeser_wwo)
 add_subdirectory(tests/sqlite_threads)
+
 
 
 

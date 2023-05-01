@@ -9,6 +9,7 @@
 #include <memory>
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
 // #define _USE_MATH_DEFINES // for C++ and MSVC
 #include <cmath>
 
@@ -58,6 +59,7 @@ enum class ChopperStatus: int {
 
 //!< @enum tns provides access to the MT tensor elements
 enum class tns : std::size_t {
+
     xx = 0,                   //!< zxx component
     xy = 1,                   //!< zxy component and coherency for the tensor row xx xy
     yx = 2,                   //!< zyx component and coherency for the tensor row yx yy
@@ -72,76 +74,92 @@ enum class tns : std::size_t {
 };
 
 
+enum class ADU : std::uint8_t {
+    LF_RF_1 =     1,  //! 0x01 ADU07/8 LF-RF-1 filter on LF board with capacitor 22pF
+    LF_RF_2 =     2,  //! 0x02 ADU07/8 LF-RF-2 filter on LF board with capacitor 122pF
+    LF_RF_3 =     4,  //! 0x04 ADU07   LF-RF-3 filter on LF board with capacitor 242pF
+    LF_RF_4 =     8,  //! 0x08 ADU07   LF-RF-4 filter on LF board with capacitor 342pF
+    LF_LP_4Hz =   16, //! 0x10 ADU07/8 LF-LP-4Hz filter on LF board with 4 Hz Lowpass characteristic
 
-enum class ADU: int {
+    MF_RF_1 =     32, //! 0x40 ADU07   MF-RF-1 filter on MF board with capacitor 470nF
+    MF_RF_2 =     64, //! 0x20 ADU07   MF-RF-2 filter on MF board with capacitor 4.7nF
 
-    adu08e_rf_1          = 1,            //!< ADU-08e RF-1 on
-    adu08e_rf_2          = 2,            //!< ADU-08e RF-2 on
-    adu07e_rf_1          = 1,            //!< ADU-07e RF-1 on
-    adu07e_rf_2          = 2,            //!< ADU-07e RF-2 on
-    adu07e_rf_3          = 3,            //!< ADU-07e RF-3 on
-    adu07e_rf_4          = 4,            //!< ADU-07e RF-4 on
-    adu08e_rf_off        = 0,            //!< ADU-08e RF off
-    adu07e_rf_off        = 0,            //!< ADU-07e RF off
-    adu08e_lp4hz_on      = 4,            //!< ADU-08e Low Pass 4Hz on
-    adu07e_lp4hz_on      = 4,            //!< ADU-07e Low Pass 4Hz on
-    adu08e_lp1hz_on      = 1,            //!< ADU-08e Low Pass 1Hz on
-    adu08e_lp_off        = 0,            //!< ADU-08e Low Pass  off
-    adu07e_lp_off        = 0,            //!< ADU-07e Low Pass  off
-    adu08e_hp500hz_on    = 500,          //!< ADU-08e High Pass 500Hz on
-    adu07e_hp500hz_on    = 500,          //!< ADU-08e High Pass 500Hz on
-    adu08e_hp1hz_on      = 1,            //!< ADU-08e High Pass 1Hz on
-    adu07e_hp1hz_on      = 1,            //!< ADU-07e High Pass 1Hz on
-    adu08e_hp_off        = 0,            //!< ADU-08e High Pass off
-    adu07e_hp_off        = 0,            //!< ADU-07e High Pass off
-    div_1                = 1,            //!< input divider 1 (off direct)
-    div_8                = 8,            //!< input divider 8 (on, divides by 8 for +/- 10V extended input, e.g. coils
-    apply_hf_spc_cal_sample_f = 8000,   //!< sample frequency above we may want to apply spectral correction of the board
-    apply_lf_spc_cal_sample_f = 800     //!< sample frequency above we may want to apply spectral correction of the board
+    // HF Path
+    // 1 Hz has been dropped for 08
+    HF_HP_1Hz =   1,  //! 0x01 ADU07   HF-HP-1Hz 1Hz filter enable for HF board
+    // 500Hz is the HP for 08
+    HF_HP_500Hz = 2,  //! 0x02 ADU08   HF-HP-500Hz 500Hz filter enable for HF board
+
+    div_1 = 1,        //! default for E
+    div_8 = 8,         //! default for H and +/- 10V
+
+    off = 0
 
 
 };
 
-std::vector<std::string> survey_dirs() {
+std::vector<std::string> survey_dirs_old() {
 
-    std::vector<std::string> dirs;
-    dirs.emplace_back("config"); dirs.emplace_back("db");
-    dirs.emplace_back("reports"); dirs.emplace_back("dump"); dirs.emplace_back("edi");
-    // filters would also contain calibration functions of coils and boards
-    // they are multiplied all together in order to get a final filter / calibration
-    dirs.emplace_back("filters"); dirs.emplace_back("jle"); dirs.emplace_back("jobs");
-    dirs.emplace_back("log"); dirs.emplace_back("processings");
-    dirs.emplace_back("shell"); dirs.emplace_back("tmp"); dirs.emplace_back("stations");
-    dirs.emplace_back("meta"); // meta information with log from the system etc, mirror of stations
-
-    return dirs;
+    return std::vector<std::string> ({"cal", "config", "db", "dump", "edi", "filters", "jle", "jobs", "log", "processings", "shell", "tmp", "ts"});
 }
 
-bool create_survey_dirs(const std::filesystem::path survey, std::vector<std::string> sub_dirs) {
+
+std::vector<std::string> survey_dirs() {
+    // filters would also contain calibration functions of coils and boards
+    // they are multiplied all together in order to get a final filter / calibration
+    // meta information with log from the system etc, mirror of stations; espicially when data was converted from old files
+    return std::vector<std::string> ({"config", "db", "reports", "dump", "edi", "filters",
+                                     "jle", "jobs", "log", "processings", "shell", "tmp",  "stations", "meta"});
+
+}
+
+/*!
+ * \brief create_survey_dirs
+ * \param survey a direcory like /survey/nm or deeper like /survey/nm/test
+ * \param sub_dirs
+ * \param stations
+ * \return
+ */
+bool create_survey_dirs(const std::filesystem::path survey, const std::vector<std::string> sub_dirs, const std::vector<std::string> stations = {}) {
     if (!sub_dirs.size()) {
         std::string err_str = __func__;
         err_str += ":: sub dirs provided! ->";
         throw err_str;
-        return false;
     }
     try {
-        std::filesystem::create_directory(survey);
+        std::filesystem::create_directories(survey);
 
-
-        for (const auto str : sub_dirs) {
+        for (const auto &str : sub_dirs) {
             auto svd = survey;
             std::filesystem::create_directory((svd /= str));
+        }
+        if (sub_dirs.size() && stations.size()) {
+            auto svd = survey;
+            svd /= "ts";
+            if (std::find(sub_dirs.begin(), sub_dirs.end(), "ts") != sub_dirs.end()) {
+                for (const auto &str : stations) {
+                    auto svds = svd;
+                    std::filesystem::create_directory((svds /= str));
+                }
+            }
+            else if (std::find(sub_dirs.begin(), sub_dirs.end(), "stations") != sub_dirs.end()) {
+                for (const auto &str : stations) {
+                    auto svds = svd;
+                    std::filesystem::create_directory((svds /= str));
+                }
+            }
         }
     }
     catch (...) {
         std::string err_str = __func__;
         err_str += ":: error creating sub directories ->";
         throw err_str;
-        return false;
     }
 
     return true;
 }
+
+
 
 
 #endif

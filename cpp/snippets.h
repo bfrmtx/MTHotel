@@ -26,3 +26,9 @@ fs::path outdir;
 fs::path home_dir(getenv("HOME"));
 std::cout << "Temp directory is " << fs::temp_directory_path() << '\n';
 std::FILE* tmpf = std::tmpfile(); // auto delete
+
+
+target_link_libraries (${PROJECT_NAME}
+                      PRIVATE fftw3
+                          PRIVATE hdf5
+                      )

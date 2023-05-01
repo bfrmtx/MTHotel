@@ -482,8 +482,8 @@ std::string iso8601_time_t(const time_t &ti, const int iso_0_date_1_time_2 = 0, 
     std::string date;
     std::string time;
     tt = *std::gmtime(&ti);
-//    date.clear();
-//    time.clear();
+    //    date.clear();
+    //    time.clear();
     date += std::to_string(tt.tm_year + 1900) + "-";
     date += zero_fill_field(tt.tm_mon + 1, 2) + "-";
     date += zero_fill_field(tt.tm_mday, 2);
@@ -682,6 +682,19 @@ std::vector<std::stringstream> field_width_right_adjusted_doubles(const std::vec
     }
 
     return sss;
+}
+
+std::string escape_undersorce(const std::string &in) {
+    std::string out;
+    out.reserve(in.size() + 8);  // in most cases we have 4 '_' to be replaced by '\\_'
+    std::string replace = "\\_";
+    char origin = '_';
+
+    for (const auto &c : in) {
+        if (c != origin) out += c;
+        else out += replace;
+    }
+    return out;
 }
 
 /*

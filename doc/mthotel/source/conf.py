@@ -14,7 +14,7 @@ release = '1.2'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 # , "sphinx_rtd_theme" I use press here
-extensions = ["myst_parser", "sphinx.ext.autosectionlabel", "sphinx_rtd_theme"]
+extensions = ["myst_parser", "sphinx.ext.autosectionlabel"]
 
 myst_enable_extensions = [
     "colon_fence",
@@ -26,13 +26,17 @@ myst_enable_extensions = [
     "html_image",
     "replacements",
     "smartquotes",
-    "strikethrough",
     "substitution",
 ]
 
 myst_heading_anchors = 3
 numfig = True
 language = 'en'
+html_show_sourcelink = False
+
+source_suffix = {
+    '.md': 'markdown',
+}
 
 templates_path = ['_templates']
 
@@ -40,15 +44,25 @@ templates_path = ['_templates']
 html_additional_pages = {
     "index": "landing_page.html"
 }
-exclude_patterns = ['_build', 'build', 'Thumbs.db', '.DS_Store', 'vscode', 'sqltables']
+exclude_patterns = ['_build', 'build', 'Thumbs.db', '.DS_Store', 'sqltables', 'vscode']
 
 
-# Options for HTML output -------------------------------------------------
+# -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
-html_theme = 'press'
+html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+# indent Python
+def setup(app):
+    app.add_css_file('css/100_theme.css')
+
+html_theme_options = {
+    'prev_next_buttons_location': 'bottom',
+    'titles_only': False  # False so page subheadings are in the nav.
+}
+
 
 html_logo = '_static/images/metronix_Logo_geo_4c_09-2017_tiny.png'
 html_favicon = '_static/images/metronix_Logo_geo_4c_09-2017_icon.png'
 
+
+# I have also modified source/_templates/layout.html to get the index on the left (online) and (offline)

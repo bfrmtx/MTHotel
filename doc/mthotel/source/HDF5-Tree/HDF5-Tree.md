@@ -1,4 +1,4 @@
-# HDF5 Tree
+# HDF5-Tree
 
 The directory structure follows the [MTH5](https://mth5.readthedocs.io/en/latest/)
 project of the [USGS](https://www.usgs.gov/).

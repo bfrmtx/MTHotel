@@ -9,6 +9,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include "bthread.h"
+#include <optional>
 
 // using std::filesystem::directory_iterator;
 namespace fs = std::filesystem;
@@ -42,6 +43,7 @@ for (const auto & file : directory_iterator(path))
 */
 
 
+
 int main(int argc, char* argv[])
 {
 
@@ -50,6 +52,8 @@ int main(int argc, char* argv[])
     bool cat = false;                       //!< concatunate ats files, try read xml from atsheader & calibration from XML
     bool chats = false;                     //!< convert ADU-06 files to ADU-08e files
     bool tojson = false;                    //!< convert to JSON and binary - the new format
+    bool create_old_tree = false;           //!< create an old 07/08 survey tree to enable conversion manually
+    bool create_tree = false;               //!< create a survey empty tree
     ChopperStatus chopper = ChopperStatus::off;
     bool change_chopper = true;
     size_t adu06_shift_samples_hf = 0;
@@ -112,7 +116,13 @@ int main(int argc, char* argv[])
         if (marg.compare("-shift_start_time") == 0) {
             shift_start_time = atoi(argv[++l]);
         }
+        if (marg.compare("-create_old_tree") == 0) {
+            create_old_tree = true;
+        }
 
+        if (marg.compare("-create_tree") == 0) {
+            create_tree = true;
+        }
 
         if (marg.compare("-tojson") == 0) {
             tojson = true;
@@ -157,8 +167,15 @@ int main(int argc, char* argv[])
             std::cout << "-chats_shift_samples_lf 30 [31] " << std::endl;
             std::cout << "  removes 30 (or 31) samples at the beginning WITHOUT shifting start time: my be used for old ADU-06 data, LF board" << std::endl;
             std::cout << "  ATTENTION: do NOT use for down filtered data!, It is a RUNTIME correction for old boards" << std::endl;
-            std::cout << "- shift_start_time -1 [3599, 3600, -3600, ...] " << std::endl;
+            std::cout << "-shift_start_time -1 [3599, 3600, -3600, ...] " << std::endl;
             std::cout << "  changes the start time by -1 seconds; old ADU-06 data can be affected by untracked leap seconds, summer/winter time " << std::endl;
+
+            std::cout << "-create_old_tree survey_dir [site_1, site_2, ...] like iron_mountain L1_S3, L2_S24" << std::endl;
+            std::cout << "  create an old 07/08 survey tree; you may need it for conversion" << std::endl;
+
+            std::cout << "-create_tree survey_dir [station_1, station_2, ...] like iron_mountain L1_S3, L2_S24" << std::endl;
+            std::cout << "  create survey tree" << std::endl;
+
             std::cout << " " << std::endl;
             std::cout << " " << std::endl;
 
@@ -171,13 +188,66 @@ int main(int argc, char* argv[])
         ++l;
     }
 
+    if (create_old_tree || create_tree) {
+
+        std::unique_ptr<survey_d> survey;
+        std::filesystem::path survey_dir;
+        std::vector<std::string> stations;
+
+        while ( (l < unsigned(argc))) {
+            std::string marg(argv[l++]);
+            if (survey_dir.empty()) {
+                survey_dir = std::filesystem::path(marg);
+            }
+            else {
+                stations.emplace_back(marg);
+            }
+        }
+
+        if (create_old_tree) {
+            // do not use a canonical path for recursive creation
+            create_survey_dirs(survey_dir, survey_dirs_old(), stations);
+
+        }
+        else {
+            try {
+                survey = std::make_unique<survey_d>(survey_dir, false);
+                std::filesystem::path spath;
+                for (const auto &station : stations) {
+                    spath = survey->create_station(station);
+                }
+                if (!spath.empty()) {
+                    std::cout << "directories created in " << survey_dir << std::endl;
+                }
+            }
+            catch (const std::string &error ) {
+                std::cerr << error <<std::endl;
+
+            }
+            catch (...) {
+                std::cerr << "could not execute create survey" << std::endl;
+                return EXIT_FAILURE;
+            }
+
+            // if you would like to work the survey - delete pointer, we are in creation mode
+            // and use  survey = std::make_unique<survey_d>(survey_dir);
+
+        }
+
+        return EXIT_SUCCESS;
+
+    }
+
+
 
     if (!clone) {
         l = 1;
         while (argc > 1 && (l < unsigned(argc))) {
             std::string marg(argv[l]);
-            if ( (marg.compare(marg.size()-4, 4, ".ats") == 0) || (marg.compare(marg.size()-4, 4, ".ATS") == 0) ) {
-                atsheaders.emplace_back(std::make_shared<atsheader>(fs::path(marg)));
+            if ( mstr::ends_with(marg, ".ats") || mstr::ends_with(marg, ".ATS")) {
+                if ( (marg.compare(marg.size()-4, 4, ".ats") == 0) || (marg.compare(marg.size()-4, 4, ".ATS") == 0) ) {
+                    atsheaders.emplace_back(std::make_shared<atsheader>(fs::path(marg)));
+                }
             }
             ++l;
         }

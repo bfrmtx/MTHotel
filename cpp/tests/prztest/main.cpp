@@ -14,11 +14,7 @@
 #include <fftw3.h>
 
 #include "raw_spectra.h"
-
-
-#include "matplotlibcpp.h"
-namespace plt = matplotlibcpp;
-
+#include "gnuplotter.h"
 
 int main()
 {
@@ -260,177 +256,38 @@ int main()
 
     // ******************************** cont *******************************************************************************
 
+    std::string init_err;
+    auto gplt = std::make_unique<gnuplotter<double, double>>(init_err);
 
-    plt::title("FFT Zero Padding");
+    if (init_err.size()) {
+        std::cout << init_err << std::endl;
+        return EXIT_FAILURE;
+    }
 
-    //    plt::named_loglog("zero padded", fft_freqs[zp]->get_frequencies(), raws.at(zp)->get_abs_sa_spectra(channel_type),  "bo");
-    //    plt::loglog(fft_freqs[lw]->get_frequencies(), raws.at(lw)->get_abs_sa_spectra(channel_type), "r+");
-
-
-    //    plt::loglog(fft_freqs[0]->get_frequencies(), raws.at(0)->get_abs_sa_spectra(channel_type));
-    //    plt::loglog(fft_freqs[1]->get_frequencies(), raws.at(1)->get_abs_sa_spectra(channel_type));
-    //    plt::loglog(fft_freqs[2]->get_frequencies(), raws.at(2)->get_abs_sa_spectra(channel_type));
-
-    i = 0;
-    std::vector<std::string> marks{"b-", "r-", "g-", "c-", "m-", "b--", "r--", "g--", "c--", "m--"};
+    gplt->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
+    gplt->cmd << "set title 'FFT Zero Padding'" << std::endl;
+    //gplt->cmd << "set key off" << std::endl;
+    gplt->cmd << "set xlabel 'frequency [Hz]'" << std::endl;
+    gplt->cmd << "set logscale xy" << std::endl;
+    gplt->cmd << "set ylabel 'amplitude [mV/√Hz]'" << std::endl;
+    gplt->cmd << "set grid" << std::endl;
+    gplt->cmd << "set key font \"Hack, 10\"" << std::endl;
     for (const auto &rws : raws) {
-
-        std::string lab =  "fs: " +  std::to_string(rws->fft_freqs->get_sample_rate()) + " wl:" + std::to_string((int)rws->fft_freqs->get_wl()) + " rl:" + std::to_string((int)rws->fft_freqs->get_rl());
-        if (i == zp) lab += " zp";
-        //if (i == lw) lab += " lw";
-        //plt::named_loglog(lab, rws->fft_freqs->get_selected_frequencies(), rws->get_abs_sa_prz_spectra(channel_type), marks.at(i));
-        plt::named_loglog(lab, rws->fft_freqs->get_frequencies(), rws->get_abs_sa_spectra(channel_type), marks.at(i));
-
-        ++i;
-        if (i == marks.size()) i = 0;
-
+        std::ostringstream label;
+        label << "fs:" << rws->fft_freqs->get_sample_rate() << " wl:" << (int)rws->fft_freqs->get_wl() << " rl:" << (int)rws->fft_freqs->get_rl();
+        gplt->set_xy_lines(rws->fft_freqs->get_frequencies(), rws->get_abs_sa_spectra(channel_type), label.str(), 1);
     }
 
-    std::vector<std::string> marks2{"b--", "r--", "g--", "c--", "m--"};
-    i = 0;
     for (const auto &rws : raws) {
-
-        std::string lab =  "pz fs: " +  std::to_string(rws->fft_freqs->get_sample_rate()) + " wl:" + std::to_string((int)rws->fft_freqs->get_wl()) + " rl:" + std::to_string((int)rws->fft_freqs->get_rl());
-        if (i == zp) lab += " zp";
-        //if (i == lw) lab += " lw";
-        plt::named_loglog(lab, rws->fft_freqs->get_selected_frequencies(), rws->get_abs_sa_prz_spectra(channel_type), marks2.at(i));
-        //plt::named_loglog(lab, rws->fft_freqs->get_frequencies(), rws->get_abs_sa_spectra(channel_type), marks2.at(i));
-
-        ++i;
-
+        std::ostringstream label;
+        label << "fs prz:" << rws->fft_freqs->get_sample_rate() << " wl:" << (int)rws->fft_freqs->get_wl() << " rl:" << (int)rws->fft_freqs->get_rl();
+        gplt->set_xy_lines(rws->fft_freqs->get_selected_frequencies(), rws->get_abs_sa_prz_spectra(channel_type), label.str(), 1);
     }
 
 
-    plt::ylabel("x / Sqrt(Hz)");
-    plt::xlabel("f [Hz]");
-    plt::legend();
-    plt::show();
+    gplt->plot();
 
 
-    //std::cin.get();
-
-    /*
-
-
-    double sample_rate = 1.0/16.0;
-    // double sample_rate = 512;
-    bool invert = false;
-    if (sample_rate < 4) invert = true;
-    fftw_freqs freqs(sample_rate, 8192);
-
-    std::filesystem::path fileex("/survey-master/indi/stations/S26/run_004/295_ADU-07e_C000_TEx_16s.json");
-    channel ex(fileex);
-
-    std::vector<double> f;
-
-    std::filesystem::path sqlfile("/usr/local/procmt/bin/info.sql3");
-    auto sql_info = std::make_unique<sqlite_handler>();
-    std::string sql_query = "SELECT * FROM default_mt_frequencies";
-    auto in_targets = sql_info->sqlite_vector_double(sqlfile, sql_query);
-    std::sort(in_targets.begin(), in_targets.end());
-
-
-    std::vector<std::complex<double>> fake_fft(f.size());
-    size_t i = 0;
-    for (const auto &val : f) fake_fft[i++] = std::complex<double>(val, 0);
-
-
-    freqs.set_lower_upper_f(1.0/16384.0, 1.0/1024.0, true);
-    // freqs.set_lower_upper_f(1, 256, true);
-    f = freqs.get_frequencies();
-    auto frange = freqs.get_frange();
-    std::cout << "range" <<std::endl;
-
-    freqs.vplot(f, 12, 12, invert);
-    std::cout << std::endl;
-
-
-    freqs.set_target_freqs(in_targets);
-    std::cout << "target freqs" << std::endl;
-    freqs.vplot(freqs.get_target_freqs(), 12, 12, invert);
-    std::cout << std::endl;
-
-    //freqs.vplot(in_targets, 12, 12, true);
-
-
-
-    //    for (const auto &val : f) {
-    //        std::cout << val << std::endl;
-    //    }
-
-    std::cout << std::endl;
-    std::cout << frange.first << " <-> " << frange.second << std::endl;
-
-
-
-    std::vector<double> t(1000);
-    std::vector<double> l(t.size());
-
-    for(size_t i = 0; i < t.size(); i++) {
-        t[i] = i / 100.0;
-        l[i] = sin(2.0 * M_PI * 1.0 * t[i]);
-    }
-
-
-    plt::title("Sample figure");
-    plt::plot(t, l);
-    plt::show();
-
-    std::vector<std::vector<double>> x, y, z;
-    for (double i = -5; i <= 5;  i += 0.25) {
-        std::vector<double> x_row, y_row, z_row;
-        for (double j = -5; j <= 5; j += 0.25) {
-            x_row.push_back(i);
-            y_row.push_back(j);
-            z_row.push_back(::std::sin(::std::hypot(i, j)));
-        }
-        x.push_back(x_row);
-        y.push_back(y_row);
-        z.push_back(z_row);
-    }
-
-    plt::plot_surface(x, y, z);
-    plt::show();
-    */
-
-        /*
-    freqs.set_lower_upper_f(0, 6, true);
-    frange = freqs.get_frange();
-    std::cout << std::endl;
-    std::cout << frange.first << " <-> " << frange.second << std::endl;
-
-        freqs.set_lower_upper_f(1, 6, false);
-    frange = freqs.get_frange();
-    std::cout << std::endl;
-    std::cout << frange.first << " <-> " << frange.second << std::endl;
-
-    freqs.set_lower_upper_f(8, 16, true);
-    frange = freqs.get_frange();
-    std::cout << std::endl;
-    std::cout << frange.first << " <-> " << frange.second << std::endl;
-
-    auto fake_trim = freqs.trim_fftw_result(fake_fft);
-
-    for (const auto &val : fake_trim) std::cout << val << std::endl;
-    std::cout << std::endl;
-
-    std::cout << "iters f:" << std::endl;
-    f = freqs.get_frequencies();
-    for (const auto &val : f) std::cout << val << std::endl;
-    std::cout << std::endl;
-
-    auto idxs = freqs.iter_range(10, 14, fake_trim, true);
-    auto used_f = freqs.iter_freqs(idxs, fake_trim);
-
-    for (auto ix = idxs.first; ix < idxs.second; ++ix) {
-        std::cout << *ix  << std::endl;
-    }
-
-    for (const auto &val : used_f) {
-        std::cout << val << std::endl;
-    }
-    */
-        // std::cout << std::endl;
 
 
         return 0;

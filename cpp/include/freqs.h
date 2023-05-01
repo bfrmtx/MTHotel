@@ -145,7 +145,7 @@ size_t next_power_of_two(const size_t &n){
      * \param steps_per_decade steps per decade (like 11 for MSF-06e or 7 for MFS-07e)
      * \return vector of frequencies (or null vector if failed)
 */
-std::vector<double> gen_equidistant_logvector(const double start, const double stop, const size_t steps_per_decade) {
+std::vector<double> gen_equidistant_logvector(const double &start, const double &stop, const size_t &steps_per_decade) {
 
     // dist would be log_stop - log_start
     // we calculate per decade

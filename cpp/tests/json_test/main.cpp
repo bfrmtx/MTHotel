@@ -73,5 +73,7 @@ std::cout << std::setw(8) << head << std::endl;
 
 std::cout << "finish" << endl;
 
+if (head["calibration_info"].contains("gain_stage1")) std::cout << "gain_stage1 exists" << endl;
+
 return 0;
 }

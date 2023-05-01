@@ -193,7 +193,7 @@ public:
     station_d(const std::filesystem::path &station_dir, const bool no_create = true) : station_dir(station_dir) {
 
         if (!no_create) {
-            std::filesystem::create_directory(this->station_dir);
+            std::filesystem::create_directories(this->station_dir);
         }
         else {
             this->scan();
@@ -350,11 +350,11 @@ public:
 
         std::unique_lock lock(this->station_lock);
         if (!no_create) {
-            if (!std::filesystem::exists(this->survey_dir)) {
+            //if (!std::filesystem::exists(this->survey_dir)) {
                 std::filesystem::create_directories(this->survey_dir);
                 this->survey_dir = std::filesystem::canonical(this->survey_dir);
                 create_survey_dirs(this->survey_dir, survey_dirs());
-            }
+            //}
 
 
         }
