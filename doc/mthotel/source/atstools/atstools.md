@@ -3,7 +3,7 @@
 
 Contains a set of tools for converting old ats format into atss format.
 
-For changing data from ats or *procmt*[^myref] to the new atss format only two steps are needed.
+For changing data from ats or *procmt* [^myref] to the new atss format only two steps are needed.
 
 ## create old survey
 
@@ -15,9 +15,10 @@ If you haven't use *procmt* you create a survey tree and put your timeseries fol
 `atstools -create_old_tree /survey/old/iron_mountain L1_S3 L2_S24 "ref station"` <br>
 creates a survey tree in /surveys named iron_mountain with stations L1_S3 and L2_S24 and a station "ref station" : **note the quotes!!**
 
-Cpoy your meas directories from the ADU into desired station, so that is looks like
+Copy your meas directories from the ADU into desired station, so that is looks like
+
 ```text
- /survey/iron_mountain/ts 
+/survey/iron_mountain/ts 
 L1_S3
 ├── meas_2009-08-20_13-22-00
 │   ├── 084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
@@ -62,5 +63,7 @@ and detailed status information.
 
 
 ## cat
+
+Footnotes
 
 [^myref]: that tree contains sites, timeseries and in some cases calibration files. Most systems however write their calibration data into  corresponding xml file.
