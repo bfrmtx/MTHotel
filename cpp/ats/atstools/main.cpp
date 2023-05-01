@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
         }
         // LF board 31 samples cut, no date shift - old source code 30
         // HF board 32 - old source 32
-        if (marg.compare("-h") || marg.compare("-help") || marg.compare("--help")  == 0) {
+        if (marg.compare("-h") == 0 || marg.compare("-help") == 0 || marg.compare("--help")  == 0) {
             std::cout << " " << std::endl;
             std::cout << "-outdir /tmp/mysurvey " << std::endl;
             std::cout << "  location where the new survey tree is created " << std::endl;
@@ -170,10 +170,10 @@ int main(int argc, char* argv[])
             std::cout << "-shift_start_time -1 [3599, 3600, -3600, ...] " << std::endl;
             std::cout << "  changes the start time by -1 seconds; old ADU-06 data can be affected by untracked leap seconds, summer/winter time " << std::endl;
 
-            std::cout << "-create_old_tree survey_dir [site_1, site_2, ...] like iron_mountain L1_S3, L2_S24" << std::endl;
+            std::cout << "-create_old_tree survey_dir [site_1 site_2, ...] like: iron_mountain L1_S3 L2_S24" << std::endl;
             std::cout << "  create an old 07/08 survey tree; you may need it for conversion" << std::endl;
 
-            std::cout << "-create_tree survey_dir [station_1, station_2, ...] like iron_mountain L1_S3, L2_S24" << std::endl;
+            std::cout << "-create_tree survey_dir [station_1 station_2, ...]: like iron_mountain L1_S3 L2_S24" << std::endl;
             std::cout << "  create survey tree" << std::endl;
 
             std::cout << " " << std::endl;
