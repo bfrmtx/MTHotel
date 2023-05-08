@@ -4,11 +4,13 @@
 #include <chrono>
 #include <climits>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <map>
 #include <string>
 #include <vector>
 #include "strings_etc.h"
+#include "whereami.h"
 
 std::tm *file_datetime(const std::string &filename) {
     auto ftime = std::filesystem::last_write_time(filename);
@@ -93,44 +95,38 @@ std::shared_ptr<tm> time_from_ints(const int YYYY = 0, const int MM = 0, const i
  * \param filename append a file in case
  * \return either the current working dir of procmt, with subfolder and file in case, if file check existance
  */
-std::filesystem::path working_dir(const std::string subdir, const std::string filename) {
-    auto cup = std::filesystem::current_path();
-    auto upp = cup.parent_path();
-    std::filesystem::path exec_dir;
+std::filesystem::path working_dir_data(const std::string filename) {
+    std::filesystem::path result(get_exec_dir());
+    if (!std::filesystem::exists(result)) return std::filesystem::path();
+
+    // ..... /bin/atstools
+    // ..... /bin
+
+    if (!result.has_parent_path()) return std::filesystem::path();
+    else result = result.parent_path();
+    // .....
+    if (!result.has_parent_path()) return std::filesystem::path();
+    else result = result.parent_path();
+
+    // ..... /data
+    result /= "data";
+
+
+    if (!std::filesystem::exists(result)) {
+        if(const char* env_p = std::getenv("MTHotel_data")) {
+            std::cout << "Your PATH is: " << env_p << '\n';
+            result = std::string(env_p);
+        }
+    }
+
     // procmt we have procmt/bin procmt/data and so on - want maybe data info.sql3 or cal MFS.txt
-    if (mstr::ends_with(cup.string(), "bin")) {
-        exec_dir = cup;
-    }
-    else {
-        exec_dir = upp;
-    }
-    if (!std::filesystem::is_directory(exec_dir)) {
-        exec_dir.clear();
+
+    result /= filename;
+    if (!std::filesystem::exists(result)) {
+        return std::filesystem::path();
     }
 
-    if (subdir.size()) {
-        exec_dir /= subdir;
-        if (!std::filesystem::is_directory(exec_dir)) {
-            exec_dir.clear();
-
-        }
-    }
-
-    if (filename.size()) {
-        exec_dir /= filename;
-        if (!std::filesystem::exists(exec_dir)) {
-            exec_dir.clear();
-        }
-    }
-
-    if (exec_dir.empty()) {
-        std::string err_str = __func__;
-        err_str += "::can not determin working dir // looking for info.sql3? ";
-        throw err_str;
-        return exec_dir;
-    }
-
-    return std::filesystem::canonical(exec_dir);
+    return std::filesystem::canonical(result);
 }
 
 /*!
