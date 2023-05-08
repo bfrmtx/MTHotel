@@ -288,14 +288,11 @@ public:
 
     void exec_query_error(const int &rc) {
         if (rc != SQLITE_OK) {
-            std::string err_str = __func__;
-            err_str += " ";
-            err_str += "::Error SELECT / INSERT ->";
-            err_str += this->db_name.string();
-            err_str += " ";
-            if (this->DB != nullptr) err_str += std::string(sqlite3_errmsg(this->DB));
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::Error SELECT / INSERT -> " << this->db_name;
+            if (this->DB != nullptr) err_str << " " << std::string(sqlite3_errmsg(this->DB));
             this->close();
-            throw err_str;
+            throw err_str.str();
         }
     }
 
@@ -305,41 +302,35 @@ public:
         this->open_mode = open_mode;
         if (this->open_mode == SQLITE_OPEN_READONLY) {
             if (!std::filesystem::exists(this->db_name)) {
-                std::string err_str = __func__;
-                err_str += ":: DB RO file not found ->";
-                err_str += std::filesystem::absolute(db_name).string();
-                throw err_str;
+                std::ostringstream err_str(__func__, std::ios_base::ate);
+                err_str << ":: DB RO file not found -> " << std::filesystem::absolute(db_name);
+                throw err_str.str();
             }
             this->exit = sqlite3_open_v2(this->db_name.string().c_str(), &this->DB, SQLITE_OPEN_READONLY, NULL);
             if (this->exit) {
                 std::cerr << "Error open DB RO" << this->db_name << " " << sqlite3_errmsg(this->DB) << std::endl;
-                std::string err_str = __func__;
-                err_str += " ";
-                err_str += this->db_name.string();
-                err_str += " ";
-                if (this->DB != nullptr) err_str += std::string(sqlite3_errmsg(this->DB));
+                std::ostringstream err_str(__func__, std::ios_base::ate);
+                err_str << ":: " << this->db_name;
+                if (this->DB != nullptr) err_str << " " <<  std::string(sqlite3_errmsg(this->DB));
                 this->close();
-                throw err_str;
+                throw err_str.str();
             }
 
         }
         if (this->open_mode == SQLITE_OPEN_READWRITE) {
             if (!std::filesystem::exists(this->db_name)) {
-                std::string err_str = __func__;
-                err_str += ":: DB RW file not found ->";
-                err_str += std::filesystem::absolute(db_name).string();
-                throw err_str;
+                std::ostringstream err_str(__func__, std::ios_base::ate);
+                err_str << ":: DB RW file not found ->" << std::filesystem::absolute(db_name);
+                throw err_str.str();
             }
             this->exit = sqlite3_open_v2(this->db_name.string().c_str(), &this->DB, SQLITE_OPEN_READWRITE, NULL);
             if (this->exit) {
                 std::cerr << "Error open DB RW" << this->db_name << " " << sqlite3_errmsg(this->DB) << std::endl;
-                std::string err_str = __func__;
-                err_str += " ";
-                err_str += this->db_name.string();
-                err_str += " ";
-                if (this->DB != nullptr) err_str += std::string(sqlite3_errmsg(this->DB));
+                std::ostringstream err_str(__func__, std::ios_base::ate);
+                err_str << " " << this->db_name;
+                if (this->DB != nullptr) err_str << " " << std::string(sqlite3_errmsg(this->DB));
                 this->close();
-                throw err_str;
+                throw err_str.str();
             }
         }
 
@@ -348,14 +339,11 @@ public:
             this->exit = sqlite3_open_v2(this->db_name.string().c_str(), &this->DB, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
             if (this->exit) {
                 std::cerr << "Error open DB / Create " << this->db_name << " " << sqlite3_errmsg(this->DB) << std::endl;
-                std::string err_str = __func__;
-                err_str += " ";
-                err_str += this->db_name.string();
-                err_str += " ";
-                err_str += std::string(sqlite3_errmsg(this->DB));
-                if (this->DB != nullptr) err_str += std::string(sqlite3_errmsg(this->DB));
+                std::ostringstream err_str(__func__, std::ios_base::ate);
+                err_str << " " << this->db_name.string();
+                if (this->DB != nullptr) err_str << " " << std::string(sqlite3_errmsg(this->DB));
                 this->close();
-                throw err_str;
+                throw err_str.str();
             }
         }
 

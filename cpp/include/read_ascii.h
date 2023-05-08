@@ -11,20 +11,18 @@
 
 void read_two_col(const std::filesystem::path &filename, std::vector<double> &x, std::vector<double> &y) {
     if (!std::filesystem::exists(filename)) {
-        std::string err_str = __func__;
-        err_str += "::  file not exists " + filename.string();
-        throw err_str;
-        return;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::  file not exists " << filename;
+        throw err_str.str();
     }
 
 
     std::ifstream afile;
     afile.open(filename, std::ios::in);
     if (!afile.is_open()) {
-        std::string err_str = __func__;
-        err_str += ":: can not open ascii for reading " + filename.string();
-        throw err_str;
-        return;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << ":: can not open ascii for reading " << filename;
+        throw err_str.str();
     }
 
     std::string line;
@@ -41,10 +39,9 @@ void read_two_col(const std::filesystem::path &filename, std::vector<double> &x,
     }
 
     if ( (xq.size() != yq.size()) || (!xq.size()) || (!yq.size()) ) {
-        std::string err_str = __func__;
-        err_str += ":: data zero or unequal " + filename.string() + ", x: " + std::to_string(xq.size()) + ", y: " + std::to_string(yq.size());
-        throw err_str;
-        return;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << ":: data zero or unequal " << filename <<  ", x: " << xq.size() << ", y: " << yq.size();
+        throw err_str.str();
     }
     x.resize(xq.size());
     y.resize(yq.size());

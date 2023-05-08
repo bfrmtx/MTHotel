@@ -72,21 +72,18 @@ bool write_json_message_file(const std::filesystem::path &directory_path_only, c
         std::cout << "creating " << filepath << std::endl;
         if (!std::filesystem::exists(filepath)) {
             std::cout << "creating " << filepath << " " << "failed!" <<  std::endl;
-            std::string err_str = __func__;
-            err_str += " can not create message in dir: " + filepath.string();
-            throw err_str;
-            return false;
-
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " can not create message in dir: " << filepath;
+            throw err_str.str();
         }
     }
     std::ofstream file;
     filepath /= ("msg_" + std::to_string(write_json_message_file_written++) + ".json");
     file.open(filepath, std::fstream::out | std::fstream::trunc);
     if (!file.is_open()) {
-        std::string err_str = __func__;
-        err_str += " can not create message " + filepath.string();
-        throw err_str;
-        return false;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << " can not create message " << filepath;
+        throw err_str.str();
     }
 
     nlohmann::ordered_json jmsg;                // use ordered because of readability
@@ -102,7 +99,6 @@ bool write_json_message_file(const std::filesystem::path &directory_path_only, c
 
     file << std::setw(2) << jmsg << std::endl;
     file.close();
-
     return true;
 }
 

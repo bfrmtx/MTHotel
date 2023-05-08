@@ -12,6 +12,8 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <sstream>
+
 
 namespace fs = std::filesystem;
 
@@ -102,10 +104,9 @@ public:
         }
         else {
             this->file.close();
-            std::string err_str = __func__;
-            err_str += ":: can not WRITE HEADER!";
-            throw err_str;
-            return false;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: can not WRITE HEADER! " << this->filename;
+            throw err_str.str();
         }
         if (close_after_write) this->file.close();
         return true;
@@ -121,10 +122,9 @@ public:
         }
         else {
             this->file.close();
-            std::string err_str = __func__;
-            err_str += ":: can not RE-WRITE HEADER!";
-            throw err_str;
-            return false;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: can not RE-WRITE HEADER! " << this->filename;
+            throw err_str.str();
         }
         this->file.close();
         return true;

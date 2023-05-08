@@ -185,9 +185,9 @@ public:
     fftw_freqs(const double &sample_rate, const size_t &wl, const size_t &rl) : wl(wl), rl(rl), sample_rate(sample_rate){
 
         if (rl > wl) {
-            std::string err_str = __func__;
-            err_str += ":: read length must be equal or smaller than window length, rl: " + std::to_string(rl) + " wl: " + std::to_string(wl) ;
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: read length must be equal or smaller than window length, rl: " << rl << " wl: " << wl ;
+            throw err_str.str();
         }
         // this indices have a size of 513 - that is the output from fftw
         this->idx_range.first = 0; // DC part is at [0]
@@ -313,10 +313,9 @@ public:
         auto h = std::upper_bound(l, all_f.cend(), max_f);
 
         if ((l == h) || (l == all_f.cend())) {
-            std::string err_str = __func__;
-            err_str += ":: no frequencies found for slice!";
-            throw err_str;
-            return freqs;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: no frequencies found for slice!";
+            throw err_str.str();
 
         }
         this->idx_range_slice.first = size_t(l - all_f.cbegin());
@@ -332,9 +331,9 @@ public:
         }
 
         if (!freqs.size()) {
-            std::string err_str = __func__;
-            err_str += ":: no frequencies found for slice!";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: no frequencies found for slice!";
+            throw err_str.str();
         }
 
         return freqs;

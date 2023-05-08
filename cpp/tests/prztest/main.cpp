@@ -34,9 +34,9 @@ int main()
     auto run_003 = station_26->get_run(3);
     auto run_004 = station_26->get_run(4);
 
+    std::vector<std::shared_ptr<channel>> channels;
     auto pool = std::make_shared<BS::thread_pool>();
 
-    std::vector<std::shared_ptr<channel>> channels;
     std::string channel_type("Ey");
 
     // shared pointer from survey
@@ -78,6 +78,7 @@ int main()
 
     double f_or_s;
     std::string unit;
+
 
     // example iterator usage  fft with auto & channels
     auto fft_res_iter = fft_freqs.begin();

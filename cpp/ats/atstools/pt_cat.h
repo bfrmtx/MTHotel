@@ -10,7 +10,7 @@
 #include <map>
 #include <mutex>
 #include <shared_mutex>
-
+#include <sstream>
 
 #include "atsheader_def.h"
 #include "atsheader.h"
@@ -21,17 +21,15 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
 
     if (!ats.size()) return;
     if (outdir_base.empty()) {
-        std::string err_str = __func__;
-        err_str += "::no -outdir supplied or";
-        throw err_str;
-        return;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::no -outdir supplied or";
+        throw err_str.str();
     }
 
     if (!std::filesystem::exists(outdir_base)) {
-        std::string err_str = __func__;
-        err_str += "::top outdir does not exists!, want to create outdir/meas_dir!";
-        throw err_str;
-        return;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::top outdir does not exists!, want to create outdir/meas_dir!";
+        throw err_str.str();
     }
 
     //std::unique_lock<std::mutex> lck (mtx, std::defer_lock); // don't lock the mutex on construction

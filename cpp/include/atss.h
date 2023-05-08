@@ -14,6 +14,8 @@
 #include <fstream>
 #include <mutex>
 #include <shared_mutex>
+#include <sstream>
+
 #include "base_constants.h"
 #include "json.h"
 #include "cal_base.h"
@@ -434,10 +436,9 @@ public:
     bool parse_json_filename(const std::filesystem::path &in_json_file) {
 
         if (!std::filesystem::exists(in_json_file)) {
-            std::string err_str = std::string("channel::") + __func__;
-            err_str += "::file not exists " + in_json_file.string();
-            throw err_str;
-            return false;
+            std::ostringstream err_str( (std::string("channel::") + __func__), std::ios_base::ate);
+            err_str << "::file not exists " << in_json_file;
+            throw err_str.str();
         }
 
         std::stringstream ss(in_json_file.stem().string());
@@ -453,11 +454,10 @@ public:
         }
 
         if (i != 5) {
-            std::string err_str = std::string("channel::") + __func__;
-            err_str += "::error parsing filename " + in_json_file.string();
+            std::ostringstream err_str( (std::string("channel::") + __func__), std::ios_base::ate);
+            err_str << "::error parsing filename " << in_json_file;
             this->pt.clear();
-            throw err_str;
-            return false;
+            throw err_str.str();
         }
 
 
@@ -532,10 +532,9 @@ public:
         bool success = false;
         std::filesystem::path newrun = this->filepath_wo_ext.parent_path().parent_path();
         if (newrun == filepath_wo_ext.root_path()) {
-            std::string err_str = std::string("channel::") + __func__;
-            err_str += "::can not create run, I am a root dir" ;
-            throw err_str;
-            return success;
+            std::ostringstream err_str( (std::string("channel::") + __func__), std::ios_base::ate);
+            err_str << "::can not create run, I am a root dir" ;
+            throw err_str.str();
         }
         newrun /=  mstr::run2string(run);
         if (!std::filesystem::exists(newrun)) {
@@ -544,10 +543,9 @@ public:
         else success = true;
 
         if (!success) {
-            std::string err_str = std::string("channel::") + __func__;
-            err_str += "::can not create run " + mstr::zero_fill_field(run, 3);
-            throw err_str;
-            return success;
+            std::ostringstream err_str( (std::string("channel::") + __func__), std::ios_base::ate);
+            err_str << "::can not create run " << mstr::zero_fill_field(run, 3);
+            throw err_str.str();
         }
         this->filepath_wo_ext = newrun / this->filepath_wo_ext.filename();
         return success;
@@ -572,9 +570,9 @@ public:
     double set_sample_rate(const double& sample_rate) {
 
         if (sample_rate < treat_as_null ) {
-            std::string err_str = std::string("channel->") + __func__;
-            err_str += ":: you can not have NULL negative frequencies";
-            throw err_str;
+            std::ostringstream err_str( (std::string("channel::") + __func__), std::ios_base::ate);
+            err_str << ":: you can not have NULL negative frequencies";
+            throw err_str.str();
         }
         else this->pt.sample_rate = sample_rate;
         return this->pt.sample_rate;
@@ -592,10 +590,9 @@ public:
     std::string filename(const std::string& extension_with_dot = "") const {
 
         if (this->pt.sample_rate < treat_as_null) {
-            std::string err_str = std::string("channel::") + __func__;
-            err_str += "::you can not have NULL or negative frequencies";
-            throw err_str;
-            return std::string();
+            std::ostringstream err_str( (std::string("channel::") + __func__), std::ios_base::ate);
+            err_str << "::you can not have NULL or negative frequencies";
+            throw err_str.str();
         }
         std::string str;
         str += mstr::zero_fill_field(this->serial, 3) + "_";
@@ -709,19 +706,15 @@ public:
 
         if (!file.is_open()) {
             file.close();
-            std::string err_str = __func__;
-            err_str += "::can not write header, file not open ";
-            err_str += filepath.string();
-            throw err_str;
-            return std::filesystem::path();
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::can not write header, file not open " << filepath;
+            throw err_str.str();
         }
 
         file << std::setw(2) << head << std::endl;
         file.close();
 
         return filepath;
-
-        //std::cout << std::setw(2) << head << std::endl;
     }
 
 
@@ -740,11 +733,9 @@ public:
 
             if (!file.is_open()) {
                 file.close();
-                std::string err_str = __func__;
-                err_str += "::file not open ";
-                err_str += filepath.string();
-                throw err_str;
-                return false;
+                std::ostringstream err_str(__func__, std::ios_base::ate);
+                err_str << "::file not open " << filepath;
+                throw err_str.str();
             }
             for (auto dat : data) {
                 file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
@@ -764,11 +755,9 @@ public:
 
         if (!file.is_open()) {
             file.close();
-            std::string err_str = __func__;
-            err_str += "::file not open ";
-            err_str += filepath.string();
-            throw err_str;
-            return false;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::file not open " << filepath;
+            throw err_str.str();
         }
         for (auto dat : data) {
             file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
@@ -802,11 +791,9 @@ public:
 
     //            if (!file.is_open()) {
     //                file.close();
-    //                std::string err_str = __func__;
-    //                err_str += "::file not open ";
-    //                err_str += filepath.string();
+    //                std::ostringstream err_str(__func__, std::ios_base::ate);
+    //                err_str << "::file not open " << filepath;
     //                throw err_str;
-    //                return false;
     //            }
     //            for (auto dat : data) {
     //                file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
@@ -830,20 +817,18 @@ public:
             ok = std::filesystem::exists(this->get_atss_filepath());
         }
         catch (std::filesystem::filesystem_error& e) {
-            std::string err_str = __func__;
-            std::cerr << err_str << " " << e.what() << std::endl;
-            return -1;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " " << e.what() << " can not open";
+            throw err_str.str();
         }
 
         if (!ok) return false;
         this->infile.open(this->get_atss_filepath(), std::ios::in | std::ios::binary);
         if (!this->infile.is_open()) {
             this->infile.close();
-            std::string err_str = __func__;
-            err_str += "::can not open, file not open ";
-            err_str += this->get_atss_filepath().string();
-            throw err_str;
-            return false;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::can not open, file not open " << this->get_atss_filepath();
+            throw err_str.str();
         }
 
         return true;
@@ -851,11 +836,9 @@ public:
 
     int64_t skip_samples(const int64_t &samples) {
         if (!this->infile.is_open()) {
-            std::string err_str = __func__;
-            err_str += "::file is NOT open! ";
-            err_str += this->get_atss_filepath().string();
-            throw err_str;
-            return -1;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::file is NOT open! " << this->get_atss_filepath();
+            throw err_str.str();
         }
 
         this->infile.seekg(samples * sizeof(double), this->infile.cur);
@@ -864,19 +847,15 @@ public:
 
     int64_t shift_to_read_time(const p_timer &new_tt) {
         if (!this->infile.is_open()) {
-            std::string err_str = __func__;
-            err_str += "::file is NOT open! ";
-            err_str += this->get_atss_filepath().string();
-            throw err_str;
-            return -1;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::file is NOT open! " << this->get_atss_filepath();
+            throw err_str.str();
         }
 
         if (new_tt < this->pt) {
-            std::string err_str = __func__;
-            err_str += "::new time is earlier than start time ";
-            err_str += this->get_atss_filepath().string();
-            throw err_str;
-            return -1;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::new time is earlier than start time "<< this->get_atss_filepath();
+            throw err_str.str();
         }
 
         p_timer diff_time = (new_tt - this->pt);
@@ -1039,9 +1018,9 @@ public:
     size_t samples(const std::filesystem::path &filepath_wo_ext = "")  {
 
         if (this->filepath_wo_ext.empty() && filepath_wo_ext.empty()) {
-            std::string err_str = __func__;
-            err_str += "::empty class file AND no argument given ";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::empty class file AND no argument given ";
+            throw err_str.str();
         }
         std::filesystem::path filepath;
         if (!filepath_wo_ext.empty()) filepath = filepath_wo_ext;

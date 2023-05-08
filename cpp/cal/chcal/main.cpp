@@ -9,6 +9,8 @@ int main(int argc, char **argv)
     using namespace std;
     namespace fs = std::filesystem;
 
+    auto exec_path = std::filesystem::path(argv[0]);
+
     bool tojson = false;
     bool toxml = false;
     bool tomtx = false;
@@ -149,10 +151,12 @@ int main(int argc, char **argv)
             if ((check_ext.extension() == ".xml") ||  (check_ext.extension() == ".XML")) {
                 try {
 
+                    std::string messages;
+
                     std::shared_ptr<read_cal> mtx_cal_file = std::make_shared<read_cal>();
                     std::vector<std::shared_ptr<calibration>> xcals;
                     std::string fdig(check_ext.stem().string());
-                    if ((isdigit(fdig.at(0)) || force_measdoc) && !force_single)  xcals = mtx_cal_file->read_std_xml(check_ext);
+                    if ((isdigit(fdig.at(0)) || force_measdoc) && !force_single)  xcals = mtx_cal_file->read_std_xml(check_ext, messages);
                     else xcals = mtx_cal_file->read_std_xml_single(check_ext);
 
                     for (auto &xcal : xcals) {

@@ -52,9 +52,9 @@ int main()
     try {
 
         if (!station->runs.size()) {
-            std::string err_str = __func__;
-            err_str += ":: can not WRITE HEADER!";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: can not WRITE HEADER!";
+            throw err_str.str();
         }
         for (auto &run : station->runs) {
             channels.emplace_back(run->get_channel(channel_type));

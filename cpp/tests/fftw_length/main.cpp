@@ -52,31 +52,32 @@ int main(int argc, char* argv[])
             if (marg.compare("-u") == 0) {
                 fs::path surveyname = std::string(argv[++l]);
                 if (!fs::is_directory(surveyname)) {
-                    std::cerr << "-u surveydir needs an existing directoy with stations inside" << std::endl;
-                    std::cerr << "given: " << surveyname.string() << std::endl;
-                    return EXIT_FAILURE;
+                    std::ostringstream err_str(__func__, std::ios_base::ate);
+                    err_str << " -u surveydir needs an existing directoy with stations inside" << std::endl;
+                    err_str << " given: " << surveyname.string() << std::endl;
+                    throw err_str.str();
                 }
                 surveyname = fs::canonical(surveyname);
                 survey = std::make_shared<survey_d>(surveyname);
                 if (survey == nullptr) {
-                    std::string err_str = __func__;
-                    err_str += "first use -u surveyname in order to init the survey";
-                    throw err_str;
+                    std::ostringstream err_str(__func__, std::ios_base::ate);
+                    err_str << " first use -u surveyname in order to init the survey";
+                    throw err_str.str();
                 }
 
             }
             if (marg.compare("-s") == 0) {
                 if (survey == nullptr) {
-                    std::string err_str = __func__;
-                    err_str += "first use -u surveyname in order to init the survey";
-                    throw err_str;
+                    std::ostringstream err_str(__func__, std::ios_base::ate);
+                    err_str << " first use -u surveyname in order to init the survey";
+                    throw err_str.str();
                 }
                 auto stationname = std::string(argv[++l]);
                 station = survey->get_station(stationname); // that is a shared pointer from survey
                 if (station == nullptr) {
-                    std::string err_str = __func__;
-                    err_str += "secondly use -s stationname in order to init station";
-                    throw err_str;
+                    std::ostringstream err_str(__func__, std::ios_base::ate);
+                    err_str << " secondly use -s stationname in order to init station";
+                    throw err_str.str();
                 }
             }
 

@@ -27,6 +27,9 @@ namespace fs = std::filesystem;
 #include "adu06_fname.h"
 #include "chats.h"
 
+#include "BS_thread_pool.h"
+#include "whereami.h"
+
 // run tests
 // -outdir /tmp -cat /home/bfr/devel/ats_data/cat_ats_data/NGRI/meas_2019-11-20_06-52-49/*ats /home/bfr/devel/ats_data/cat_ats_data/NGRI/meas_2019-11-22_06-22-30/*ats
 // -outdir /tmp -chats /home/bfr/devel/ats_data/zero6/site0199/*ats
@@ -47,6 +50,9 @@ for (const auto & file : directory_iterator(path))
 int main(int argc, char* argv[])
 {
 
+    auto exec_path = get_exec_dir();
+
+    std::cout << exec_path << std::endl;
 
 
     bool cat = false;                       //!< concatunate ats files, try read xml from atsheader & calibration from XML
@@ -238,6 +244,7 @@ int main(int argc, char* argv[])
 
     }
 
+    auto pool = std::make_shared<BS::thread_pool>();
 
 
     if (!clone) {
@@ -392,9 +399,11 @@ int main(int argc, char* argv[])
         }
 
         read_cal rcal;
+        std::string messages;
+
         for (const auto& xmlfile : xml_files) {
             std::cout << "scanning XML for calibration:" << xmlfile << std::endl;
-            auto cals = rcal.read_std_xml(xmlfile);
+            auto cals = rcal.read_std_xml(xmlfile, messages);
             calibs.insert(calibs.end(), cals.begin(), cals.end());
         }
         // correct sensor name in case from MFS06e to MFS-06e
@@ -406,7 +415,7 @@ int main(int argc, char* argv[])
         remove_cal_duplicates(calibs);
 
         // this function will sort the ats channel files in order to get C00 ... C99
-        xml_from_ats(xmls_and_files, calibs);
+        xml_from_ats(exec_path, xmls_and_files, calibs);
         return EXIT_SUCCESS;
 
     }
@@ -524,7 +533,7 @@ int main(int argc, char* argv[])
         }
         remove_cal_duplicates(xxcal);
 
-        xml_from_ats(xmls_and_files, xxcal);
+        xml_from_ats(exec_path, xmls_and_files, xxcal);
         return EXIT_SUCCESS;
 
     }
@@ -569,31 +578,26 @@ int main(int argc, char* argv[])
             }
         }
 
-        // ask HW and split threads
-        std::vector<size_t> execs = mk_mini_threads(0, atsheaders.size());
+        try {
+            for (const auto &atsh : atsheaders) {
+                //pool->push_task(collect_atsheaders, std::ref(atsh), std::ref(survey), std::ref(shift_start_time));
+                collect_atsheaders(atsh, survey, shift_start_time);
 
-        size_t thread_index = 0;
+            }
+           // pool->wait_for_tasks();
 
-        for (const auto &ex : execs) {
-            try {
-                std::vector<std::jthread> threads;
-                for (size_t j = 0; j < ex; ++j) {
-                    //collect_atsheaders(ats, survey);
-                    threads.emplace_back(std::jthread (collect_atsheaders, std::ref(atsheaders[thread_index++]), std::ref(survey), std::ref(shift_start_time)));
-                }
-            }
-            catch( const std::string &error ) {
-                std::cerr << error <<std::endl;
-                return EXIT_FAILURE;
-            }
-            catch(std::filesystem::filesystem_error& e) {
-                std::cerr <<  e.what() << std::endl;
-                return EXIT_FAILURE;
-            }
-            catch (...) {
-                std::cerr << "could not execute all threads" << std::endl;
-                return EXIT_FAILURE;
-            }
+        }
+        catch( const std::string &error ) {
+            std::cerr << error <<std::endl;
+            return EXIT_FAILURE;
+        }
+        catch(std::filesystem::filesystem_error& e) {
+            std::cerr <<  e.what() << std::endl;
+            return EXIT_FAILURE;
+        }
+        catch (...) {
+            std::cerr << "could not execute all threads" << std::endl;
+            return EXIT_FAILURE;
         }
 
         std::cout << "done collecting" << std::endl;
@@ -631,30 +635,27 @@ int main(int argc, char* argv[])
         }
 
         std::cout << "done make tree" << std::endl;
-        atsheaders.clear();
-        thread_index = 0;
-        for (const auto &ex : execs) {
-            try {
-                std::vector<std::jthread> threads;
-                std::cout << "starting: " << ex << std::endl;
-                for (size_t j = 0; j < ex; ++j) {
-                    threads.emplace_back(std::jthread (fill_survey_tree, std::ref(survey), thread_index++) );
-                }
+
+        try {
+            for (size_t i = 0; i < vch.size(); ++i) {
+                //fill_survey_tree(survey, i);
+                pool->push_task(fill_survey_tree, std::ref(survey), i);
             }
-            catch( const std::string &error ) {
-                std::cerr << error <<std::endl;
-                return EXIT_FAILURE;
-            }
-            catch(std::filesystem::filesystem_error& e) {
-                std::cerr <<  e.what() << std::endl;
-            }
-            catch (...) {
-                std::cerr << "could not execute all threads" << std::endl;
-                return EXIT_FAILURE;
-            }
+            pool->wait_for_tasks();
         }
-        try
-        {
+        catch( const std::string &error ) {
+            std::cerr << error <<std::endl;
+            return EXIT_FAILURE;
+        }
+        catch(std::filesystem::filesystem_error& e) {
+            std::cerr <<  e.what() << std::endl;
+        }
+        catch (...) {
+            std::cerr << "could not execute all threads" << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        try  {
             if (std::filesystem::exists((clone_dir / "doc"))) {
                 std::filesystem::copy((clone_dir / "doc"), (survey->survey_path() / "reports"), std::filesystem::copy_options::skip_existing | std::filesystem::copy_options::recursive);
             }
@@ -662,9 +663,7 @@ int main(int argc, char* argv[])
                 std::filesystem::copy((clone_dir / "shell"), (survey->survey_path() / "shell"), std::filesystem::copy_options::skip_existing | std::filesystem::copy_options::recursive);
             }
         }
-
-        catch (std::exception& e)
-        {
+        catch (std::exception& e) {
             std::cerr << e.what();
         }
         for (const auto &ch : vch) {
@@ -673,8 +672,8 @@ int main(int argc, char* argv[])
         std::cout << "done" << std::endl;
 
         return EXIT_SUCCESS;
-
     }
+
 
 
     return EXIT_SUCCESS;

@@ -108,18 +108,18 @@ public:
 
     std::shared_ptr<channel> ch_first() const {
         if (!channels.size()) {
-            std::string err_str = __func__;
-            err_str += " Station " + this->run_dir.parent_path().filename().string() + " " + this->run_dir.filename().string() +" is empty";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " Station " << this->run_dir.parent_path().filename() << " " << this->run_dir.filename() << " is empty";
+            throw err_str.str();
         }
         return channels.at(0);
     }
 
     std::shared_ptr<channel> get_channel(const std::string &chtype) const {
         if (!channels.size()) {
-            std::string err_str = __func__;
-            err_str += " Station " + this->run_dir.parent_path().filename().string() + " " + this->run_dir.filename().string() +" is empty";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " Station " << this->run_dir.parent_path().filename() << " " << this->run_dir.filename() << " is empty";
+            throw err_str.str();
         }
 
         for (auto &ch : this->channels) {
@@ -282,9 +282,9 @@ public:
 
 
         if (!std::filesystem::exists(spath)) {
-            std::string err_str = __func__;
-            err_str += ":: run does not exists! " + this->station_dir.filename().string() + " wanted: " + srun;
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: run does not exists! " << this->station_dir.filename() << " wanted: " << srun;
+            throw err_str.str();
         }
         else {
             for (const auto &r : this->runs ) {
@@ -395,9 +395,9 @@ public:
 
         std::sort(this->all_channels.begin(), this->all_channels.end(), compare_channel_start_lt);
         if (!std::filesystem::exists(this->survey_dir)) {
-            std::string err_str = __func__;
-            err_str += " Survey dir " + this->survey_dir.string() + " does not exists";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " Survey dir " << this->survey_dir.string() << " does not exists";
+            throw err_str.str();
         }
         std::map<std::string, int> all_stations;
         int i = 0;
@@ -411,9 +411,9 @@ public:
                 if (station.filename() == ch->tmp_station) {
                     this->add_create_run(station, ch);
                     if (ch->filepath_wo_ext.empty()) {
-                        std::string err_str = __func__;
-                        err_str += ":: NO PATH for channel CREATED ";
-                        throw err_str;
+                        std::ostringstream err_str(__func__, std::ios_base::ate);
+                        err_str << ":: NO PATH for channel CREATED ";
+                        throw err_str.str();
                     }
                 }
             }
@@ -429,6 +429,12 @@ public:
         std::shared_lock lock(this->station_lock);
         return this->all_channels;
     }
+
+    size_t nchannels() const {
+        std::shared_lock lock(this->station_lock);
+        return this->all_channels.size();
+    }
+
 
     ~survey_d() {
 
@@ -451,9 +457,9 @@ public:
         // lamda
         auto stat = std::find_if(this->stations.begin(), this->stations.end(), [spath] (const std::shared_ptr<station_d> s) { return s->station_dir == spath ; });
         if (stat == stations.end()) {
-            std::string err_str = __func__;
-            err_str += " Station " + station_name + " does not exists";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " Station " << station_name << " does not exists";
+            throw err_str.str();
         }
 
         return *stat;
@@ -510,9 +516,9 @@ public:
         // lamda
         if (std::find_if(this->stations.begin(), this->stations.end(), [spath] (const std::shared_ptr<station_d> s) { return s->station_dir == spath ; }) != stations.end()) {
 
-            std::string err_str = __func__;
-            err_str += " Station " + station_name + " already exists";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " Station " << station_name << " already exists";
+            throw err_str.str();
         }
 
 
@@ -520,9 +526,9 @@ public:
 
         if (!std::filesystem::exists(spath)) this->stations.emplace_back(std::make_shared<station_d>(spath, false));
         else {
-            std::string err_str = __func__;
-            err_str += " Station " + station_name + " already exists in filesystem - you can't create it";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " Station " << station_name << " already exists in filesystem - you can't create it";
+            throw err_str.str();
         }
         if (!std::filesystem::exists(mpath)) std::filesystem::create_directory(mpath);
 

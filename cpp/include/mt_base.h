@@ -8,6 +8,7 @@
 #include <vector>
 #include <memory>
 #include <fstream>
+#include <sstream>
 #include <filesystem>
 #include <algorithm>
 // #define _USE_MATH_DEFINES // for C++ and MSVC
@@ -122,9 +123,9 @@ std::vector<std::string> survey_dirs() {
  */
 bool create_survey_dirs(const std::filesystem::path survey, const std::vector<std::string> sub_dirs, const std::vector<std::string> stations = {}) {
     if (!sub_dirs.size()) {
-        std::string err_str = __func__;
-        err_str += ":: sub dirs provided! ->";
-        throw err_str;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << ":: sub dirs provided! ->";
+        throw err_str.str();
     }
     try {
         std::filesystem::create_directories(survey);
@@ -151,9 +152,9 @@ bool create_survey_dirs(const std::filesystem::path survey, const std::vector<st
         }
     }
     catch (...) {
-        std::string err_str = __func__;
-        err_str += ":: error creating sub directories ->";
-        throw err_str;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << ":: error creating sub directories ->";
+        throw err_str.str();
     }
 
     return true;

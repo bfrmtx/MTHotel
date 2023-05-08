@@ -9,6 +9,8 @@
 #include <memory>
 #include <fstream>
 #include <filesystem>
+#include <sstream>
+
 //
 // that is now in cmake as add_compile_definitions( _USE_MATH_DEFINES _msvc )
 // #define _USE_MATH_DEFINES // for C++ and MSVC
@@ -128,17 +130,15 @@ struct calibration
                       const bool old_to_new = false, const bool new_to_old = false) {
 
         if (!this->f.size()) {
-            std::string err_str = __func__;
-            err_str += ":: no data! ->";
-            throw err_str;
-            return 0;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: no data! ->";
+            throw err_str.str();
         }
 
         if ((this->f.size() != this->a.size()) || (this->f.size() != this->p.size())) {
-            std::string err_str = __func__;
-            err_str += ":: no data corrupted ->";
-            throw err_str;
-            return 0;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: no data corrupted ->";
+            throw err_str.str();
         }
 
         if (ampl_div_f) {
@@ -185,6 +185,11 @@ struct calibration
     std::string chopper2string() const {
         if (this->chopper == ChopperStatus::on) return std::string("on");
         return std::string("off");
+    }
+
+    std::string serial2string() const {
+
+        return std::to_string(this->serial);
     }
 
     CalibrationType cal_type() const {
@@ -364,11 +369,9 @@ struct calibration
 
         if ((this->f.size() != this->a.size()) || (this->f.size() != this->p.size())) {
             this->clear();
-            std::string err_str = __func__;
-            err_str += ":: calibration vecors f,a, are inconsistent ->";
-            err_str += std::filesystem::absolute(filepath).string();
-            throw err_str;
-            return 0;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: calibration vecors f,a, are inconsistent ->" << std::filesystem::absolute(filepath);
+            throw err_str.str();
         }
 
         return this->f.size();
@@ -384,19 +387,15 @@ struct calibration
     size_t read_file(const std::filesystem::path &filepath, const bool auto_convert = true) {
         this->clear();
         if (!std::filesystem::exists(filepath)) {
-            std::string err_str = __func__;
-            err_str += ":: file not found ->";
-            err_str += std::filesystem::absolute(filepath).string();
-            throw err_str;
-            return 0;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str <<  ":: file not found ->" << std::filesystem::absolute(filepath);
+            throw err_str.str();
         }
 
         if (!this->extract_from_filename(filepath)) {
-            std::string err_str = __func__;
-            err_str += ":: filename can not be parsed! ->";
-            err_str += std::filesystem::absolute(filepath).string();
-            throw err_str;
-            return 0;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: filename can not be parsed! -> " << std::filesystem::absolute(filepath);
+            throw err_str.str();
         }
 
         std::ifstream file;
@@ -510,10 +509,9 @@ struct calibration
     std::filesystem::path mtx_cal_head(const std::filesystem::path &directory_path_only, bool create_filepath_only) const {
 
         if (this->ct == CalibrationType::nn) {
-            std::string err_str = __func__;
-            err_str += ":: calibration type is CalibrationType::nn  -> no idea what to do";
-            throw err_str;
-            return std::filesystem::path();
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: calibration type is CalibrationType::nn  -> no idea what to do in " << directory_path_only;
+            throw err_str.str();
         }
 
         std::filesystem::path filepath(std::filesystem::canonical(directory_path_only));
@@ -530,11 +528,9 @@ struct calibration
         file.open (filepath, std::fstream::out | std::fstream::trunc);
 
         if (!file.is_open()) {
-            std::string err_str = __func__;
-            err_str += ":: can not open ->";
-            err_str += std::filesystem::absolute(filepath).string();
-            throw err_str;
-            return std::filesystem::path();
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: can not open ->" << std::filesystem::absolute(filepath);
+            throw err_str.str();
         }
 
         // ISO is a date hint for YY/mm/DD
@@ -558,11 +554,9 @@ struct calibration
         file.open (full_path_filename, std::fstream::out | std::fstream::app);
 
         if (!file.is_open()) {
-            std::string err_str = __func__;
-            err_str += ":: can not open ->";
-            err_str += std::filesystem::absolute(full_path_filename).string();
-            throw err_str;
-            return;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: can not open ->" << std::filesystem::absolute(full_path_filename);
+            throw err_str.str();
         }
 
         file << "FREQUENCY    MAGNITUDE    PHASE" << std::endl;

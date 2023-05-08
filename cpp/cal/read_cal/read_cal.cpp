@@ -9,35 +9,16 @@ read_cal::read_cal()
 {
     std::filesystem::path dbfile;
 
-    try {
-        dbfile = working_dir("data", "info.sql3");
+
+    dbfile = working_dir_data("info.sql3");
+
+
+    if (!std::filesystem::exists(dbfile)) {
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << ":: read_cal() missing sql database " <<  dbfile.string();
+        throw err_str.str();
     }
 
-
-    catch (const std::string &error) {
-        std::cerr << error << std::endl;
-
-        try {
-            if (!std::filesystem::exists(dbfile)) {
-                dbfile = getenv("HOME");
-                dbfile /= "devel/github_mthotel/MTHotel/cpp/data/info.sql3";
-
-                if (!std::filesystem::exists(dbfile)) {
-                    std::string err_str = __func__;
-                    err_str += ":: read_cal() ";
-                    err_str += dbfile.string();
-                    throw err_str;
-                    return;
-                }
-            }
-        }
-
-        catch (const std::string &error) {
-            std::cerr << error << std::endl;
-            exit;
-        }
-
-    }
     this->dbloaded = true;
     // that is a two column db
 
@@ -73,17 +54,14 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
     this->clear();
     auto cal = std::make_shared<calibration>();
     if (!this->dbloaded) {
-        std::string err_str = __func__;
-        err_str += ":: no database loaded, e.g info.sql3 missing";
-        throw err_str;
-        return cal;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << ":: no database loaded, e.g info.sql3 missing";
+        throw err_str.str();
     }
     if (!fs::exists(filename)) {
-        std::string err_str = __func__;
-        err_str += ":: file not found ->";
-        err_str += std::filesystem::absolute(filename).string();
-        throw err_str;
-        return cal;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << ":: file not found -> " << filename;
+        throw err_str.str();
     }
 
     fs::path name(filename.filename());
@@ -239,10 +217,9 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
 
     if (failed) {
         cal->clear();
-        std::string err_str = __func__;
-        err_str += ":: FAILED to read inside file, check BREAK or numbers ->";
-        err_str += std::filesystem::absolute(filename).string();
-        throw err_str;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << ":: FAILED to read inside file, check BREAK or numbers -> " << filename;
+        throw err_str.str();
     }
 
 
@@ -340,7 +317,7 @@ void read_cal::guess_date()
 
 
 
-std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path &filename)
+std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path &filename, std::string &messages)
 {
     auto tir = std::make_shared<tinyxml2::XMLDocument>();
     std::vector<std::shared_ptr<calibration>> cal_entries;
@@ -354,28 +331,22 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
 
     bool loaded = tir->LoadFile(filename.string().c_str());
     if (loaded) {
-        std::string err_str = __func__;
-        err_str += ":: error loading XML file ";
-        err_str += filename.string();
-        throw err_str;
-        return cal_entries;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << ":: error loading XML file " << filename;
+        throw err_str.str();
     }
     auto proot = tir->RootElement(); // that is the envelope, mostly "measurement"
     if (proot == nullptr) {
-        std::string err_str = __func__;
-        err_str += "::Root Element XML_ERROR_FILE_READ_ERROR";
-        err_str += filename.string();
-        throw err_str;
-        return cal_entries;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::Root Element XML_ERROR_FILE_READ_ERROR" << filename;
+        throw err_str.str();
     }
 
     auto pscal_sens = open_node(proot, "calibration_sensors", true);
     if (pscal_sens == nullptr) {
-        std::string err_str = __func__;
-        err_str += "::calibration_sensors entry not there, ";
-        err_str += filename.string();
-        throw err_str;
-        return cal_entries;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::calibration_sensors entry not there, " << filename;
+        throw err_str.str();
     }
     auto pchan = open_node(pscal_sens, "channel");
 
@@ -384,7 +355,7 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
         int old_id = id;
         pchan->QueryIntAttribute("id", &id);
         if (old_id != id) {
-            std::stringstream message; // this inside a thread, try bundle output
+            std::ostringstream message(messages, std::ios_base::ate); // this inside a thread, try bundle output
             message << "sensor for channel: " << id << " -> ";
             old_id = id;
             auto pca = open_node(pchan, "calibration");
@@ -481,9 +452,11 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
                     else cal_entries.back()->datetime += "T00:00:00";
                     // cal_entries.back()->write_file("/tmp");
                 }
-                std::cout << message.str() << std::endl;
+                messages += message.str() + ";";
+
             }
             catch (const std::string &error) {
+                std::cerr << message.str() << std::endl;
                 std::cerr << error << std::endl;
                 std::cerr << "ignore in case this is E" << std::endl;
             }
@@ -495,12 +468,11 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
     //        std::cerr << error << std::endl;
     //    }
 
-
     return cal_entries;
 
 }
 
-std::vector<std::shared_ptr<calibration> > read_cal::read_std_xml_single(const std::filesystem::__cxx11::path &filename)
+std::vector<std::shared_ptr<calibration> > read_cal::read_std_xml_single(const std::filesystem::path &filename)
 {
     auto tir = std::make_shared<tinyxml2::XMLDocument>();
     std::vector<std::shared_ptr<calibration>> cal_entries;
@@ -513,19 +485,15 @@ std::vector<std::shared_ptr<calibration> > read_cal::read_std_xml_single(const s
 
         bool loaded = tir->LoadFile(filename.string().c_str());
         if (loaded) {
-            std::string err_str = __func__;
-            err_str += ":: error loading XML file ";
-            err_str += filename.string();
-            throw err_str;
-            return cal_entries;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: error loading XML file " << filename;
+            throw err_str.str();
         }
         auto proot = tir->RootElement(); // that is the envelope, mostly "calibration"
         if (proot == nullptr) {
-            std::string err_str = __func__;
-            err_str += "::Root Element XML_ERROR_FILE_READ_ERROR";
-            err_str += filename.string();
-            throw err_str;
-            return cal_entries;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::Root Element XML_ERROR_FILE_READ_ERROR " << filename;
+            throw err_str.str();
         }
 
 
@@ -623,9 +591,8 @@ std::vector<std::shared_ptr<calibration> > read_cal::read_std_xml_single(const s
             // cal_entries.back()->write_file("/tmp");
         }
 
-
-
-    } catch (const std::string &error) {
+    }
+    catch (const std::string &error) {
         std::cerr << error << std::endl;
     }
 

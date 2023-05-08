@@ -11,6 +11,7 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <sstream>
 
 #include "atsheader_def.h"
 #include "strings_etc.h"
@@ -53,7 +54,7 @@ for (const auto& part : pathToShow)
  * It has bee seperated from the binary structs
  */
 
-    class atsheader {
+class atsheader {
 
 public:
     /*!
@@ -125,15 +126,14 @@ public:
         if (this->file.is_open())
             this->file.close();
 
-        this->file.open(filename, std::ios::out | std::ios::binary);
+        this->file.open(this->filename, std::ios::out | std::ios::binary);
         if (this->file.is_open()) {
             this->file.write((char *)&this->header, sizeof(this->header));
         } else {
             this->file.close();
-            std::string err_str = __func__;
-            err_str += ":: can not WRITE HEADER!";
-            throw err_str;
-            return false;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: can not WRITE HEADER! " << this->filename;
+            throw err_str.str();
         }
         if (close_after_write)
             this->file.close();
@@ -146,10 +146,9 @@ public:
         std::string xmlfile;
 
         if (this->filename.empty()) {
-            std::string err_str = __func__;
-            err_str += ":: no ats filename!";
-            throw err_str;
-            return xmlfile;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: no ats filename!";
+            throw err_str.str();
         }
 
         std::string sad = this->start_date();
@@ -226,15 +225,15 @@ public:
 
         this->gen_xmlfilename();
 
-        this->file.open(filename, std::ios::out | std::ios::in | std::ios::binary);
+        this->file.open(this->filename, std::ios::out | std::ios::in | std::ios::binary);
         if (this->file.is_open()) {
             this->file.write((char *)&this->header, sizeof(this->header));
-        } else {
+        }
+        else {
             this->file.close();
-            std::string err_str = __func__;
-            err_str += ":: can not RE-WRITE HEADER!";
-            throw err_str;
-            return false;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: can not RE-WRITE HEADER! " << this->filename;
+            throw err_str.str();
         }
         this->file.close();
         return true;
@@ -248,37 +247,46 @@ public:
    */
     template <typename T>
     size_t ats_read_ints_doubles(std::vector<T> &ints_doubles) {
+
+        if(!this->count_ats_read_ints_doubles) std::cerr << "converting " << this->filename << std::endl;
+        else std::cout << ".";
+        ++this->count_ats_read_ints_doubles;
         if (!this->file.is_open()) {
-            std::string err_str = __func__;
-            err_str += ":: file not open!";
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: file not open! " << this->filename;
             ints_doubles.resize(0);
-            throw err_str;
-            return ints_doubles.size();
+            this->count_ats_read_ints_doubles = 0;
+            throw err_str.str();
         }
         // whatever is was, reset ints to a 0 state
         if (!ints_doubles.size()) {
-            std::string err_str = __func__;
-            err_str += ":: ints size can't be ZERO - no chunk read";
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: ints size can't be ZERO - no chunk read " << this->filename;
             ints_doubles.resize(0);
+            this->count_ats_read_ints_doubles = 0;
             this->file.close();
-            throw err_str;
-            return ints_doubles.size();
+            throw err_str.str();
         }
-        auto pos_start = file.tellg();
+        int64_t pos_start = file.tellg();
         // next op will fail
         // typically when previous read reached EOF
+        // in some routines we want to read until end!
         if (file.peek() == EOF || (std::istream::traits_type::eof() == pos_start)) {
             ints_doubles.resize(0);
-            return 0;
+            this->file.close();
+            this->count_ats_read_ints_doubles = 0;
+            std::cout << std::endl;
+            return ints_doubles.size();
+
         }
 
         if (pos_start < 1024) {
-            std::string err_str = __func__;
-            err_str += ":: we seem to be still INSIDE HEADER";
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: we seem to be still INSIDE HEADER" << this->filename;
             ints_doubles.resize(0);
             this->file.close();
-            throw err_str;
-            return ints_doubles.size();
+            this->count_ats_read_ints_doubles = 0;
+            throw err_str.str();
         }
 
         size_t i = 0;
@@ -330,7 +338,8 @@ public:
                     idata32 = idata;
                     this->file.write(static_cast<char *>(static_cast<void *>(&idata32)), 4);
                 }
-            } else {
+            }
+            else {
                 int32_t idata32;
                 for (const auto &idata : ints_doubles) {
                     double val = idata * lsbval;
@@ -378,7 +387,8 @@ public:
                 idata32 = int32_t(data / this->header.lsbval);
                 this->file.write(static_cast<char *>(static_cast<void *>(&idata32)), 4);
             }
-        } catch (std::system_error &e) {
+        }
+        catch (std::system_error &e) {
             std::cerr << e.code().message() << std::endl;
             std::cerr << "failed writing data atsheader::" << __func__ << std::endl;
             this->file.close();
@@ -399,10 +409,9 @@ public:
         afilename += ".tsdata";
         afile.open(afilename, std::ios::out | std::ios::trunc);
         if (!afile.is_open()) {
-            std::string err_str = __func__;
-            err_str += ":: can not open ascii for writing " + afilename.string();
-            throw err_str;
-            return 0;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: can not open ascii for writing " << afilename;
+            throw err_str.str();
         }
         this->read();
         std::vector<double> ints_doubles(8192 * 64);
@@ -472,6 +481,7 @@ public:
 private:
     std::fstream file;
     fs::path filename;
+    uint64_t count_ats_read_ints_doubles = 0;
 
 };
 

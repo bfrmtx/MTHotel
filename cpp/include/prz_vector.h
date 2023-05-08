@@ -10,6 +10,7 @@
 #include <numeric>
 #include <vector>
 #include <utility>
+#include <sstream>
 
 #include "base_constants.h"
 
@@ -22,10 +23,9 @@ void parzen(const std::vector<T> &data, const std::vector<S> &selected_freqs, co
     }
 
     if (result.size() != selected_freqs.size()) {
-        std::string err_str = __func__;
-        err_str += "::result size != selected frequencies size";
-        throw err_str;
-        return ;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::result size != selected frequencies size";
+        throw err_str.str();
     }
     //for (auto &res: result) res *= 0.7;
 
@@ -35,29 +35,25 @@ void parzen(const std::vector<T> &data, const std::vector<S> &selected_freqs, co
 
 
 size_t parzen_vector(const std::vector<double> &freqs, const std::vector<double> &target_freqs, const double &prz_radius,
-                     std::vector<double> &selected_freqs, std::vector<std::vector<double>> &parzendists)
-{
+                     std::vector<double> &selected_freqs, std::vector<std::vector<double>> &parzendists) {
 
     if (!freqs.size() || !target_freqs.size()) {
-        std::string err_str = __func__;
-        err_str += "::no frequencies or target frequncies given";
-        throw err_str;
-        return 0;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::no frequencies or target frequncies given";
+        throw err_str.str();
     }
     const double max_parzen = 0.31;
 
     if (prz_radius <= 0.0) {
-        std::string err_str = __func__;
-        err_str += "::parzen radius is < 0";
-        throw err_str;
-        return 0;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::parzen radius is < 0: " << prz_radius;
+        throw err_str.str();
     }
 
     if (prz_radius > max_parzen) {
-        std::string err_str = __func__;
-        err_str += "::parzen radius is > " + std::to_string(max_parzen);
-        throw err_str;
-        return 0;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::parzen radius " << prz_radius << " is > " << max_parzen;
+        throw err_str.str();
     }
 
 
@@ -132,10 +128,9 @@ size_t parzen_vector(const std::vector<double> &freqs, const std::vector<double>
     } while ((selected_freqs.size() < 1) && (tries < max_tries));
 
     if (!selected_freqs.size()) {
-        std::string err_str = __func__;
-        err_str += "::no frequencies selected ";
-        throw err_str;
-        return 0;
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::no frequencies selected ";
+        throw err_str.str();
     }
 
     parzendists.clear();
@@ -180,10 +175,9 @@ size_t parzen_vector(const std::vector<double> &freqs, const std::vector<double>
         //      std::cout << distsum << "at" << this->mtd->przfreq_sel.at(i) << *iter_lwr_bnds[i] << *iter_upr_bnds[i] << *iter_upr_bnds[i] - *iter_lwr_bnds[i] << j << "lines";
 
         if (distsum < treat_as_null) {
-            std::string err_str = __func__;
-            err_str += "::distsum too small - can't avarage ";
-            throw err_str;
-            return 0;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::distsum too small - can't avarage < " << treat_as_null;
+            throw err_str.str();
         }
 
         for ( auto &val : parzendists[i]) val /= distsum;

@@ -9,13 +9,15 @@
 using namespace std;
 
 
-int main()
+int main(int argc, char **argv)
 {
 
     std::filesystem::path sqlfile("/usr/local/mthotel/data/filter.sql3");
     auto sql_info = std::make_unique<sqlite_handler>(sqlfile);
     std::vector<double> coeff;
     std::filesystem::path fileoutpath(std::filesystem::temp_directory_path() / "aa/filter");
+    auto exec_path = std::filesystem::path(argv[0]);
+
 
     std::cout << "filter calc:" << std::endl;
 

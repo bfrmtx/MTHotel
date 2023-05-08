@@ -15,6 +15,8 @@
 #include <iterator>
 #include <unordered_map>
 #include <filesystem>
+#include <sstream>
+
 #include "strings_etc.h"
 #include "json.h"
 #include "mt_base.h"
@@ -288,11 +290,9 @@ struct ats_header_json {
 
         if (!file.is_open()) {
             file.close();
-            std::string err_str = __func__;
-            err_str += "::can not write header, file not open ";
-            err_str += filepath.string();
-            throw err_str;
-            return std::filesystem::path("");
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::can not write header, file not open " << filepath;
+            throw err_str.str();
         }
 
         file << std::setw(2) << this->header << std::endl;
@@ -408,9 +408,9 @@ struct ats_header_json {
     double pos2angle() const {
 
         if (!this->header.contains("channel_type") ) {
-            std::string err_str = __func__;
-            err_str += "::header not existing; read file and use get_ats_header() ";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::header not existing; read file and use get_ats_header() ";
+            throw err_str.str();
         }
         double tx, ty;
         tx = double(this->atsh.x2 - this->atsh.x1);
@@ -474,9 +474,9 @@ struct ats_header_json {
     bool can_and_want_scale() const {
 
         if (!this->header.contains("channel_type") ) {
-            std::string err_str = __func__;
-            err_str += "::header not existing; read file and use get_ats_header() ";
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::header not existing; read file and use get_ats_header() ";
+            throw err_str.str();
         }
         if (this->pos2length() == 0.0) return false;
         std::vector<std::string> types;

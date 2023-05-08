@@ -81,17 +81,17 @@ public:
             this->indent();
             if (reminder.size()) {
                 if (reminder != element) {
-                    std::string err_str = std::string("tinyxmlwriter->") + __func__;
-                    err_str += ":: possibly closing error of node (manually): </" + reminder + "> vs auto: </" + element + ">";
-                    throw err_str;
+                    std::ostringstream err_str( (std::string("tinyxmlwriter::") + __func__), std::ios_base::ate);
+                    err_str << ":: possibly closing error of node (manually): </" << reminder << "> vs auto: </" << element << ">";
+                    throw err_str.str();
                 }
             }
             this->xml << "</" << element << ">" << std::endl;
             return;
         } else {
-            std::string err_str = std::string("tinyxmlwriter->") + __func__;
-            err_str += ":: stack is empty, too many pop?: </" + reminder + ">";
-            throw err_str;
+            std::ostringstream err_str( (std::string("tinyxmlwriter::") + __func__), std::ios_base::ate);
+            err_str << ":: stack is empty, too many pop?: </" << reminder << ">";
+            throw err_str.str();
         }
     }
 
@@ -200,10 +200,9 @@ public:
 
         this->file.open(this->filename, std::ios::out | std::ios::trunc);
         if (!this->file.is_open()) {
-            std::string err_str = __func__;
-            err_str += ":: can not open XML for writing " + this->filename.string();
-            throw err_str;
-            return false;
+            std::ostringstream err_str( (std::string("tinyxmlwriter::") + __func__), std::ios_base::ate);
+            err_str << " can not open XML for writing " << this->filename;
+            throw err_str.str();
         }
         this->file << xml.str();
         this->file.close();

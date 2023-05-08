@@ -249,10 +249,9 @@ private:
     void set_data(const std::vector<T> &x, const std::vector<S> &y) {
 
         if (x.size() != y.size()) {
-            std::string err_str = __func__;
-            err_str += "::vectors have different sizes!";
-            throw err_str;
-            return;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << "::vectors have different sizes! " << x.size() << ", " << y.size();
+            throw err_str.str();
         }
         this->xaxis.push(std::vector<T>(x));
         this->yaxis.push(std::vector<S>(y));

@@ -27,8 +27,6 @@ int main()
 
     size_t i;
 
-
-
     std::vector<std::shared_ptr<channel>> channels;
     std::string channel_type("Ex");
     double sample_freq = 1024;

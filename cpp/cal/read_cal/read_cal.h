@@ -23,6 +23,8 @@ namespace fs = std::filesystem;
 #include "../../include/cal_base.h"
 
 
+
+
 class read_cal
 {
 public:
@@ -37,14 +39,14 @@ public:
      * \param filename e.g. a measdoc.xml with multiple channels
      * \return
      */
-    std::vector<std::shared_ptr<calibration>> read_std_xml(const fs::path &filename);
+    std::vector<std::shared_ptr<calibration>> read_std_xml(const fs::path &filename, std::string &messages);
 
     /*!
-     * \brief read_std_xml_single same as above - but for a XML calibration conating no channels - but calibration only
+     * \brief read_std_xml_single same as above - but for a XML calibration containg no channels - but calibration only
      * \param filename
      * \return
      */
-    std::vector<std::shared_ptr<calibration>> read_std_xml_single(const fs::path &filename);
+    std::vector<std::shared_ptr<calibration>> read_std_xml_single(const std::filesystem::path &filename);
 
 
     void clear();

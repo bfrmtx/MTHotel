@@ -1,5 +1,13 @@
 # Developers
 
+##
+
+**ENVIRONMENT**
+
+The software will load data during *runtime* <br>
+When working in debug mode or without installing this data can not be found! |<br>
+Use <br> `export MTHotel_data=/home/bfr/devel/github_mthotel/MTHotel/cpp/data/` <br> in your `.zshrc` or `.bashrc`.
+
 ## ats
 
 The ats file format is outdated.

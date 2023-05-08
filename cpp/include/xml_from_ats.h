@@ -20,7 +20,7 @@
 // std::vector<std::shared_ptr<calibration>> calibs;       //!< all JSON style calibrations
 // std::multimap<std::string, fs::path> xmls_and_files;    //!< create a multimap which ats files belong to the same XML
 
-void xml_from_ats (std::multimap<std::string, fs::path> &xmls_and_files, const std::vector<std::shared_ptr<calibration>> &calibs) {
+void xml_from_ats (const std::filesystem::path exepath_bin_argv0, std::multimap<std::string, fs::path> &xmls_and_files, const std::vector<std::shared_ptr<calibration>> &calibs) {
     std::cout << "try to generate new XML files" << std::endl;
 
     sort_xml_and_files(xmls_and_files);

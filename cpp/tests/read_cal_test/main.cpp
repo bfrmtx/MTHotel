@@ -8,6 +8,8 @@ int main(int argc, char **argv)
 {
     using namespace std;
     namespace fs = std::filesystem;
+    auto exec_path = std::filesystem::path(argv[0]);
+
 
     cout << "testing reading cal files, give file name as parameter" << endl;
 

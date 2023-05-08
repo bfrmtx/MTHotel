@@ -51,15 +51,23 @@ void collect_atsheaders(const std::shared_ptr<atsheader> &ats, std::unique_ptr<s
     cal->serial = atsj->header["sensor_serial_number"];
     cal->chopper = atsj->get_chopper();
 
+    std::string messages;
+    int64_t ssi = atsj->header["channel_number"];
+    std::string ssh = std::to_string(ssi);
+
+
     std::vector<std::shared_ptr<calibration>> cals;
     try{
-        cals = rcal->read_std_xml(atsj->xml_path());
+        cals = rcal->read_std_xml(atsj->xml_path(), messages);
     }
     catch (const std::string &error) {
         std::cerr << error << std::endl;
         std::cerr << "--> continued" << std::endl;
         cals.clear();
     }
+
+
+
     chan->tmp_station = ats->site_name();
     chan->tmp_orgin = ats->path();
 
@@ -75,10 +83,26 @@ void collect_atsheaders(const std::shared_ptr<atsheader> &ats, std::unique_ptr<s
             ncal->old_to_newformat();
             chan->set_cal(ncal);
             has_cal = true;
+            auto all_messages = mstr::split(messages, ';' );
+            for (const auto &str: all_messages) {
+                if ( mstr::contains(str, cal->sensor, false) && mstr::contains(str, cal->chopper2string(), false)  && mstr::contains(str, cal->serial2string(), false) && mstr::contains(str, ssh, false)) {
+                    std::cout << str << std::endl;
+                    break;
+                }
+
+            }
         }
     }
     if (!has_cal) {
         chan->set_cal(cal);
+        auto all_messages = mstr::split(messages, ';' );
+        for (const auto &str: all_messages) {
+            if ( mstr::contains(str, cal->sensor, false)  && mstr::contains(str, ssh, false)) {
+                std::cout << str << std::endl;
+                break;
+            }
+
+        }
     }
     survey->collect(chan);
 
@@ -121,15 +145,17 @@ void fill_survey_tree(const std::unique_ptr<survey_d> &survey, const size_t &ind
     std::ofstream file;
     size_t samples_read = 0;
 
-    do {
-        dbls.resize(ats->ats_read_ints_doubles(ints));
-        samples_read += dbls.size();
-        std::transform(ints.begin(), ints.end(), dbls.begin(), [lsb](double v) { return (lsb * v);} );
-        chan->write_data(dbls, file);
-    } while (dbls.size() && file.good());
-    file.close();
+
 
     try {
+        do {
+            dbls.resize(ats->ats_read_ints_doubles(ints));
+            samples_read += dbls.size();
+            std::transform(ints.begin(), ints.end(), dbls.begin(), [lsb](double v) { return (lsb * v);} );
+            chan->write_data(dbls, file);
+        } while (dbls.size() && file.good());
+        file.close();
+
         std::cout << chan->filename(".json") << "  " << samples_read << " <-> " << chan->samples() <<  std::endl;
     }
     catch (const std::string &error) {

@@ -15,17 +15,16 @@ fir_filter::~fir_filter()
 
 std::shared_ptr<channel> fir_filter::set_filter(std::shared_ptr<channel> &chan, const std::string &filter_type, const bool &shift_to_full_seconds, const int64_t grid_raster)
 {
-    auto dbfile = working_dir("data", db_sql_file);
+    auto dbfile = working_dir_data(db_sql_file);
 
     if (!std::filesystem::exists(dbfile)) {
         dbfile = getenv("HOME");
         dbfile /= "devel/github_mthotel/MTHotel/cpp/data/" db_sql_file;
 
         if (!std::filesystem::exists(dbfile)) {
-            std::string err_str = __func__;
-            err_str += ":: database not found " db_sql_file;
-            err_str += dbfile.string();
-            throw err_str;
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << ":: database not found " db_sql_file << " " << dbfile;
+            throw err_str.str();
         }
     }
 
@@ -74,16 +73,14 @@ void fir_filter::shift_to_new_start_time(const bool &shift_to_full_seconds)
     // return 2
 
     if (!this->coeff.size()) {
-        std::string err_str = std::string("fir_filter::") + __func__;
-        err_str += "::filter has no coefficients ";
-        throw err_str;
-        return;
+        std::ostringstream err_str( (std::string("fir_filter::") + __func__), std::ios_base::ate);
+        err_str << " filter has no coefficients ";
+        throw err_str.str();
     }
     if ( (this->coeff.size() % 2) == 0) {
-        std::string err_str = std::string("fir_filter::") + __func__;
-        err_str += "::filter is even - must be odd ";
-        throw err_str;
-        return;
+        std::ostringstream err_str( (std::string("fir_filter::") + __func__), std::ios_base::ate);
+        err_str <<  " filter is even - must be odd ";
+        throw err_str.str();
     }
 
     size_t hlen = (this->coeff.size() -1) / 2;
@@ -107,10 +104,9 @@ void fir_filter::shift_to_new_start_time(const bool &shift_to_full_seconds)
     size_t samples_control = samples_shift + samples_delay;
 
     if((samples_shift + samples_delay) != size_t(shift_time * this->in_chan->get_sample_rate())) {
-        std::string err_str = std::string("fir_filter::") + __func__;
-        err_str += "::filter can not calculate full seconds start time, integer parts ";
-        throw err_str;
-        return;
+        std::ostringstream err_str( (std::string("fir_filter::") + __func__), std::ios_base::ate);
+        err_str << " filter can not calculate full seconds start time, integer parts ";
+        throw err_str.str();
     }
 
     size_t samples_at_new_start_time = size_t(shift_time * this->in_chan->get_sample_rate());
@@ -122,10 +118,9 @@ void fir_filter::shift_to_new_start_time(const bool &shift_to_full_seconds)
 
 
     if (std::abs(fracs) > treat_as_null ) {
-        std::string err_str = std::string("fir_filter::") + __func__;
-        err_str += "::filter can not calculate full seconds start time sec calc";
-        throw err_str;
-        return;
+        std::ostringstream err_str( (std::string("fir_filter::") + __func__), std::ios_base::ate);
+        err_str << " filter can not calculate full seconds start time sec calc";
+        throw err_str.str();
     }
 
     this->out_chan->pt.tt += int64_t(fullsecs);
@@ -136,10 +131,9 @@ void fir_filter::shift_to_new_start_time(const bool &shift_to_full_seconds)
 void fir_filter::shift_to_grid(const int64_t grid_raster)
 {
     if (grid_raster <= 0) {
-        std::string err_str = std::string("fir_filter::") + __func__;
-        err_str += "::grid raster is 0 or negative " + std::to_string(grid_raster);
-        throw err_str;
-        return;
+        std::ostringstream err_str( (std::string("fir_filter::") + __func__), std::ios_base::ate);
+        err_str <<  " grid raster is 0 or negative " + std::to_string(grid_raster);
+        throw err_str.str();
     }
     if (this->out_chan->pt.fracs > treat_as_null) {
         this->out_chan->pt.fracs = 0.0;
