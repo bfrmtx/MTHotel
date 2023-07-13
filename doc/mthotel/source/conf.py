@@ -44,6 +44,8 @@ templates_path = ['_templates']
 html_additional_pages = {
     "index": "landing_page.html"
 }
+
+# do not scan the SQLITE dir and auto created md files
 exclude_patterns = ['_build', 'build', 'Thumbs.db', '.DS_Store', 'sqltables', 'vscode']
 
 
