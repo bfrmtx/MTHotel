@@ -115,25 +115,27 @@ void xml_from_ats (const std::filesystem::path exepath_bin_argv0, std::multimap<
             tix->pop("recording");
 
             tix->push("calibration_sensors");
-            bool cal_found = false;
-            bool cal_head_added = false;
-            for (const auto &atsj : json_into_xml) {
-                tix->push("channel", "id", static_cast<int>(atsj->header["channel_number"]));
 
+            for (const auto &atsj : json_into_xml) {
+                bool cal_found = false;
+                bool cal_head_added = false;
+                tix->push("channel", "id", static_cast<int>(atsj->header["channel_number"]));
+                std::cerr <<  atsj->header["channel_number"] << std::endl;
 
                 for (const auto &cal : calibs) {
                     if (((cal->sensor == atsj->header["sensor_type"].get<std::string>()) || cal->sensor == old_sensor_type) && (cal->serial == atsj->header["sensor_serial_number"]) ) {
                         cal_found = true;
+                        std::cerr << cal->sensor << " " << atsj->header["sensor_serial_number"] << std::endl;
                         if (!cal_head_added) cal->add_to_xml_1_of_3(tix);
                         cal_head_added = true;
-                        // xml has chopper on AND chopper off
+                        // xml has chopper on AND chopper off; adding the data here!
                         cal->add_to_xml_2_of_3(tix);
 
                     }
                 }
                 cal_head_added = false;
                 if (cal_found) {
-                    // if found we had at least one entry
+                    // if found we had at least one entry; can take any index here, it is the closing tag only
                     calibs.at(0)->add_to_xml_3_of_3(tix);
                 }
                 if (!cal_found) {

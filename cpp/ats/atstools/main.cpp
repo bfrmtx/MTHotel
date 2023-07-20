@@ -37,6 +37,20 @@ namespace fs = std::filesystem;
 // -tojson -clone -outdir /tmp/aa  /survey/Northern_Mining
 // -chats -outdir /tmp/aa/06 -json_caldir /tmp  /home/bfr/devel/ats_data/adu06/
 // -tojson -clone -outdir /tmp/bb -json_caldir /tmp /home/bfr/devel/ats_data/adu06/
+// -split_channels -outdir /home/bfr/tmp /home/bfr/tmp/meas_2023-07-14_09-05-03/*ats
+//  splits all to s1 and s2 in /home/bfr/tmp
+/*
+-split_channels  -outdir /home/bfr/tmp
+/home/bfr/tmp/meas_2023-07-14_09-05-03/053_V01_C00_R000_TEx_BH_65536H.ats
+/home/bfr/tmp/meas_2023-07-14_09-05-03/053_V01_C01_R000_TEy_BH_65536H.ats
+/home/bfr/tmp/meas_2023-07-14_09-05-03/053_V01_C02_R000_THx_BH_65536H.ats
+/home/bfr/tmp/meas_2023-07-14_09-05-03/053_V01_C03_R000_THy_BH_65536H.ats
+/home/bfr/tmp/meas_2023-07-14_09-05-03/053_V01_C04_R000_THz_BH_65536H.ats
+/home/bfr/tmp/meas_2023-07-14_09-05-03/053_V01_C07_R000_THx_BH_65536H.ats
+/home/bfr/tmp/meas_2023-07-14_09-05-03/053_V01_C08_R000_THy_BH_65536H.ats
+/home/bfr/tmp/meas_2023-07-14_09-05-03/053_V01_C09_R000_THz_BH_65536H.ats
+
+ */
 
 /*
    string path = "/";
@@ -60,6 +74,7 @@ int main(int argc, char* argv[])
     bool tojson = false;                    //!< convert to JSON and binary - the new format
     bool create_old_tree = false;           //!< create an old 07/08 survey tree to enable conversion manually
     bool create_tree = false;               //!< create a survey empty tree
+    bool split_channels = false;            //!< split a a multichannel recoring into 5 channels
     ChopperStatus chopper = ChopperStatus::off;
     bool change_chopper = true;
     size_t adu06_shift_samples_hf = 0;
@@ -89,6 +104,9 @@ int main(int argc, char* argv[])
 
         if (marg.compare("-cat") == 0) {
             cat = true;
+        }
+        if (marg.compare("-split_channels") == 0) {
+            split_channels = true;
         }
         if (marg.compare("-chats") == 0) {
             chats = true;
@@ -300,7 +318,7 @@ int main(int argc, char* argv[])
         std::cout <<  ats->path() <<  std::endl;
     }
 
-    if (cat|| chats) {
+    if (cat || chats) {
         // first we order by start time
         std::sort(atsheaders.begin(), atsheaders.end(), compare_ats_start);
         // secondly we sort by channel type
@@ -416,6 +434,154 @@ int main(int argc, char* argv[])
 
         // this function will sort the ats channel files in order to get C00 ... C99
         xml_from_ats(exec_path, xmls_and_files, calibs);
+        return EXIT_SUCCESS;
+
+    }
+
+    // ************************************************************************ S P L I T *******************************************************************************************
+
+
+    if (split_channels && std::filesystem::exists(outdir)) {
+        std::vector<std::shared_ptr<atsheader>> split_ats_1, split_ats_2;
+        auto s1dir = outdir / "s1";  // 0, 1, 2, 3, 4
+        auto s2dir = outdir / "s2";  // 0, 1, 7, 8, 9
+        fs::path xmlfile;
+        size_t i = 0;
+        for (auto &atsh : atsheaders) {
+            auto atsj = std::make_shared<ats_header_json>( atsh->header,  atsh->path());
+            atsj->get_ats_header();
+            if (!i) {
+                xmlfile =  atsh->path().parent_path() / fs::path(atsj->header["XmlHeader"].get<std::string>());
+                s1dir /= atsj->measdir();
+                s2dir /= atsj->measdir();
+            }
+            ++i;
+            if (atsj->header["channel_number"] < 2 ) {
+                split_ats_1.push_back(atsh);
+                split_ats_2.push_back(atsh);
+            }
+            else if (atsj->header["channel_number"] < 5) {
+                split_ats_1.push_back(atsh);
+            }
+            else {
+                split_ats_2.push_back(atsh);
+            }
+
+            try {
+
+                if (!fs::exists(s1dir)) fs::create_directories(s1dir);
+                if (!fs::exists(s2dir)) fs::create_directories(s2dir);
+
+            }
+            catch (...) {
+                std::cerr << "could not create outdir s1 or s2 " << std::endl;
+                return EXIT_FAILURE;
+            }
+
+
+        }
+        std::cout << "splitting" << std::endl;
+
+        for (auto &atsh : split_ats_1) {
+            std::filesystem::copy(atsh->path(), s1dir, fs::copy_options::update_existing);
+        }
+        for (auto &atsh : split_ats_2) {
+            std::filesystem::copy(atsh->path(), s2dir, fs::copy_options::update_existing);
+        }
+
+        try {
+            read_cal rcal;
+
+            std::string messages;
+            std::cout << "scanning XML for calibration:" << xmlfile << std::endl;
+            auto cals = rcal.read_std_xml(xmlfile, messages);
+            calibs.insert(calibs.end(), cals.begin(), cals.end());
+
+            // correct sensor name in case from MFS06e to MFS-06e
+            for (auto &cal : calibs) {
+                cal->sensor = rcal.get_sensor_name(cal->sensor);
+            }
+            remove_cal_duplicates(calibs);
+
+
+            //xml_from_ats(exec_path, xmls_and_files, calibs);
+
+        }
+        catch (const std::string &error ) {
+            std::cerr << error <<std::endl;
+            return EXIT_FAILURE;
+        }
+        catch (...) {
+
+        }
+
+        // get all atsfiles from s1
+        std::cout << "scanning XML for calibration:" << xmlfile << std::endl;
+        try {
+            xmls_and_files.clear();
+            for (const auto & file: fs::directory_iterator(s1dir)) {
+                std::cout << file.path() << std::endl;
+                auto atsh = std::make_shared<atsheader>(file.path());
+                xmls_and_files.emplace(atsh->gen_xmlfilename(), atsh->path());
+            }
+            xml_from_ats(exec_path, xmls_and_files, calibs);
+
+            xmls_and_files.clear();
+            for (const auto & file: fs::directory_iterator(s2dir)) {
+                std::cout << file.path() << std::endl;
+                int i = 0;
+                auto atsh = std::make_shared<atsheader>(file.path());
+                atsh->read();
+                std::string ren_in(file.path().filename());
+                std::string ren_out;
+                if (mstr::contains(ren_in, "_TEx_")) {
+                    ren_out = mstr::string_replace(ren_in, "_C05_", "_C00_");
+                    i = 0;
+                }
+                if (mstr::contains(ren_in, "_TEy_")) {
+                    ren_out = mstr::string_replace(ren_in, "_C06_", "_C01_");
+                    i = 1;
+                    }
+                if (mstr::contains(ren_in, "_THx_")) {
+                    i = 2;
+                    ren_out = mstr::string_replace(ren_in, "_C07_", "_C02_");
+                }
+                if (mstr::contains(ren_in, "_THy_")) {
+                    i = 3;
+                    ren_out = mstr::string_replace(ren_in, "_C08_", "_C03_");
+                }
+                if (mstr::contains(ren_in, "_THz_")) {
+                    i = 4;
+                    ren_out = mstr::string_replace(ren_in, "_C09_", "_C04_");
+                }
+                if (ren_in != ren_out) {
+                    atsh->header.channel_number = i;
+                    atsh->re_write();
+                    fs::rename(file.path(), fs::path(file.path()).replace_filename(ren_out));
+                }
+
+
+
+            }
+            for (const auto & file: fs::directory_iterator(s2dir)) {
+                std::cout << file.path() << std::endl;
+                auto atsh = std::make_shared<atsheader>(file.path());
+                xmls_and_files.emplace(atsh->gen_xmlfilename(), atsh->path());
+            }
+            xml_from_ats(exec_path, xmls_and_files, calibs);
+
+        }
+        catch (const std::string &error ) {
+            std::cerr << error <<std::endl;
+            return EXIT_FAILURE;
+        }
+        catch (...) {
+
+        }
+
+
+
+
         return EXIT_SUCCESS;
 
     }
@@ -584,7 +750,7 @@ int main(int argc, char* argv[])
                 collect_atsheaders(atsh, survey, shift_start_time);
 
             }
-           // pool->wait_for_tasks();
+            // pool->wait_for_tasks();
 
         }
         catch( const std::string &error ) {

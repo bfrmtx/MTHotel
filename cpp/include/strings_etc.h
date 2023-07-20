@@ -217,6 +217,21 @@ inline bool contains(std::string const &str, std::string const &search, bool cas
     return false;
 }
 
+std::string string_replace(const std::string &in, const std::string &search, const std::string &replace) {
+    std::string s = in;
+    size_t pos = 0;
+    while (pos += replace.length()) {
+        pos = s.find(search, pos);
+        if (pos == std::string::npos) {
+            break;
+        }
+        s.replace(pos, search.length(), replace);
+    }
+
+    return s;
+
+}
+
 /*!
  * \brief compare full comparsion
  * \param str

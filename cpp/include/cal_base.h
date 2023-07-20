@@ -468,7 +468,7 @@ struct calibration
         tix->element("ci_serial_number", this->serial);
         tix->element_empty("ci_revision");
         tix->element("ci_date", this->datetime.substr(0,9));
-        tix->element("ci_time", this->datetime.substr(10));
+        tix->element("ci_time", this->datetime.substr(11));
         tix->element_empty("ci_calibration_valid_until");
         tix->element_empty("ci_next_calibration");
         tix->element_empty("ci_tag");

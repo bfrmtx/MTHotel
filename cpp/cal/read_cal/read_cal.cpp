@@ -15,7 +15,7 @@ read_cal::read_cal()
 
     if (!std::filesystem::exists(dbfile)) {
         std::ostringstream err_str(__func__, std::ios_base::ate);
-        err_str << ":: read_cal() missing sql database " <<  dbfile.string();
+        err_str << ":: read_cal() missing sql database " <<  dbfile;
         throw err_str.str();
     }
 

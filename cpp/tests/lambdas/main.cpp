@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <iostream>
 #include <algorithm>
 #include <memory>
@@ -7,9 +8,9 @@
 
 struct calibration {
     std::string sensor;
-    std::uint64_t serial = 0;
-    std::uint64_t chopper = 0;
-    std::uint64_t other = 0;
+    uint64_t serial = 0;
+    uint64_t chopper = 0;
+    uint64_t other = 0;
 
     calibration(std::string sensor, uint64_t serial, uint64_t chopper) : sensor(sensor), serial(serial), chopper(chopper) {;}
 
@@ -35,8 +36,8 @@ auto find_serial = [](const std::shared_ptr<calibration> &lhs, const std::shared
 };
 
 struct s_find_serial {
-    std::uint64_t serial = 0;
-    std::uint64_t chopper = 0;
+    uint64_t serial = 0;
+    uint64_t chopper = 0;
     s_find_serial(const std::shared_ptr<calibration> &lhs) : serial(lhs->serial), chopper(lhs->chopper){;}
     bool operator()(std::shared_ptr<calibration> &rhs) const {
         return ((this->serial == rhs->serial) && (this->chopper == rhs->chopper));
