@@ -240,7 +240,7 @@ public:
     }
 
     /*!
-   * \brief ats_read_ints read native data from file without conversion; these are the ADC values templates are std::int32_t or double!
+   * \brief ats_read_ints read native data from file without conversion; these are the ADC values templates are int32_t or double!
    * \param ints
    * \param close_after_read
    * \return
@@ -296,7 +296,7 @@ public:
             }
         }
         else if (typeid(ints_doubles.at(0)) == typeid(double)) {
-            std::int32_t idata32;
+            int32_t idata32;
             while (!this->file.eof() && (i < ints_doubles.size())) {
                 this->file.read(static_cast<char *>(static_cast<void *>(&idata32)), 4);
                 ints_doubles[i++] = this->header.lsbval * idata32;

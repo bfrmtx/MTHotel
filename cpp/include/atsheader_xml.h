@@ -19,7 +19,7 @@ void recording_ats_sub(std::shared_ptr<tinyxmlwriter> &tix, const std::shared_pt
   tix->element("Granularity", "seconds");
 }
 
-void global_config_ats(std::shared_ptr<tinyxmlwriter> &tix, const std::shared_ptr<ats_header_json> &atsh, const std::uint32_t nchannels) {
+void global_config_ats(std::shared_ptr<tinyxmlwriter> &tix, const std::shared_ptr<ats_header_json> &atsh, const uint32_t nchannels) {
 
   tix->push("global_config");
 

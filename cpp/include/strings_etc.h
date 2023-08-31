@@ -1,6 +1,7 @@
 #ifndef STRINGS_ETC_H
 #define STRINGS_ETC_H
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <iostream>
@@ -374,9 +375,9 @@ std::string sample_rate_to_str_simple(const double& sample_rate, bool add_space_
     double f_or_s;
     std::string unit;
     bool round_f_or_s = true;
-    double must_be_zero = mstr::sample_rate_to_str(sample_rate, f_or_s, unit, round_f_or_s);
+    // double must_be_zero = mstr::sample_rate_to_str(sample_rate, f_or_s, unit, round_f_or_s);
     std::string sval;
-    sval = std::to_string(static_cast<std::uint32_t>(f_or_s));
+    sval = std::to_string(static_cast<uint32_t>(f_or_s));
     sval += unit;
     if (add_space_for_s) {
         if (unit == "s") sval += " ";
@@ -458,14 +459,14 @@ std::string iso_8601_str_d(const std::string& datetime, const double& fracs = 0.
  */
 time_t time_t_iso_8601_str(const std::string& datetime) {
     // maybe not thread safe?
-    struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     double dseconds;
     if (sscanf(datetime.c_str(), "%04d-%02d-%02dT%02d:%02d:%lf",
                &tt.tm_year, &tt.tm_mon, &tt.tm_mday,
                &tt.tm_hour, &tt.tm_min, &dseconds) != 6)
         return -1;
     double fs;
-    double fracpart = std::modf (dseconds , &fs);
+    // double fracpart = std::modf (dseconds , &fs);
     tt.tm_sec = int(fs);
     tt.tm_mon  -= 1;
     tt.tm_year -= 1900;
@@ -475,7 +476,7 @@ time_t time_t_iso_8601_str(const std::string& datetime) {
 
 time_t time_t_iso_8601_str_fracs(const std::string& datetime, double &remaining_fracs) {
     // maybe not thread safe?
-    struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     double dseconds;
     if (sscanf(datetime.c_str(), "%04d-%02d-%02dT%02d:%02d:%lf",
                &tt.tm_year, &tt.tm_mon, &tt.tm_mday,
@@ -492,7 +493,7 @@ time_t time_t_iso_8601_str_fracs(const std::string& datetime, double &remaining_
 
 std::string iso8601_time_t(const time_t &ti, const int iso_0_date_1_time_2 = 0, const double& fracs = 0.0) {
     // maby not thread safe?
-    struct tm tt = {0};
+    struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     std::string sfracs;
     std::string date;
     std::string time;
@@ -549,7 +550,7 @@ double get_fracs_from_iso8601(const std::string &datetime) {
 }
 
 std::string measdir_time(const time_t &ti) {
-    struct tm tt = {0};
+    struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     std::string sfracs;
     tt = *std::gmtime(&ti);
     std::string date ("meas_");

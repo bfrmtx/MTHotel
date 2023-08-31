@@ -43,7 +43,7 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
 
         try {
             size_t chunk_size = 524288;
-            std::vector<std::int32_t> ints(chunk_size);
+            std::vector<int32_t> ints(chunk_size);
             size_t samples_read = 0;
             ats[0]->read();
             auto atsj = std::make_shared<ats_header_json>( ats[0]->header,  ats[0]->path());
@@ -126,7 +126,7 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
 
             out->close();
             atm->close(true);
-            out->header.samples = std::uint32_t(out->write_count);
+            out->header.samples = uint32_t(out->write_count);
            // std::cout << "total samples: " << out->header.samples << " " << atm->header.samples << std::endl;
             // update header with new samples AND new xml file
             out->re_write();

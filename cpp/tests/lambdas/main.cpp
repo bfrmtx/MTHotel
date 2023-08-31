@@ -102,7 +102,7 @@ int main()
 
 
     size_t chunk_size = 5;
-    std::vector<std::int32_t> ints(chunk_size);
+    std::vector<int32_t> ints(chunk_size);
     std::vector<double> dbls;
     double lsb = 2.2;
     for (int32_t i = 0; i < ints.size(); ++i) {

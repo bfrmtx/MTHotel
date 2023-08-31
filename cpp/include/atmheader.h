@@ -27,7 +27,7 @@ namespace fs = std::filesystem;
     struct atmheader {
     std::int16_t header_length;
     std::int16_t header_version;
-    std::uint32_t samples;
+    uint32_t samples;
 };
 
 class atmfile {

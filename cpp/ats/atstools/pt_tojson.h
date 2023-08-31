@@ -131,7 +131,7 @@ void fill_survey_tree(const std::unique_ptr<survey_d> &survey, const size_t &ind
 
     // now read the data, convert to double and scale E in case
     size_t chunk_size = 524288;
-    std::vector<std::int32_t> ints;
+    std::vector<int32_t> ints;
     std::vector<double> dbls;
     if (samples < chunk_size) {
         dbls.resize(samples);

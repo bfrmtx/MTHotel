@@ -30,7 +30,7 @@ public:
         this->xml << "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" << std::endl;
     }
     void indent() {
-        for (int i = 0; i < this->stack.size(); ++i)
+        for (size_t i = 0; i < this->stack.size(); ++i)
             this->xml << this->indentation;
     }
 
@@ -102,7 +102,7 @@ public:
    * \param precision assumes a double
    * \param scientific activate scientific in cas precision is set
    */
-    void element(const std::string &element, const auto &val, const std::uint32_t precision = 0, const bool scientific = false) {
+    void element(const std::string &element, const auto &val, const uint32_t precision = 0, const bool scientific = false) {
         if (precision) {
             std::stringstream sstr;
             sstr.precision(precision);
@@ -137,7 +137,7 @@ public:
    * \param precision
    * \param scientific
    */
-    void element_attr(const std::string &element, const std::string &str_attribute, const auto attribute_value, const auto &val, const std::uint32_t precision = 0, const bool scientific = false) {
+    void element_attr(const std::string &element, const std::string &str_attribute, const auto attribute_value, const auto &val, const uint32_t precision = 0, const bool scientific = false) {
         if (precision) {
             std::stringstream sstr;
             sstr.precision(precision);

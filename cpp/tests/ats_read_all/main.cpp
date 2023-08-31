@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
 
   try {
     size_t chunk_size = 300000;
-    std::vector<std::int32_t> ints(chunk_size);
+    std::vector<int32_t> ints(chunk_size);
     size_t samples_read = 0;
     atsheaders[0]->read();
     auto out = std::make_shared<atsheader>(atsheaders.at(0));
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
 
     out->close();
     atm->close(true);
-    out->header.samples = std::uint32_t(out->write_count);
+    out->header.samples = uint32_t(out->write_count);
     std::cout << "total samples: " << out->header.samples << " " << atm->header.samples << std::endl;
     out->re_write();
     // out->write_ascii();

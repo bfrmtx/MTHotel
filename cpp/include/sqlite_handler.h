@@ -108,10 +108,10 @@ static int sqlite_handler_scolumn_double_callback(void* ptr, int argc, char** ar
  */
 static int sqlite_handler_scolumn_int64_t_callback(void* ptr, int argc, char** argv, char** col_name) {
 
-    std::vector<std::int64_t>* vec = static_cast<std::vector<std::int64_t>*>(ptr);
+    std::vector<int64_t>* vec = static_cast<std::vector<int64_t>*>(ptr);
     std::string snum = (argv[0]) ? (argv[0]) : "NULL";
     if (snum == "NULL") return SQLITE_ERROR;
-    std::int64_t num = 0;
+    int64_t num = 0;
     try {
         num = std::stoll(std::string(argv[0]));
 
@@ -132,7 +132,7 @@ static int sqlite_handler_scolumn_int64_t_callback(void* ptr, int argc, char** a
 
 /*!
  * \brief sqlite_handler_scolumn_uint64_t_callback
- * \param ptr std::vector<std::uint64_t> with results only - as we use for indices
+ * \param ptr std::vector<uint64_t> with results only - as we use for indices
  * \param argc
  * \param argv
  * \param col_name
@@ -140,10 +140,10 @@ static int sqlite_handler_scolumn_int64_t_callback(void* ptr, int argc, char** a
  */
 static int sqlite_handler_scolumn_uint64_t_callback(void* ptr, int argc, char** argv, char** col_name) {
 
-    std::vector<std::uint64_t>* vec = static_cast<std::vector<std::uint64_t>*>(ptr);
+    std::vector<uint64_t>* vec = static_cast<std::vector<uint64_t>*>(ptr);
     std::string snum = (argv[0]) ? (argv[0]) : "NULL";
     if (snum == "NULL") return SQLITE_ERROR;
-    std::uint64_t num = 0;
+    uint64_t num = 0;
     try {
         num = std::stoull(std::string(argv[0]));
 

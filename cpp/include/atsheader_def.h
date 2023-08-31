@@ -51,8 +51,8 @@ assuming 3 slices of 4096 iSamples will be 12,288 samples in the header,
 
 struct ATSSliceHeader_1080
 {
-    std::uint32_t uiSamples;                    //!< 000h  number of samples for this slice
-    std::uint32_t uiStartDateTime;              //!< 004h  startdate/time as UNIX timestamp (UTC)
+    uint32_t uiSamples;                    //!< 000h  number of samples for this slice
+    uint32_t uiStartDateTime;              //!< 004h  startdate/time as UNIX timestamp (UTC)
     double        dbDCOffsetCorrValue;          //!< 008h  DC offset correction value in mV
     float         rPreGain;                     //!< 010h  originally used pre-gain (GainStage1) - LSB is the same for all slices
     float         rPostGain;                    //!< 014h  originally used post-gain (GainStage2) - LSB is the same for all slices
@@ -103,12 +103,12 @@ struct ATSHeader_80 {
     std::int16_t  header_version;               //!< 002h  80 for ats, 81 for 64bit possible / metronix, 1080 for CEA / sliced header
 
     // This information can be found in the ChannelTS datastructure
-    std::uint32_t samples;                      //!< 004h  amount of samples (each is a 32bit / 64bit int INTEL byte order little endian) in the file total of all slices; if uiSamples == UINT32_MAX, uiSamples64bit at address 0F0h will be used instead; uiSamples64bit replaces uiSamples in that case; do not add!
+    uint32_t samples;                      //!< 004h  amount of samples (each is a 32bit / 64bit int INTEL byte order little endian) in the file total of all slices; if uiSamples == UINT32_MAX, uiSamples64bit at address 0F0h will be used instead; uiSamples64bit replaces uiSamples in that case; do not add!
 
     float         sample_rate;                  //!< 008h  sampling frequency in Hz
-    std::uint32_t start;                        //!< 00Ch  unix TIMESTAMP (some computers will revert that to negative numbers if this number is grater than 32bit signed); 2106-02-07T06:28:14 is the END of this format
+    uint32_t start;                        //!< 00Ch  unix TIMESTAMP (some computers will revert that to negative numbers if this number is grater than 32bit signed); 2106-02-07T06:28:14 is the END of this format
     double        lsbval;                       //!< 010h  least significant bit in mV ()
-    std::int32_t  GMToffset;                    //!< 018h  not used, default 0; can be used as "UTC to GMT"
+    int32_t  GMToffset;                    //!< 018h  not used, default 0; can be used as "UTC to GMT"
     float         orig_sample_rate;             //!< 01Ch  sampling frequency in Hz as ORIGINALLY recorded; this value should NOT change (for example after filtering)
 
     //The required data could probably found in the HardwareConfig
@@ -141,9 +141,9 @@ struct ATSHeader_80 {
     float         gain_stage2;                  //!< 05Ch  e.g. Gain Stage 2
 
     // Data from status information ?
-    std::int32_t  iLat_ms;                      //!< 060h  must be used, UNIT = milli seconds
-    std::int32_t  iLong_ms;                     //!< 064h  must be used, UNIT = milli seconds
-    std::int32_t  iElev_cm;                     //!< 068h  must be used, UNIT = cm
+    int32_t  iLat_ms;                      //!< 060h  must be used, UNIT = milli seconds
+    int32_t  iLong_ms;                     //!< 064h  must be used, UNIT = milli seconds
+    int32_t  iElev_cm;                     //!< 068h  must be used, UNIT = cm
     char          Lat_Long_TYPE;                //!< 06Ch  'G' default, 'U' user, GPS should be used
     char          coordinate_type;              //!< 06Dh  'U' = UTM, default empty
     std::int16_t  ref_meridian;                 //!< 06Eh  default empty, should not be used (external)
@@ -182,9 +182,9 @@ struct ATSHeader_80 {
     char          LF_filters [8];               //!< 0B8h  is a bitfield
 
     char          UTMZone     [12];             //!< 0C0h  not used  (external)  (formerly abyADU06CalFilename) 32U or 01G, 32UMD7403 : alway NNC od NNCCNNNN
-    std::uint32_t system_cal_datetime;          //!< 0CCh  not used  (external)
+    uint32_t system_cal_datetime;          //!< 0CCh  not used  (external)
     char          sensor_cal_filename [12];     //!< 0D0h  not used  ("SENSOR.CAL") (external)
-    std::uint32_t sensor_cal_datetime;          //!< 0DCh  not used  (external)
+    uint32_t sensor_cal_datetime;          //!< 0DCh  not used  (external)
 
     float         powerline1;                   //!< 0E0h  e.g. empty  (external)
     float         powerline2;                   //!< 0E4h  e.g. empty  (external)
@@ -192,7 +192,7 @@ struct ATSHeader_80 {
 
 
     // IF uiSamples == UINT32_MAX you find
-    std::uint64_t samples_64bit;                //!< 0F0h  amount of samples (each is a 32bit /64bit int) in the file total of all slices; ONLY used in case uiSamples == UINT32_MAX; else 0; REPLACSES the uiSamples; do not add
+    uint64_t samples_64bit;                //!< 0F0h  amount of samples (each is a 32bit /64bit int) in the file total of all slices; ONLY used in case uiSamples == UINT32_MAX; else 0; REPLACSES the uiSamples; do not add
 
     //double        OriginalLSBMV;              //!< 0F0h  NOT USED ANYMORE! orig lsb from selftest without gains; used for ADC values
     float         external_gain;                //!< 0F8h  for external satellite box

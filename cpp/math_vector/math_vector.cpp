@@ -1107,7 +1107,7 @@ statmap math_vector::mk_regression_data(const statmap &x_variance_data, const st
 
     statmap datamap;
 
-    int i;
+    size_t i;
 
     // at his moment y data war treated befor as x because it was calculated independently
     if ( (x_variance_data.at(g_stat::d_n_x) == y_variance_data.at(g_stat::d_n_x)) && (x_variance_data.at(g_stat::d_n_x) >= 4.00) ) {

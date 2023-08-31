@@ -183,7 +183,7 @@ public:
 
 
 
-    void set_xy_points(const std::vector<T> &x, const std::vector<S> &y, const std::string title, const std::uint64_t ps, const std::string formats ="") {
+    void set_xy_points(const std::vector<T> &x, const std::vector<S> &y, const std::string title, const uint64_t ps, const std::string formats ="") {
 
         this->set_data(x,y);
         std::ostringstream tmp;
@@ -193,7 +193,7 @@ public:
         this->plt.push_back(this->trim(tmp.str()));
     }
 
-    void set_xy_lines(const std::vector<T> &x, const std::vector<S> &y, const std::string title, const std::uint64_t lw, const std::string formats ="") {
+    void set_xy_lines(const std::vector<T> &x, const std::vector<S> &y, const std::string title, const uint64_t lw, const std::string formats ="") {
 
         this->set_data(x,y);
         std::ostringstream tmp;
@@ -203,7 +203,7 @@ public:
         this->plt.push_back(this->trim(tmp.str()));
     }
 
-    void set_xy_linespoints(const std::vector<T> &x, const std::vector<S> &y, const std::string &title, const std::uint64_t &lw, const std::uint64_t &ps, const std::string &formats ="") {
+    void set_xy_linespoints(const std::vector<T> &x, const std::vector<S> &y, const std::string &title, const uint64_t &lw, const uint64_t &ps, const std::string &formats ="") {
 
         this->set_data(x,y);
         std::ostringstream tmp;

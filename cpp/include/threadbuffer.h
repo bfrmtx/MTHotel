@@ -16,7 +16,7 @@
 #include <typeinfo>
 #include <string>
 
-enum class atsfileout: std::int32_t {
+enum class atsfileout: int32_t {
     atsfileout_void,
 
     ////////////////// continious
@@ -50,7 +50,7 @@ enum class atsfileout: std::int32_t {
 };
 
 
-enum class threadbuffer_status : std::int32_t {
+enum class threadbuffer_status : int32_t {
     running = 0,           //!<
     finished = 1,          //!< last buffer submitted, fetch it
     terminated = 2,        //!< no last buffer available, nothing to fetch

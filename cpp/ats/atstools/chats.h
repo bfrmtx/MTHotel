@@ -14,8 +14,8 @@ void chats_files(std::shared_ptr<atsheader> &atsh, std::shared_ptr<atsheader> &a
     adu08->write(false);
     // now read the data, do no conversion
     size_t chunk_size = 524288;
-    std::vector<std::int32_t> ints;
-    std::vector<std::int32_t> skip_utc;
+    std::vector<int32_t> ints;
+    std::vector<int32_t> skip_utc;
 
 
 

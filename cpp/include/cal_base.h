@@ -25,7 +25,7 @@
 struct calibration
 {
     std::string sensor;
-    std::uint64_t serial = 0;
+    uint64_t serial = 0;
     ChopperStatus chopper = ChopperStatus::off;
     std::string units_amplitude;
     std::string units_frequency;
