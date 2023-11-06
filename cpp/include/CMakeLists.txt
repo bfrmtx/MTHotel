@@ -6,13 +6,18 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 
 if(NOT DEFINED HEADERS)
-    file(GLOB HEADERS_INSTALL ${CMAKE_CURRENT_SOURCE_DIR}⁄*.h)
+    file(GLOB HEADERS_INSTALL "*.h")
 endif()
-
+message("incs" "${HEADERS_INSTALL}")
 install(FILES ${HEADERS_INSTALL} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
 if(NOT DEFINED FILES_INSTALL)
-    file(GLOB FILES_INSTALL ${CMAKE_CURRENT_SOURCE_DIR}⁄*.md)
+    file(GLOB FILES_INSTALL "*.md")
 endif()
 
 install(FILES ${FILES_INSTALL} DESTINATION ${CMAKE_INSTALL_PREFIX}/doc)
+
+# file(GLOB files "*h")
+#  foreach(file IN LISTS files)
+#    message(STATUS " ------------- ${file} ------------- ")
+#  endforeach()

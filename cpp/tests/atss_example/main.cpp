@@ -1,92 +1,89 @@
+#include "strings_etc.h"
+#include <../../include/atss.h>
+#include <../../include/json.h>
 #include <iostream>
-#include <vector>
 #include <memory>
 #include <string>
-#include <../../include/json.h>
-#include <../../include/atss.h>
-#include "strings_etc.h"
+#include <vector>
 
 #include <chrono>
 
 using namespace std;
 using jsn = nlohmann::ordered_json;
 
-int main()
-{
+int main() {
 
-    std::shared_ptr<channel> channel_hx = std::make_shared<channel>(" H_x "); // empty spaces and "_" will be removed
+  std::shared_ptr<channel> channel_hx = std::make_shared<channel>(" H_x "); // empty spaces and "_" will be removed
 
-    std::vector<double> d(12);
-    channel_hx->set_serial(124);
-    channel_hx->set_system("ADU-08e");
-    channel_hx->set_run(99);
-    channel_hx->set_channel_no(2);
+  std::vector<double> d(12);
+  channel_hx->set_serial(124);
+  channel_hx->set_system("ADU-08e");
+  channel_hx->set_run(99);
+  channel_hx->set_channel_no(2);
 
-    bool force_sample_rate_valid(true);
+  bool force_sample_rate_valid(true);
 
-    while(force_sample_rate_valid){
-        try {
-            cout << channel_hx->filename() << endl;
-            cout << "this line will be executed ONLY if the sample frequency is valid" << endl<< endl<< endl<< endl;
-            force_sample_rate_valid = false;
-        }
-
-        catch (const std::string &error) {
-
-            std::cerr << endl << error << std::endl;
-            std::cerr << endl << "in this demo I correct to 0.25 Hz sample rate" << std::endl;
-            channel_hx->set_sample_rate(0.25);
-            force_sample_rate_valid = true;
-        }
+  while (force_sample_rate_valid) {
+    try {
+      cout << channel_hx->filename() << endl;
+      cout << "this line will be executed ONLY if the sample frequency is valid" << endl
+           << endl
+           << endl
+           << endl;
+      force_sample_rate_valid = false;
+    } catch (const std::runtime_error &error) {
+      std::cerr << error.what() << std::endl;
+      std::cerr << endl
+                << "in this demo I correct to 0.25 Hz sample rate" << std::endl;
+      channel_hx->set_sample_rate(0.25);
+      force_sample_rate_valid = true;
     }
+  }
 
-    bool force_date_valid(true);
+  bool force_date_valid(true);
 
-    std::string sdate("1234");
-    std::string stime("5678");
-    double fracs = 0.4;
+  std::string sdate("1234");
+  std::string stime("5678");
+  double fracs = 0.4;
 
-    while(force_date_valid){
-        try {
-            channel_hx->set_datetime(sdate, fracs);
-            cout << "this line will be executed ONLY if the date is valid" << endl;
-            force_date_valid = false;
-        }
-
-        catch (const std::string &error) {
-
-            std::cerr << endl << error << std::endl;
-            std::cerr << endl << "in this demo I correct the start time" << std::endl;
-            sdate = "2022-01-18";
-            stime = "17:30:00";
-            channel_hx->set_datetime((sdate + "T" + stime), fracs);
-            force_date_valid = true;
-        }
+  while (force_date_valid) {
+    try {
+      channel_hx->set_datetime(sdate, fracs);
+      cout << "this line will be executed ONLY if the date is valid" << endl;
+      force_date_valid = false;
+    } catch (const std::runtime_error &error) {
+      std::cerr << std::endl
+                << error.what() << std::endl;
+      std::cerr << std::endl
+                << "in this demo I correct the start time" << std::endl;
+      sdate = "2022-01-18";
+      stime = "17:30:00";
+      channel_hx->set_datetime((sdate + "T" + stime), fracs);
+      force_date_valid = true;
     }
-    std::cout << "start date time " << mstr::get_date_from_iso8601(channel_hx->get_datetime()) << " " << mstr::get_time_fracs_from_iso8601(channel_hx->get_datetime()) << std::endl;
-    std::cout << "Full ISO string " << channel_hx->get_datetime() << std::endl;
+  }
+  std::cout << "start date time " << mstr::get_date_from_iso8601(channel_hx->get_datetime()) << " " << mstr::get_time_fracs_from_iso8601(channel_hx->get_datetime()) << std::endl;
+  std::cout << "Full ISO string " << channel_hx->get_datetime() << std::endl;
 
-    std::cout << "add 6 days" << std::endl;
-    double tfracs = 0.0;
-    std::time_t tm = mstr::time_t_iso_8601_str("2022-01-30T17:30:00");
-    struct tm* ptm = std::gmtime(&tm);
-    ptm->tm_mday += 6;
-    tm = std::mktime(ptm) - timezone;
-    std::string a, b;
-    double f = 0.0;
-    std::string result = mstr::iso8601_time_t(tm);
-    cout << result << std::endl;
+  std::cout << "add 6 days" << std::endl;
+  double tfracs = 0.0;
+  std::time_t tm = mstr::time_t_iso_8601_str("2022-01-30T17:30:00");
+  struct tm *ptm = std::gmtime(&tm);
+  ptm->tm_mday += 6;
+  tm = std::mktime(ptm) - timezone;
+  std::string a, b;
+  double f = 0.0;
+  std::string result = mstr::iso8601_time_t(tm);
+  cout << result << std::endl;
 
-    std::cout << "atss time examples" << std::endl;
+  std::cout << "atss time examples" << std::endl;
 
-    f = 0.0;
-    std::time_t utc = mstr::time_t_iso_8601_str("1970-01-01T00:00:00");
-    std::string udate, utime;
-    std::cout << "atss time starts at second " << utc << " for: " << mstr::iso8601_time_t(utc) << std::endl;
-    std::cout << "atss time fractions are zero: "<< f << std::endl;
+  f = 0.0;
+  std::time_t utc = mstr::time_t_iso_8601_str("1970-01-01T00:00:00");
+  std::string udate, utime;
+  std::cout << "atss time starts at second " << utc << " for: " << mstr::iso8601_time_t(utc) << std::endl;
+  std::cout << "atss time fractions are zero: " << f << std::endl;
 }
-
-
 
 /*
 using namespace std;

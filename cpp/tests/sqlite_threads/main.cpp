@@ -3,109 +3,117 @@
 #include <iostream>
 #include <list>
 #include <memory>
-#include <vector>
-#include <thread>
 #include <sstream>
+#include <thread>
+#include <vector>
 
-#include <chrono>
 #include "messages.h"
-#include "sqlite_msg_thread.h"
+#include "sqlite_status_thread.h"
+#include <chrono>
 
+#include "json.h"
 #include "ring_buf_micro.h"
 
-
-
-
+using jsn = nlohmann::ordered_json;
 int main() {
 
-    std::filesystem::path sqlfile(std::filesystem::temp_directory_path() / "log_test.sql3");
-    std::filesystem::path logdir(std::filesystem::temp_directory_path());
-    std::unique_ptr<msg_sqlite_receiver> logger;
+  std::exception_ptr ex_ptr;
+  const size_t channels = 5;
+  std::filesystem::path sqlfile_log(std::filesystem::temp_directory_path() / "log_test.sql3");
+  std::filesystem::path sqlfile_status(std::filesystem::temp_directory_path() / "status.sql3");
+  std::filesystem::path logdir(std::filesystem::temp_directory_path());
 
-    try {
-        logger = std::make_unique<msg_sqlite_receiver>(sqlfile);
+  std::filesystem::path http_dir("/srv/http");
+  std::filesystem::path channel_file(http_dir / "adu/system/json/ADU-10e/status/channel.json");
+  std::filesystem::path system_file(http_dir / "adu/system/json/ADU-10e/status/system.json");
+  std::filesystem::path gps_file(http_dir / "adu/system/json/ADU-10e/status/gps.json");
 
-    }
-    catch (const std::string &error) {
-        logger.reset();
-        std::cerr << error << std::endl;
-        return EXIT_FAILURE;
-    }
+  std::unique_ptr<sqlite_receiver>
+      logger; // logs like battery voltage, gps position, adc values and so on
 
-    // create my messengers
-    auto message_sender_1 =std::make_unique<msg_sender>(logger);
-    auto message_sender_2 =std::make_unique<msg_sender>(logger);
+  try {
+    // make sure to use the template type of the receiver
+    logger = std::make_unique<sqlite_receiver>(sqlfile_status, sqlfile_log); // create logger receiver
 
-    // start the receiver thread
-    logger->run();
+  } catch (const std::runtime_error &error) {
+    std::cerr << error.what() << std::endl;
+    logger.reset();
+    return EXIT_FAILURE;
+  }
 
-    // create message sender
-    auto message_1 = msg_to_sqlite();
-    auto message_2 = msg_to_sqlite();
+  std::cout << "logger and status created" << std::endl;
 
-    message_1.sender = "Batt_1";
-    message_1.message = "V";
-    message_1.dval_first = 12.3;
+  std::unordered_map<std::string, std::unique_ptr<sqlite_sender>> status_senders;
+  // create a sender using the logger
+  // first sender will create the table and start the receiver thread
 
-    message_2.sender = "GPS";
-    message_2.message = "Sats tracked";
-    message_2.ival_first = 2;
+  status_senders.emplace("adu", logger->create_status_sender("adu", system_file));
+  for (size_t i = 0; i < channels; ++i) {
+    std::stringstream ss;
+    ss << "ch" << i;
+    status_senders.emplace(ss.str(), logger->create_status_sender(ss.str(), channel_file));
+  }
+  status_senders.emplace("gps", logger->create_status_sender("gps", gps_file));
 
-    size_t loops(10);           // simulate live
+  std::cout << "status senders created" << std::endl;
+  // set some key values
+  try {
+    // status_senders["adu"]->log_only_message("logging starts", "2021-01-01");
+    status_senders["ch0"]->set_key_value("channel", "Ex");
+    status_senders["ch1"]->set_key_value("channel", "Ey");
+    status_senders["ch0"]->set_key_value("gain", 1.0);
+    status_senders["ch1"]->set_key_value("gain", 1.0);
+    status_senders["ch0"]->set_key_value("angle", 0.0);
+    status_senders["ch1"]->set_key_value("angle", 90.0);
+    status_senders["ch0"]->set_key_value("dip", 0.0);
+    status_senders["ch1"]->set_key_value("dip", 0.0);
+    status_senders["ch0"]->set_key_value("sensor", "EFP-06");
+    status_senders["ch1"]->set_key_value("sensor", "EFP-06");
+    // status_senders["gps"]->set_key_value("tracked_sats", 4); force an error
+    status_senders["gps"]->set_key_value("tracked", 4);
+    status_senders["gps"]->set_key_value("in_use", 3);
+    status_senders["gps"]->set_key_value("latitude", 39.0261966);
+    status_senders["gps"]->set_key_value("longitude", 29.12395333);
+    status_senders["gps"]->set_key_value("elevation", 340.0);
+    status_senders["adu"]->set_key_value("bat_1", 12.5); // space in key works - but maybe a bad idea
+    status_senders["adu"]->set_key_value("bat_2", 11.5);
+  }
+  // catch std::runtime_error
+  catch (const std::runtime_error &error) {
+    std::cerr << error.what() << std::endl;
+    status_senders.clear();
+    return EXIT_FAILURE;
+  }
+  // catch all
+  catch (...) {
+    std::cerr << "unknown error" << std::endl;
+    status_senders.clear();
+    return EXIT_FAILURE;
+  }
 
-    for (size_t i= 0; i < loops; ++i) {
-        message_sender_1->submit(message_1);
-        message_sender_2->submit(message_2);
+  try {
+    status_senders["adu"]->watchdog();
+    status_senders["adu"]->run_double("bat 1", 11.5, 14.2, 1500);
+    status_senders["adu"]->run_double("bat_2", 11.5, 14.2, 1510);
+    status_senders["gps"]->run_int("tracked", 3, 8, 1000);
 
-        write_json_message_file(logdir, message_1);
-        write_json_message_file(logdir, message_2);
+  } catch (const std::runtime_error &error) {
+    std::cerr << error.what() << std::endl;
+    status_senders.clear();
+    return EXIT_FAILURE;
+  } catch (const std::exception &e) {
+    std::cerr << "in main" << std::endl;
+    std::cerr << e.what() << '\n';
+    status_senders.clear();
+    return EXIT_FAILURE;
+  }
 
-        message_1.ival_first +=1;
-        message_2.ival_first += 1;
-        std::cerr << i << std::endl;
+  std::cout << "wait for key pressed" << std::endl;
+  std::cin.get();
 
-    }
+  // gracefully stop the sender threads
+  status_senders.clear();
 
-    // another function is called - here simuled by try & catch
-    // example - a later created messenger will auto delete when leaving the scope
-    try {
-        auto msg3 =std::make_unique<msg_sender>(logger);
-        auto sta3 = msg_to_sqlite();
-
-        sta3.sender = "GPS";
-        sta3.message = "position";
-        sta3.dval_first = 39.0261966;
-        sta3.dval_second = 29.12395333;
-
-        msg3->submit(sta3);
-    }
-    catch (...) {
-        std::cerr << "error in scope" << std::endl;
-    }
-
-
-    std::time_t s = std::time(nullptr);
-    std::cout << std::endl << s << " seconds since the Epoch\n";
-    // set datafile separator "|"
-    // set xdata time
-    // set timefmt "%s"
-    // set format x "%m/%d/%Y %H:%M:%S"
-    // plot '< sqlite3 log_test.sql3 "select timestamp, ival_first from logs WHERE sender=\"GPS\" and message like \"Sats tracked\" ";' using 1:2
-    // select timestamp, ival_first from logs WHERE sender="GPS" AND message like "Sats tracked";
-
-    auto rbuf = mini_ring_buf_avg<size_t>(6);
-
-    std::cout << " rbuf " << std::endl;
-
-    for (size_t i = 1; i < 10; ++i) {
-       std::cout << rbuf.push_back_avg(i) << " " ;
-    }
-
-    std::cout << " rbuf end " << rbuf.last() <<  std::endl;
-
-    return EXIT_SUCCESS;
-
-
+  std::cout << "finish" << std::endl;
+  return EXIT_SUCCESS;
 }
-
-

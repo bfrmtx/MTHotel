@@ -1,109 +1,465 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
 
-#include <string>
+#include "json.h"
+#include <atomic>
 #include <climits>
-#include <sstream>
 #include <cmath>
-#include <iostream>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
-#include <filesystem>
-#include <atomic>
+#include <iostream>
+#include <mutex>
+#include <sstream>
+#include <string>
+#include <thread>
+#include <type_traits>
+#include <unordered_map>
+#include <vector>
+
 #include "json.h"
+#include "json_text.h"
+#include "strings_etc.h"
+
+using jsn = nlohmann::ordered_json;
+
+/*!
+ * @brief message_to_sqlite is the class for messages adds SQL commands to the JSON message;
+ * @details it is like a  R O W  in a  T A B L E  of a database; the json data is  P R I V A T E  and can not be changed from outside: when running the rows of a table are fixed
+ */
+
+class msg_to_sqlite {
+public:
+  msg_to_sqlite(const int &idx = 0) {
+    msg["idx"] = idx;           //!< index of the message; needed for an update statement; incremented by receiver class act value
+    msg["date"] = "1970-01-01"; //!< date as string, date of message
+    msg["time"] = "00:00:00";   //!< time as string, time of message
+    msg["ref_idx"] = 0;         //!< reference to an index for a long explanation of the message inside a database of detailed explanations
+    msg["sender"] = "";         //!< string id of the sender like ch0, ch2, Batt_1, GPS, ADC, ADU and so on; so the SW component for the HW
+    msg["key"] = "";            //!< like "battery_voltage" or "satellites" - YOU NEED TO DEFINE A KEY VECTOR FOR EACH SENDER - OTHERWISE THE STATUS TABLE CAN NOT BE UPDATED
+    msg["value"] = "";          //!< like "12.3" or "9"
+    msg["severity"] = 0;        //!< 0 = info ... warning = 1 ... error = 2
+    msg["log_only"] = 0;        //!< true gives you the opportunity to log a message without updating the status table and be more verbose in the log table, I do not write this to the database
+  }
+  msg_to_sqlite(const int &idx, const std::string &date, const std::string &time, const int &ref_idx, const std::string &sender, const std::string &key, const std::string &value, const int severity = 0, const int log_only = 0) {
+    msg["idx"] = idx;
+    msg["date"] = date;
+    msg["time"] = time;
+    msg["ref_idx"] = ref_idx;
+    msg["sender"] = sender;
+    msg["key"] = key;
+    msg["value"] = value;
+    msg["severity"] = severity;
+    msg["log_only"] = log_only;
+  }
+
+  msg_to_sqlite(const msg_to_sqlite &msg) {
+    this->msg = msg.msg;
+  }
+
+  msg_to_sqlite(const std::unique_ptr<msg_to_sqlite> msg) {
+    this->msg = msg->msg;
+  }
+
+  std::string key() const {
+    return msg["key"].get<std::string>();
+  }
+
+  std::string value() const {
+    return msg["value"].get<std::string>();
+  }
+
+  int is_log_only() const {
+    return msg["log_only"];
+  }
+
+  int ivalue() const {
+    return msg["value"].get<int>();
+  }
+
+  double dvalue() const {
+    return msg["value"].get<double>();
+  }
+
+  int idx() const {
+    return msg["idx"].get<int>();
+  }
+
+  jsn get_msg() const {
+    return msg;
+  }
+
+  std::string create_table_status(const std::string &name) const {
+    std::ostringstream sst;
+    sst << "CREATE TABLE IF NOT EXISTS `" << name << "` (`idx` INTEGER NOT NULL UNIQUE, `ref_idx` INTEGER NOT NULL,";
+    for (auto &it : msg.items()) {
+      if (std::find(exclude_keys_create.begin(), exclude_keys_create.end(), it.key()) == exclude_keys_create.end()) {
+        sst << "`" << it.key() << "` TEXT,";
+      }
+    }
+    sst << "`severity` INTEGER NOT NULL, PRIMARY KEY('idx'));";
+    return sst.str();
+  }
+
+  std::string create_table_log(const std::string &name) const {
+    std::ostringstream sst;
+    sst << "CREATE TABLE IF NOT EXISTS `" << name << "` (`idx` INTEGER NOT NULL, `ref_idx` INTEGER NOT NULL,";
+    for (auto &it : msg.items()) {
+      if (std::find(exclude_keys_create.begin(), exclude_keys_create.end(), it.key()) == exclude_keys_create.end()) {
+        sst << "`" << it.key() << "` TEXT,";
+      }
+    }
+    sst << "`severity` INTEGER NOT NULL, PRIMARY KEY('idx' AUTOINCREMENT));";
+    return sst.str();
+  }
+
+  std::string insert_into_table_log(const std::string &table_name) const {
+    std::ostringstream sst;
+    sst << "INSERT INTO `" << table_name << "` (";
+    sst << "`ref_idx`,";
+    for (auto &it : msg.items()) {
+      if (std::find(exclude_keys_create.begin(), exclude_keys_create.end(), it.key()) == exclude_keys_create.end()) {
+        sst << "`" << it.key() << "`,";
+      }
+    }
+    sst << "`severity`) VALUES (";
+    sst << msg["ref_idx"] << ",";
+    for (auto &it : msg.items()) {
+      if (std::find(exclude_keys_create.begin(), exclude_keys_create.end(), it.key()) == exclude_keys_create.end()) {
+        sst << "'" << to_text(it) << "', ";
+      }
+    }
+    sst << msg["severity"] << ");";
+    return sst.str();
+  }
+
+  std::string insert_into_table_status(const std::string &table_name = "") const {
+    std::ostringstream sst;
+    std::string local_table_name = table_name;
+    size_t i = 0;
+    if (!table_name.size())
+      local_table_name = msg["sender"];
+    sst << "INSERT INTO `" << local_table_name << "` (";
+    for (auto &it : msg.items()) {
+      if (it.key() != always_exclude_key) {
+        sst << "`" << it.key() << "`, ";
+      }
+    }
+    // remove last comma
+    sst.seekp(-2, std::ios_base::end);
+
+    sst << ") VALUES (";
+    for (auto &it : msg.items()) {
+      if (it.key() != always_exclude_key) {
+        sst << "'" << to_text(it) << "', ";
+      }
+    }
+    // remove last comma
+    sst.seekp(-2, std::ios_base::end);
+    sst << ");";
+    return sst.str();
+  }
+
+  std::string update_table_status(const std::string &table_name = "") const {
+    std::ostringstream sst;
+    std::string local_table_name = table_name;
+    if (!table_name.size())
+      local_table_name = msg["sender"];
+    sst << "UPDATE `" << local_table_name << "` SET ";
+    for (auto &it : msg.items()) {
+      if ((it.key() != always_exclude_key) && (it.key() != "idx")) { // idx is the primary key, do not update
+        sst << "`" << it.key() << "` = '" << to_text(it) << "', ";
+      }
+    }
+    // remove last comma
+    sst.seekp(-2, std::ios_base::end);
+    sst << " WHERE `idx` = " << msg["idx"] << ";";
+    return sst.str();
+  }
+
+  void set_date_time(const std::string &date, const std::string &time) {
+    msg["date"] = date;
+    msg["time"] = time;
+  }
+
+  void set_timestamp(const std::time_t &timestamp) {
+    std::string date, time;
+    mstr::date_and_time(timestamp, date, time);
+    msg["date"] = date;
+    msg["time"] = time;
+  }
+
+  void set_ref_idx(const int &ref_idx) {
+    msg["ref_idx"] = ref_idx;
+  }
+
+  void set_key(const std::string &key, const int &severity = 0) {
+    msg["key"] = key;
+    msg["severity"] = severity;
+  }
+
+  void set_sender(const std::string &sender) {
+    msg["sender"] = sender;
+  }
+
+  void set_severity(const int &severity) {
+    msg["severity"] = severity;
+  }
+
+  void set_log_only() {
+    msg["log_only"] = 1;
+  }
+
+  // set value --- unless the key is not changed you update the value
+  void set_value(const auto &T, const int &severity = 0, const int &log_only = 0) {
+    msg["severity"] = severity;
+    msg["value"] = T;
+    msg["log_only"] = log_only;
+  }
+
+  // needed for latitudes and longitudes ONLY
+  void set_value_precise(const double &value, const int &severity = 0, const int &log_only = 0) {
+    msg["severity"] = severity;
+    std::ostringstream sst;
+    sst << std::setprecision(std::numeric_limits<double>::digits10) << std::scientific << value;
+    msg["value"] = sst.str();
+    msg["log_only"] = log_only;
+  }
+
+  // key value --- you can change the key and the value
+  void set_key_value(const std::string &key, const auto &T, const int &severity = 0, const int &log_only = 0) {
+    msg["key"] = key;
+    msg["severity"] = severity;
+    msg["value"] = T;
+    msg["log_only"] = log_only;
+  }
+
+  // needed for latitudes and longitudes ONLY
+  void set_key_value_precise(const std::string &key, const double &value, const int &severity = 0, const int &log_only = 0) {
+    msg["key"] = key;
+    msg["severity"] = severity;
+    std::ostringstream sst;
+    sst << std::setprecision(std::numeric_limits<double>::digits10) << std::scientific << value;
+    msg["value"] = sst.str();
+    msg["log_only"] = log_only;
+  }
+
+private:
+  jsn msg;
+  std::list<std::string> exclude_keys_create = {"idx", "ref_idx", "severity", "log_only"}; //!< keys are handled differently
+  std::string always_exclude_key = "log_only";                                             //!< key shall not appear in the database
+};
+
+// **********************************  M U L T I P L E  M E S S A G E S  *****************************************************************
+
+/*!
+ * @brief multiple_msg_to_sqlite is the class for multiple messages - e.g. for a  T A B L E  with multiple keys
+ * @details a sender can / will contain  M U L T I P L E  keys for multiple messages; reminder: a message is a  R O W  in a  T A B L E  of a database
+ * for status we have F I X E D  keys and a fixed table size; for log we append messages to the table and increment the index
+ */
+
+class multiple_msg_to_sqlite {
+public:
+  multiple_msg_to_sqlite(const std::string &sender_name, const std::vector<std::string> &keys) :
+      sender_name(sender_name) {
+    int i = 1;
+    std::string date, time;
+    std::time_t timestamp = std::time(nullptr);
+    mstr::date_and_time(timestamp, date, time);
+
+    // create all keys - and I let you not change the keys later, v  is private
+    // a running status table will crash if you change the keys and there index
+    v.reserve(keys.size());
+    for (const auto &key : keys) {
+      v.emplace_back(msg_to_sqlite(i++, date, time, 0, sender_name, key, "", 0, false));
+    }
+  }
+
+  /*!
+   * @brief create a multiple message from a json file
+   * @param sender_name like GPS, ch0 ... chX, ADU, ADC, Batt_1, Batt_2 and so on
+   * @param json_file - same as we use in PHP on the webserver
+   */
+  multiple_msg_to_sqlite(const std::string &sender_name, const std::filesystem::path &json_file) :
+      sender_name(sender_name) {
+    int i = 1;
+    std::string date, time;
+    std::time_t timestamp = std::time(nullptr);
+    mstr::date_and_time(timestamp, date, time);
+
+    if (!std::filesystem::exists(json_file))
+      throw std::runtime_error("json file " + json_file.string() + " does not exist");
+
+    // create all keys - and I let you not change the keys later, v  is private
+    // a running status table will crash if you change the keys and there index
+    std::ifstream ifs(json_file);
+    jsn j;
+    ifs >> j;
+    ifs.close();
+    v.reserve(j.size());
+    for (auto &it : j.items()) {
+      std::cerr << it.key() << " " << it.value() << std::endl;
+      // std::string value = it.value().get<std::string>();
+      msg_to_sqlite m(i++);
+      m.set_date_time(date, time);
+      m.set_sender(sender_name);
+      m.set_ref_idx(0);
+      m.set_key_value(it.key(), it.value());
+      m.set_severity(0);
+      v.emplace_back(m);
+    }
+  }
+
+  std::string get_sender_name() const {
+    return sender_name;
+  }
+
+  void set_date_time(const std::string &key, const std::string &date, const std::string &time) {
+    for (auto &msg : v) {
+      if (msg.key() == key) {
+        msg.set_date_time(date, time);
+        return;
+      }
+    }
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << " key " << key << " not found in sender " << sender_name;
+    throw std::runtime_error(err_str.str());
+  }
+
+  void set_timestamp(const std::string &key) {
+    std::string date, time;
+    std::time_t timestamp = std::time(nullptr);
+    mstr::date_and_time(timestamp, date, time);
+    for (auto &msg : v) {
+      if (msg.key() == key) {
+        msg.set_date_time(date, time);
+        return;
+      }
+    }
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << " key " << key << " not found in sender " << sender_name;
+    throw std::runtime_error(err_str.str());
+  }
+
+  void set_ref_idx(const std::string &key, const int &ref_idx) {
+    for (auto &msg : v) {
+      if (msg.key() == key) {
+        msg.set_ref_idx(ref_idx);
+        return;
+      }
+    }
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << " key " << key << " not found in sender " << sender_name;
+    throw std::runtime_error(err_str.str());
+  }
+
+  void set_value(const std::string &key, const auto &T, const int &severity = 0, const int &log_only = 0) {
+    for (auto &msg : v) {
+      if (msg.key() == key) {
+        msg.set_value(T, severity, log_only);
+        msg.set_timestamp(std::time(nullptr));
+        return;
+      }
+    }
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << " key " << key << " not found in sender " << sender_name;
+    throw std::runtime_error(err_str.str());
+  }
+
+  void set_value_precise(const std::string &key, const double &value, const int &severity = 0, const int &log_only = 0) {
+    for (auto &msg : v) {
+      if (msg.key() == key) {
+        msg.set_value_precise(value, severity, log_only);
+        return;
+      }
+    }
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << " key " << key << " not found in sender " << sender_name;
+    throw std::runtime_error(err_str.str());
+  }
+
+  msg_to_sqlite log_only_message(const std::string &key, const auto &T, const int &severity = 0, const int &ref_idx = 0) {
+    msg_to_sqlite l(0);
+    l.set_key_value(key, T, severity, 1);
+    l.set_timestamp(std::time(nullptr));
+    l.set_sender(this->sender_name);
+    l.set_ref_idx(ref_idx);
+    // std::cerr << "log only message " << l.get_msg() << std::endl;
+    return l;
+  }
+
+  msg_to_sqlite get(const std::string &key) const {
+    for (auto &msg : v) {
+      if (msg.key() == key) {
+        return msg;
+      }
+    }
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << " key " << key << " not found in sender " << sender_name;
+    throw std::runtime_error(err_str.str());
+  }
+
+  std::string create_status_table(const std::string table_name) const {
+    if (!v.size())
+      throw std::runtime_error("no keys defined");
+
+    std::ostringstream sst;
+    sst << v[0].create_table_status(table_name);
+    for (auto msg : v) {
+      sst << msg.insert_into_table_status(table_name);
+    }
+    return sst.str();
+  }
+
+  std::string create_log_table(const std::string table_name) const {
+    if (!v.size())
+      throw std::runtime_error("no keys defined");
+
+    std::ostringstream sst;
+    sst << v[0].create_table_log(table_name);
+    return sst.str();
+  }
+
+private:
+  std::vector<msg_to_sqlite> v; //!< list of messages to be written to the database
+  const std::string sender_name;
+};
+
 /**
  * @file messages.h
  * @brief messages.h: defines messages to be send to a sqlite database or write to an file
  */
 
-// **********************************  L O G  &  E R R O R  D A T A B A S E *****************************************************************
+// adu senders example for my web test
+std::vector<std::string> adu_keys = {
+    "start_date",
+    "start_time",
+    "duration",
+    "sampling_rate",
+    "min_voltage",
+    "grid_mode",
+    "utc_offset",
+    "dst",
+    "safe_mode",
+    "lab_mode",
+    "bat 1",
+    "bat 2",
+    "temp"};
 
-struct msg_to_sqlite
-{
-    int64_t timestamp = 0;          //!< to be filled in by the receiver; 64 bit is timestamp on new Linux systems
-    int64_t ref = 0;                //!< reference to an index for a long explanation of the message inside a database of detailed explanations
-    std::string sender;             //!< string id of the sender like Batt_1, GPS, ADC and so on
-    std::string message;            //!< message string short
-    int64_t severity =    0;        //!< 0 = info ...
-    int64_t ival_first =  0;        //!< int value like 9 for satellites   ... or RANGE start
-    int64_t ival_second = 0;        //!<                                   ... or RANGE stop
-    double  dval_first =  0;        //!< 12.3 for battery ...              and LATITUDE  or RANGE start
-    double  dval_second = 0;        //!<                               ... and LONGITUDE or RANGE stop
-};
+// gps sender - example for my web test
+std::vector<std::string> gps_keys = {
+    "gps",
+    "galileo",
+    "glonass",
+    "beidou",
+    "tracked",
+    "in_use",
+    "latitude",
+    "longitude",
+    "elevation"};
 
-std::string msg_to_sqlite_sqlstr(const msg_to_sqlite &msg) {
-    std::ostringstream sst;
-    sst << "VALUES(";
-    sst << msg.timestamp << ",";
-    sst << msg.ref << ", ";
-    sst << "'" << msg.sender << "', ";
-    sst << "'" << msg.message << "', ";
-    sst << msg.severity << ", ";
-    sst << msg.ival_first << ", ";
-    sst << msg.ival_second << ", ";
-    if (trunc(msg.dval_first) == msg.dval_first) sst  << msg.dval_first << ", ";
-    else sst  << std::setprecision(std::numeric_limits<double>::digits10) << std::scientific << msg.dval_first << ", ";
-    if (trunc(msg.dval_second) == msg.dval_second) sst << msg.dval_second;
-    else sst  << std::setprecision(std::numeric_limits<double>::digits10) << std::scientific << msg.dval_second;
-    sst << ");";
-
-    return sst.str();
-}
-
-static std::string create_sqlite_message_table("CREATE TABLE IF NOT EXISTS `logs` (`idx` INTEGER NOT NULL, `timestamp` INT8,  `ref` INT8,\
-                                            `sender` TEXT, `message` TEXT, `severity` INT8, \
-                                            `ival_first` INT8, `ival_second` INT8, \
-                                            `dval_first` DOUBLE, `dval_second` DOUBLE, PRIMARY KEY('idx' AUTOINCREMENT));");
-
-    // make a "insert_sqlite_message_table + msg_to_sqlite_sqlstr" to finally insert
-    static std::string insert_sqlite_message_table("INSERT INTO `logs` (`timestamp`, `ref`, `sender`, `message`, `severity`, `ival_first`, `ival_second`, `dval_first`, `dval_second`) ");
-
-static std::string create_sqlite_message_explanation_table("CREATE TABLE IF NOT EXISTS `help` (`key` INT8, `value` TEXT);");
-
-
-std::atomic_int64_t write_json_message_file_written;
-
-bool write_json_message_file(const std::filesystem::path &directory_path_only, const msg_to_sqlite &msg) {
-
-    std::filesystem::path filepath(std::filesystem::canonical(directory_path_only));
-
-    if (!std::filesystem::exists(filepath)) {
-        std::filesystem::create_directory(filepath);
-        std::cout << "creating " << filepath << std::endl;
-        if (!std::filesystem::exists(filepath)) {
-            std::cout << "creating " << filepath << " " << "failed!" <<  std::endl;
-            std::ostringstream err_str(__func__, std::ios_base::ate);
-            err_str << " can not create message in dir: " << filepath;
-            throw err_str.str();
-        }
-    }
-    std::ofstream file;
-    filepath /= ("msg_" + std::to_string(write_json_message_file_written++) + ".json");
-    file.open(filepath, std::fstream::out | std::fstream::trunc);
-    if (!file.is_open()) {
-        std::ostringstream err_str(__func__, std::ios_base::ate);
-        err_str << " can not create message " << filepath;
-        throw err_str.str();
-    }
-
-    nlohmann::ordered_json jmsg;                // use ordered because of readability
-    jmsg["timestamp"]   = msg.timestamp;
-    jmsg["ref"]         = msg.ref;
-    jmsg["sender"]      = msg.sender;
-    jmsg["message"]     = msg.message;
-    jmsg["severity"]    = msg.severity;
-    jmsg["ival_first"]  = msg.ival_first;
-    jmsg["ival_second"] = msg.ival_second;
-    jmsg["dval_first"]  = msg.dval_first;
-    jmsg["dval_second"] = msg.dval_second;
-
-    file << std::setw(2) << jmsg << std::endl;
-    file.close();
-    return true;
-}
-
-
-
-
+// channel senders - example for my web test
+std::vector<std::string>
+    channel_keys = {"channel", "sensor", "chopper", "gain", "serial", "angle", "dip"};
 
 #endif // MESSAGES_H

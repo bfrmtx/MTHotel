@@ -22,7 +22,7 @@ namespace fs = std::filesystem;
 
 int main(int argc, char *argv[]) {
 
-  bool cat = false;  //!< concatunate ats files
+  bool cat = false;  //!< concatenate ats files
   int run = -1;      //!< run number, greater equal 0
   double lsbval = 0; //!< lsb
   fs::path outdir;
@@ -149,12 +149,10 @@ int main(int argc, char *argv[]) {
 
     std::cout << "done" << std::endl;
 
-    
     std::cout << std::setw(2) << atsj->header << std::endl;
 
-  } catch (const std::string &error) {
-
-    std::cerr << error << std::endl;
+  } catch (const std::runtime_error &error) {
+    std::cerr << error.what() << std::endl;
   }
 
   std::cout << "run finished - w/o exception" << std::endl;
