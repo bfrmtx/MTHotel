@@ -23,18 +23,27 @@ int main() {
   const double median_limit = 0.7;
 
   std::filesystem::path home_dir(getenv("HOME"));
-  auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/three_fgs/indi");
-  auto station_26 = survey->get_station("S26"); // that is a shared pointer from survey
+  // auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/three_fgs/indi");
+
+  auto survey = std::make_shared<survey_d>("/home/bfr/tmp/ptr/");
+
+  //  auto station_26 = survey->get_station("S26"); // that is a shared pointer from survey
+
+  auto station_26 = survey->get_station("pt_1"); // that is a shared pointer from survey
 
   // standard windows 512 x 4
+  // auto run_002 = station_26->get_run(2);
+  // auto run_003 = station_26->get_run(3);
+  // auto run_004 = station_26->get_run(4);
+
   auto run_002 = station_26->get_run(2);
-  auto run_003 = station_26->get_run(3);
-  auto run_004 = station_26->get_run(4);
+  auto run_003 = station_26->get_run(4);
+  auto run_004 = station_26->get_run(6);
 
   std::vector<std::shared_ptr<channel>> channels;
   auto pool = std::make_shared<BS::thread_pool>();
 
-  std::string channel_type("Ey");
+  std::string channel_type("Hx");
 
   // shared pointer from survey
   try {
@@ -65,7 +74,7 @@ int main() {
       fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), wl, wl));
     wl *= 4;
     ++i;
-    chan->set_fftw_plan(fft_freqs.back());
+    chan->init_fftw(fft_freqs.back());
     // here each channel is treated as single result - by default it would contain 5 channels
     raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
   }
@@ -79,7 +88,7 @@ int main() {
     auto fft_fres = *fft_res_iter++;
     mstr::sample_rate_to_str(chan->get_sample_rate(), f_or_s, unit);
     std::cout << "use sample rates of " << f_or_s << " " << unit << " wl:" << fft_fres->get_wl() << "  read length:" << fft_fres->get_rl() << std::endl;
-    chan->set_fftw_plan(fft_fres);
+    chan->init_fftw(fft_fres);
   }
 
   // ******************************** read all fft *******************************************************************************
@@ -105,7 +114,8 @@ int main() {
   for (auto &chan : channels) {
     auto fft_fres = *fft_res_iter++;
     // set the range of fft spectra to use here
-    fft_fres->set_lower_upper_f(1.0 / 2048.0, 0.011, true); // cut off spectra
+    // fft_fres->set_lower_upper_f(1.0 / 2048.0, 0.011, true); // cut off spectra
+    fft_fres->set_lower_upper_f(chan->get_sample_rate() / 10., chan->get_sample_rate() / 4., true); // cut off spectra
   }
 
   // ******************************** queue to vector *******************************************************************************
@@ -135,7 +145,7 @@ int main() {
 
   i = 0;
   for (auto &chan : channels) {
-    raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->bw, chan->is_remote, chan->is_emap);
+    raws[i++]->set_raw_spectra(chan);
   }
 
   std::cout << std::endl;
@@ -225,7 +235,9 @@ int main() {
     return EXIT_FAILURE;
   }
 
-  gplt->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
+  //  gplt->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
+  gplt->cmd << "set terminal qt size 1024,768 enhanced" << std::endl;
+
   gplt->cmd << "set title 'FFT Zero Padding'" << std::endl;
   // gplt->cmd << "set key off" << std::endl;
   gplt->cmd << "set xlabel 'frequency [Hz]'" << std::endl;

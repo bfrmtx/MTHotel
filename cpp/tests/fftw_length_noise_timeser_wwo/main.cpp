@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
   if (!files)
     gplt_ts->set_qt_terminal(basename, ++file_count);
   else
-    gplt_ts->set_svg_terminal(outpath, basename, 1, ++file_count);
+    gplt_ts->set_svg_terminal(outpath, basename, "", 1, ++file_count);
 
   gplt_ts->cmd << "set multiplot layout 3, 1" << std::endl;
   i = 0;
@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
           fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), wl * 2, rl));
         else
           fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), wl, rl));
-        chan->set_fftw_plan(fft_freqs.back());
+        chan->init_fftw(fft_freqs.back());
         raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
         ++i;
       }
@@ -225,7 +225,7 @@ int main(int argc, char *argv[]) {
         else
           chan->prepare_to_raw_spc(fft_fres, true, true); // make vector from queue, 2 wincal
 
-        raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->bw, chan->is_remote, chan->is_emap); // swap!
+        raws[i++]->set_raw_spectra(chan); // swap!
       }
       std::sort(max_mins.begin(), max_mins.end()); // of x-axis frequencies
 
@@ -269,7 +269,7 @@ int main(int argc, char *argv[]) {
       if (!files)
         gplt->set_qt_terminal(basename, ++file_count);
       else
-        gplt->set_svg_terminal(outpath, basename, 1, ++file_count);
+        gplt->set_svg_terminal(outpath, basename, "", 1, ++file_count);
 
       // here the full explanation of 0, 1, 2
       if (pl == 0)

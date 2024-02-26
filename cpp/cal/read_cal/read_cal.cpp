@@ -332,77 +332,97 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
       message << "sensor for channel: " << id << " -> ";
       old_id = id;
       auto pca = open_node(pchan, "calibration");
-      try {
-        auto pci = open_node(pca, "calibrated_item");
-        std::string sensor(xml_svalue(pci, "ci"));
-        int64_t serial = xml_ivalue(pci, "ci_serial_number");
-        if (serial != INT64_MAX)
-          message << sensor << " " << serial << " detected";
-        else
-          message << sensor << " with no serial no detected";
-        std::string cal_date(xml_svalue(pci, "ci_date"));
-        std::string cal_time(xml_svalue(pci, "ci_time"));
-        std::vector<double> f_on, f_off, a_on, a_off, p_on, p_off;
-        auto f_unit = std::make_unique<std::string>();
-        auto a_unit = std::make_unique<std::string>();
-        auto p_unit = std::make_unique<std::string>();
+      // check status for _closingType in tinyxml2.h
+      if (pca->ClosingType() == tinyxml2::XMLElement::OPEN) {
+        try {
+          auto pci = open_node(pca, "calibrated_item");
+          std::string sensor(xml_svalue(pci, "ci"));
+          int64_t serial = xml_ivalue(pci, "ci_serial_number");
+          if (serial != INT64_MAX)
+            message << sensor << " " << serial << " detected";
+          else
+            message << sensor << " with no serial no detected";
 
-        // cd will be NULL when there is no cal data, like e.g. for E
-        auto cd = open_node(pca, "caldata", true);
-        while (cd) {
-          if (cd != nullptr) {
-            std::string strchp("ukn");
-            const char *cchopper = cd->Attribute("chopper");
-            if (cchopper != nullptr) {
-              strchp = std::string(cchopper);
-            }
-            double f = xml_dvalue(cd, "c1", f_unit.get(), "unit");
-            double a = xml_dvalue(cd, "c2", a_unit.get(), "unit");
-            double p = xml_dvalue(cd, "c3", p_unit.get(), "unit");
-            if ((f != DBL_MAX && (a != DBL_MAX) && (p != DBL_MAX))) {
-              if (strchp == "on") {
-                f_on.push_back(f);
-                a_on.push_back(a);
-                p_on.push_back(p);
-              } else {
-                f_off.push_back(f);
-                a_off.push_back(a);
-                p_off.push_back(p);
+          // function automatically skips if entry does not exists
+          std::string cal_date(xml_svalue(pci, "ci_date"));
+          std::string cal_time(xml_svalue(pci, "ci_time"));
+          std::vector<double> f_on, f_off, a_on, a_off, p_on, p_off;
+          auto f_unit = std::make_unique<std::string>();
+          auto a_unit = std::make_unique<std::string>();
+          auto p_unit = std::make_unique<std::string>();
+
+          // cd will be NULL when there is no cal data, like e.g. for E
+          auto cd = open_node(pca, "caldata", true);
+          while (cd) {
+            if (cd != nullptr) {
+              std::string strchp("ukn");
+              const char *cchopper = cd->Attribute("chopper");
+              if (cchopper != nullptr) {
+                strchp = std::string(cchopper);
+              }
+              double f = xml_dvalue(cd, "c1", f_unit.get(), "unit");
+              double a = xml_dvalue(cd, "c2", a_unit.get(), "unit");
+              double p = xml_dvalue(cd, "c3", p_unit.get(), "unit");
+              if ((f != DBL_MAX && (a != DBL_MAX) && (p != DBL_MAX))) {
+                if (strchp == "on") {
+                  f_on.push_back(f);
+                  a_on.push_back(a);
+                  p_on.push_back(p);
+                } else {
+                  f_off.push_back(f);
+                  a_off.push_back(a);
+                  p_off.push_back(p);
+                }
               }
             }
+            cd = cd->NextSiblingElement("caldata");
           }
-          cd = cd->NextSiblingElement("caldata");
-        }
-        if (f_on.size()) {
-          message << ", chopper on  size " << f_on.size();
-          cal_entries.emplace_back(std::make_shared<calibration>());
-          if ((*a_unit.get() == "V/(nT*Hz)") && (*f_unit.get() == "Hz") && (*p_unit.get() == "deg")) {
-            cal_entries.back()->set_format(CalibrationType::mtx_old);
-            cal_entries.back()->chopper = ChopperStatus::on;
-            cal_entries.back()->f = f_on;
-            cal_entries.back()->a = a_on;
-            cal_entries.back()->p = p_on;
-            cal_entries.back()->sensor = sensor;
-            if (serial != INT64_MAX)
-              cal_entries.back()->serial = serial;
-            if (cal_date.size())
-              cal_entries.back()->datetime = cal_date;
-            if (cal_time.size())
-              cal_entries.back()->datetime += "T" + cal_time;
-            else
-              cal_entries.back()->datetime += "T00:00:00";
-            // cal_entries.back()->write_file("/tmp");
-          }
-        }
-        if (f_off.size()) {
-          message << ", chopper off size " << f_off.size();
-          if ((*a_unit.get() == "V/(nT*Hz)") && (*f_unit.get() == "Hz") && (*p_unit.get() == "deg")) {
+          if (f_on.size()) {
+            message << ", chopper on  size " << f_on.size();
             cal_entries.emplace_back(std::make_shared<calibration>());
-            cal_entries.back()->set_format(CalibrationType::mtx_old);
-            cal_entries.back()->chopper = ChopperStatus::off;
-            cal_entries.back()->f = f_off;
-            cal_entries.back()->a = a_off;
-            cal_entries.back()->p = p_off;
+            if ((*a_unit.get() == "V/(nT*Hz)") && (*f_unit.get() == "Hz") && (*p_unit.get() == "deg")) {
+              cal_entries.back()->set_format(CalibrationType::mtx_old);
+              cal_entries.back()->chopper = ChopperStatus::on;
+              cal_entries.back()->f = f_on;
+              cal_entries.back()->a = a_on;
+              cal_entries.back()->p = p_on;
+              cal_entries.back()->sensor = sensor;
+              if (serial != INT64_MAX)
+                cal_entries.back()->serial = serial;
+              if (cal_date.size())
+                cal_entries.back()->datetime = cal_date;
+              if (cal_time.size())
+                cal_entries.back()->datetime += "T" + cal_time;
+              else
+                cal_entries.back()->datetime += "T00:00:00";
+              // cal_entries.back()->write_file("/tmp");
+            }
+          }
+          if (f_off.size()) {
+            message << ", chopper off size " << f_off.size();
+            if ((*a_unit.get() == "V/(nT*Hz)") && (*f_unit.get() == "Hz") && (*p_unit.get() == "deg")) {
+              cal_entries.emplace_back(std::make_shared<calibration>());
+              cal_entries.back()->set_format(CalibrationType::mtx_old);
+              cal_entries.back()->chopper = ChopperStatus::off;
+              cal_entries.back()->f = f_off;
+              cal_entries.back()->a = a_off;
+              cal_entries.back()->p = p_off;
+              cal_entries.back()->sensor = sensor;
+              if (serial != INT64_MAX)
+                cal_entries.back()->serial = serial;
+              if (cal_date.size())
+                cal_entries.back()->datetime = cal_date;
+              if (cal_time.size())
+                cal_entries.back()->datetime += "T" + cal_time;
+              else
+                cal_entries.back()->datetime += "T00:00:00";
+
+              // cal_entries.back()->write_file("/tmp");
+            }
+          }
+          // likely electrodes or old sensors
+          if (!f_on.size() && !f_off.size() && (serial != INT64_MAX)) {
+            cal_entries.emplace_back(std::make_shared<calibration>());
             cal_entries.back()->sensor = sensor;
             if (serial != INT64_MAX)
               cal_entries.back()->serial = serial;
@@ -412,30 +432,15 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
               cal_entries.back()->datetime += "T" + cal_time;
             else
               cal_entries.back()->datetime += "T00:00:00";
-
             // cal_entries.back()->write_file("/tmp");
           }
-        }
-        // likely electrodes or old sensors
-        if (!f_on.size() && !f_off.size() && (serial != INT64_MAX)) {
-          cal_entries.emplace_back(std::make_shared<calibration>());
-          cal_entries.back()->sensor = sensor;
-          if (serial != INT64_MAX)
-            cal_entries.back()->serial = serial;
-          if (cal_date.size())
-            cal_entries.back()->datetime = cal_date;
-          if (cal_time.size())
-            cal_entries.back()->datetime += "T" + cal_time;
-          else
-            cal_entries.back()->datetime += "T00:00:00";
-          // cal_entries.back()->write_file("/tmp");
-        }
-        messages += message.str() + ";";
+          messages += message.str() + ";";
 
-      } catch (const std::runtime_error &error) {
-        std::cerr << message.str() << std::endl;
-        std::cerr << error.what() << std::endl;
-        std::cerr << "ignore in case this is E" << std::endl;
+        } catch (const std::runtime_error &error) {
+          std::cerr << message.str() << std::endl;
+          std::cerr << error.what() << std::endl;
+          std::cerr << "ignore in case this is E" << std::endl;
+        }
       }
     }
     pchan = pchan->NextSiblingElement("channel");

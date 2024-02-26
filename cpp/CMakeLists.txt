@@ -32,6 +32,13 @@ IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT WIN32)
         message ("release build ---------------------")
         add_compile_options(-std=c++20 -pthread -Wno-unused-parameter -Wno-sign-compare)
     ENDIF(CMAKE_BUILD_TYPE MATCHES RELEASE)
+    IF(APPLE)
+        message ("MacOS build adding sqlite from homebrew")
+        add_definitions(-DSQLite3_INCLUDE_DIRS=/opt/homebrew/opt/sqlite/include)
+        add_definitions(-DSQLite3_LIBRARIES=/opt/homebrew/opt/sqlite/lib/libsqlite3.dylib)
+        # Add your MacOS specific commands here
+    ENDIF(APPLE)
+
 ENDIF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT WIN32)
 #
 #
@@ -85,15 +92,19 @@ ENDIF()
 message ( "adding subdirs" )
 # the info.sql3 and others will be copied to your build dir - the software will look for SQLite databases
 # DEFINES += PMTSQLPATH=\"\\\"$${PJH}/$${OSDIR}$${CPLDIR}\\\"\"
-add_definitions(-DPMTSQLPATH="${CMAKE_INSTALL_PREFIX}")
-add_definitions(-DPMTSQLPATH_UNIX="${CMAKE_INSTALL_PREFIX}/bin")
+# add_definitions(-DPMTSQLPATH="${CMAKE_INSTALL_PREFIX}")
+# add_definitions(-DPMTSQLPATH_UNIX="${CMAKE_INSTALL_PREFIX}/bin")
 #
 ## templates FIRST
 add_subdirectory(include)
 add_subdirectory(math_vector)
-add_subdirectory(cal/mk_calibration)
+# stop here for now
+# return()
+#
+# add_subdirectory(cal/mk_calibration)
 add_subdirectory(xml/tinyxmlwriter)
 add_subdirectory(xml/tinyxml2)
+add_subdirectory(ats/atsinfo)
 add_subdirectory(cal/read_cal)
 add_subdirectory(cal/chcal)
 add_subdirectory(cal/mod_xml_cal)
@@ -109,8 +120,11 @@ add_subdirectory(ats/atstools)
 add_subdirectory(utils/mk_noise)
 add_subdirectory(utils/filter)
 add_subdirectory(utils/rda)
+# add_subdirectory(utils/spcplot)
+add_subdirectory(utils/tsplot)
 add_subdirectory(utils/show_system_cal)
 add_subdirectory(pt/pt2surv)
+add_subdirectory(pt/ptspc)
 add_subdirectory(adu_sim)
 #
 #

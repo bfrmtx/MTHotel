@@ -6,8 +6,6 @@
 #include <climits>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -33,6 +31,17 @@
  */
 
 #define JSON_MAX_IVALUE 9007199254740991
+#define JSON_MIN_IVALUE -9007199254740991
+
+/*!
+ * @brief two calibration vectors shall overlap at least for 3 frequencies
+ */
+const static uint64_t overlapping_cal = 3;
+
+/*!
+ * @brief minimum number of frequencies for calibration; 3 already may be used for overlapping with theoretical or master calibration
+ */
+const static uint64_t min_cal_size = 6;
 
 // I use Capital CamelCase for enums and defines
 // I use lowcase under_score seperated for structs and classes

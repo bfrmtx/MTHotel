@@ -87,7 +87,7 @@ int main() {
 
       // fft_freqs.emplace_back(std::make_shared<fftw_freqs>(chan->get_sample_rate(), 1024, 1024));
 
-      chan->set_fftw_plan(fft_freqs.back());
+      chan->init_fftw(fft_freqs.back());
       // here each channel is treated as single result - by default it would contain 5 channels
       raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
     }
@@ -114,7 +114,7 @@ int main() {
     auto fft_fres = *fft_res_iter++;
     mstr::sample_rate_to_str(chan->get_sample_rate(), f_or_s, unit);
     std::cout << "use sample rates of " << f_or_s << " " << unit << " wl:" << fft_fres->get_wl() << "  read length:" << fft_fres->get_rl() << std::endl;
-    chan->set_fftw_plan(fft_fres);
+    chan->init_fftw(fft_fres);
   }
 
   // ******************************** read all fft *******************************************************************************
@@ -171,7 +171,7 @@ int main() {
   i = 0;
   for (auto &chan : channels) {
     // swapping should be fast
-    raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->bw, chan->is_remote, chan->is_emap);
+    raws[i++]->set_raw_spectra(chan);
   }
 
   // ******************************** stack all *******************************************************************************

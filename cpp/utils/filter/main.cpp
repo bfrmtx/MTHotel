@@ -119,22 +119,22 @@ int main() {
 
       if (chan->get_channel_type() == "Ex") {
         chan->dip = 1000.0;
-        chan->cal = std::make_shared<calibration>("EFP-06", i + 1, CalibrationType::mtx);
+        chan->cal = std::make_shared<calibration>("EFP-06", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
       if (chan->get_channel_type() == "Ey") {
         chan->dip = 1000.0;
         chan->angle = 90.0;
-        chan->cal = std::make_shared<calibration>("EFP-06", i + 1, CalibrationType::mtx);
+        chan->cal = std::make_shared<calibration>("EFP-06", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
       if (chan->get_channel_type() == "Hx") {
-        chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, CalibrationType::mtx);
+        chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
       if (chan->get_channel_type() == "Hy") {
         chan->angle = 90.0;
-        chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, CalibrationType::mtx);
+        chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
       if (chan->get_channel_type() == "Hz") {
-        chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, CalibrationType::mtx);
+        chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
 
       ++i;

@@ -1,9 +1,9 @@
 #ifndef SURVEY_H
 #define SURVEY_H
 
-#include "atss.h"
+#include "../mt/raw_spectra/raw_spectra.h"
+#include "atss.h" // channels - n channels for ech run
 #include "files_dirs.h"
-
 // ************************************************************************  R U N *******************************************************************
 
 static const size_t prep_channels = 12; //!< assume an amount of channels per run
@@ -20,8 +20,7 @@ public:
    * \param run_dir create a dir or...
    * \param no_create ... scan a dir (default)
    */
-  run_d(const std::filesystem::path &run_dir, const bool no_create = true) :
-      run_dir(run_dir) {
+  run_d(const std::filesystem::path &run_dir, const bool no_create = true) : run_dir(run_dir) {
 
     this->channels.reserve(prep_channels);
     if (!no_create) {
@@ -73,7 +72,16 @@ public:
   }
 
   size_t get_run_no() const {
-    return mstr::string2run(this->run_dir.filename().c_str());
+    auto run_no = this->run_dir;
+    // remove all until the last /
+    run_no = run_no.filename();
+    // remove run_ at the beginning
+    auto srun_no = run_no.string().substr(4);
+    // convert to size_t
+    return size_t(stoul(srun_no));
+  }
+  std::string get_name() const {
+    return this->run_dir.filename();
   }
 
   void clear() {
@@ -82,6 +90,7 @@ public:
         chan.reset();
     }
     this->channels.clear();
+    this->raw_spc.reset();
   }
 
   size_t scan() {
@@ -112,6 +121,11 @@ public:
     return channels.at(0);
   }
 
+  /*!
+   * @brief
+   * @param chtype like Ex, Ey, Hx, Hy, Hz
+   * @return std::shared_ptr<channel> or nullptr
+   */
   std::shared_ptr<channel> get_channel(const std::string &chtype) const {
     if (!channels.size()) {
       std::ostringstream err_str(__func__, std::ios_base::ate);
@@ -129,6 +143,33 @@ public:
 
   std::vector<std::shared_ptr<channel>> get_channels() const {
     return this->channels;
+  }
+
+  /*!
+   * @brief having a vector of channels, find the index of the channel with the same name inside the runs
+   * your main program should have the sort order like this:
+   * for (const auto &run : runs) {
+   *  for (const auto &channel_type : channel_types) {
+   * @param channels vector of shared pointers of channels
+   * @param name Ex, Ey, Hx, Hy, Hz
+   * @return index of the given channel vector or SIZE_MAX
+   */
+  size_t find_index_of_channel_vector_by_name(const std::vector<std::shared_ptr<channel>> &channels, const std::string &name) const {
+    size_t i = 0;
+    if (!channels.size())
+      return SIZE_MAX;
+    if (name.empty())
+      return SIZE_MAX;
+
+    auto find_me = this->get_channel(name); // shared pointer of this run and channel name
+    // find the index of the reference channel using the == operator from atss.h for shared pointers of channel
+    auto it = std::find_if(channels.begin(), channels.end(), [&find_me](const std::shared_ptr<channel> &chan) { return chan == find_me; });
+    if (it != channels.end()) {
+      i = std::distance(channels.begin(), it);
+    } else {
+      i = SIZE_MAX;
+    }
+    return i;
   }
 
   bool check_sample_rate(const double &sample_rate) const {
@@ -159,8 +200,49 @@ public:
     }
   }
 
+  void init_raw_spectra(std::shared_ptr<BS::thread_pool> &pool) {
+
+    if (!this->channels.size()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << " Station " << this->run_dir.parent_path().filename() << " " << this->run_dir.filename() << " is empty";
+      throw std::runtime_error(err_str.str());
+    }
+    this->raw_spc = std::make_shared<raw_spectra>(pool, this->channels);
+  }
+
+  void fetch_raw_spectra() {
+    if (!this->channels.size()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << " Station " << this->run_dir.parent_path().filename() << " " << this->run_dir.filename() << " is empty";
+      throw std::runtime_error(err_str.str());
+    }
+    if (this->raw_spc == nullptr) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << " Station " << this->run_dir.parent_path().filename() << " " << this->run_dir.filename() << " raw_spc is nullptr";
+      throw std::runtime_error(err_str.str());
+    }
+    for (auto &ch : this->channels) {
+      if (ch->spc.size())
+        this->raw_spc->set_raw_spectra(ch); // move the raw spectra from the channel to the raw_spectra
+    }
+  }
+
+  std::vector<size_t> get_channel_with_spectra(bool parzen_spectra) const {
+    std::vector<size_t> channels_with_spectra;
+    for (size_t i = 0; i < this->channels.size(); ++i) {
+      std::string ch_type = this->channels.at(i)->get_channel_type();
+      if (parzen_spectra) {
+        if (raw_spc->get_abs_sa_prz_spectra(ch_type).size())
+          channels_with_spectra.push_back(i);
+      } else if (this->raw_spc->get_abs_sa_spectra(ch_type).size())
+        channels_with_spectra.push_back(i);
+    }
+    return channels_with_spectra;
+  }
+
   std::filesystem::path run_dir;
   std::vector<std::shared_ptr<channel>> channels;
+  std::shared_ptr<raw_spectra> raw_spc; //!< raw spectra for the run - contains Ex, Ey, Hx, Hy, Hz, REx, REy, RHx, RHy, RHz, EEx, EEy (emap)
 };
 
 bool operator==(const std::shared_ptr<run_d> &lhs, const std::shared_ptr<run_d> &rhs) {
@@ -193,8 +275,7 @@ public:
    * \param station_dir
    * \param no_create if true, we perfom a site scan
    */
-  station_d(const std::filesystem::path &station_dir, const bool no_create = true) :
-      station_dir(station_dir) {
+  station_d(const std::filesystem::path &station_dir, const bool no_create = true) : station_dir(station_dir) {
 
     if (!no_create) {
       std::filesystem::create_directories(this->station_dir);
@@ -294,12 +375,28 @@ public:
           return r;
       }
     }
-
     return nullptr;
   }
 
-  std::vector<std::shared_ptr<run_d>> get_sample_rate(const double &sample_rate) const {
+  // operator (size_t run_no, std::string channel_type)
+  /*!
+   * \brief at
+   * \param run_no
+   * \param channel_type
+   * \return
+   */
+  std::shared_ptr<channel> at(const size_t &run_no, const std::string &channel_type) const {
 
+    auto tmp_run = this->get_run(run_no);
+    if (tmp_run == nullptr) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: run does not exists! " << this->station_dir.filename() << " wanted: " << run_no;
+      throw std::runtime_error(err_str.str());
+    }
+    return tmp_run->get_channel(channel_type);
+  }
+
+  std::vector<std::shared_ptr<run_d>> get_sample_rate(const double &sample_rate) const {
     std::vector<std::shared_ptr<run_d>> runs_s;
     for (const auto &run : runs) {
       if (run->check_sample_rate(sample_rate))
@@ -335,6 +432,10 @@ public:
     }
   }
 
+  std::string get_name() const {
+    return this->station_dir.filename();
+  }
+
   std::vector<std::shared_ptr<run_d>> runs;
   std::filesystem::path station_dir;
 };
@@ -351,8 +452,7 @@ public:
    * \param no_create == false we add tree_size files to the survey
    */
 
-  survey_d(const std::filesystem::path &survey_dir, const bool no_create = true, size_t tree_size = 0) :
-      survey_dir(survey_dir) {
+  survey_d(const std::filesystem::path &survey_dir, const bool no_create = true, size_t tree_size = 0) : survey_dir(survey_dir) {
 
     std::unique_lock lock(this->station_lock);
     if (!no_create) {
@@ -466,6 +566,11 @@ public:
     return *stat;
   }
 
+  std::shared_ptr<channel> at(const std::string &station_name, const size_t &run_no, const std::string &channel_type) const {
+    auto station = this->get_station(station_name);
+    return station->at(run_no, channel_type);
+  }
+
   std::vector<std::string> get_station_names() const {
     std::shared_lock lock(this->station_lock);
     std::vector<std::string> station_names;
@@ -572,6 +677,28 @@ public:
       }
       station->ls();
     }
+  }
+
+  std::string get_name() const {
+    std::shared_lock lock(this->station_lock);
+    return this->survey_dir.filename();
+  }
+
+  std::pair<std::string, size_t> get_station_run(const std::filesystem::path &filepath) const {
+    std::shared_lock lock(this->station_lock);
+    std::string station_name;
+    size_t run_no = SIZE_MAX;
+    for (const auto &station : stations) {
+      for (const auto &run : station->runs) {
+
+        station_name = station->station_dir.filename();
+        run_no = run->get_run_no();
+        if (filepath == run->run_dir)
+          return std::make_pair(station_name, run_no);
+      }
+    }
+
+    return std::make_pair(station_name, run_no);
   }
 
 private:

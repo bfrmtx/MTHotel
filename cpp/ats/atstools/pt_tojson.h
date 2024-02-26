@@ -57,12 +57,17 @@ void collect_atsheaders(const std::shared_ptr<atsheader> &ats, std::unique_ptr<s
   std::string ssh = std::to_string(ssi);
 
   std::vector<std::shared_ptr<calibration>> cals;
+  // read XML calibration xmlcal
   try {
     cals = rcal->read_std_xml(atsj->xml_path(), messages);
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
     std::cerr << "--> continued" << std::endl;
     cals.clear();
+  }
+  // make sure to have correct sensor names
+  for (auto &ncal : cals) {
+    ncal->sensor = rcal->get_sensor_name(ncal->sensor);
   }
 
   chan->tmp_station = ats->site_name();
@@ -136,7 +141,6 @@ void fill_survey_tree(const std::unique_ptr<survey_d> &survey, const size_t &ind
     ints.resize(chunk_size);
   }
 
-  std::ofstream file;
   size_t samples_read = 0;
 
   try {
@@ -144,9 +148,9 @@ void fill_survey_tree(const std::unique_ptr<survey_d> &survey, const size_t &ind
       dbls.resize(ats->ats_read_ints_doubles(ints));
       samples_read += dbls.size();
       std::transform(ints.begin(), ints.end(), dbls.begin(), [lsb](double v) { return (lsb * v); });
-      chan->write_data(dbls, file);
-    } while (dbls.size() && file.good());
-    file.close();
+      chan->write_data(dbls);
+    } while (dbls.size() && chan->outfile_is_good());
+    chan->close_outfile();
 
     std::cout << chan->filename(".json") << "  " << samples_read << " <-> " << chan->samples() << std::endl;
   } catch (const std::runtime_error &error) {

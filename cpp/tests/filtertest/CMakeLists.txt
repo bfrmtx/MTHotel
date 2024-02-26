@@ -13,5 +13,8 @@ find_package(SQLite3 REQUIRED)
 add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME}
     PRIVATE sqlite3
-    PUBLIC fir_filter
+    PRIVATE fir_filter
+    PRIVATE raw_spectra
 )
+
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

@@ -593,7 +593,7 @@ int main(int argc, char *argv[]) {
       // we have the old MFS06 instead MFS-06 format, use read_cal to convert
       auto rd = std::make_shared<read_cal>();
       atsj->header["sensor_type"] = rd->get_sensor_name(atsj->header["sensor_type"]);
-      calibs.emplace_back(std::make_shared<calibration>(rd->get_sensor_name(atsj->header["sensor_type"]), atsj->header["sensor_serial_number"], CalibrationType::mtx));
+      calibs.emplace_back(std::make_shared<calibration>(rd->get_sensor_name(atsj->header["sensor_type"]), atsj->header["sensor_serial_number"], ChopperStatus::off, CalibrationType::mtx));
 
       auto calfilename = calibs.back()->gen_json_filename_from_blank(ChopperStatus(atsj->header["chopper"]));
       std::cout << fs::path(json_caldir / calfilename) << std::endl;

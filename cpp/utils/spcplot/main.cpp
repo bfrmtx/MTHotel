@@ -34,11 +34,11 @@ int main(int argc, char *argv[]) {
   std::cout << "*******************************************************************************" << std::endl
             << std::endl;
   std::cout << "reads data from a survey (e.g. Northern Mining, Station Sarıçam" << std::endl;
-  std::cout << "performs different FFT lentghs and padding" << std::endl;
-  std::cout << "performs different FFT lengths and padding" << std::endl;
+  std::cout << "performs FFT lentghs (and padding)" << std::endl;
+  std::cout << "-u suvery [-sb] -s site -c [Ex, Ex, Hx, Hy, Hz] -r  1 2 ... " << std::endl;
   std::cout << "results should give same results - all curves on top of each other" << std::endl;
-  std::cout << "the envelope of the padded must be be the non-padded - you just obtain points in between" << std::endl;
-  std::cout << "the base level is different: you have a different amount of stacks; noise may go down for shorter wl -> more stacks" << std::endl;
+  std::cout << "the envelope of the padded must be be the non-padded - you just obtain points inbetween" << std::endl;
+  std::cout << "the base level is differrent: you have a different amount of stacks; noise may go down for shorter wl -> more stacks" << std::endl;
   std::cout << std::endl
             << "*******************************************************************************" << std::endl
             << std::endl;
@@ -49,6 +49,24 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<station_d> station;
   std::vector<std::shared_ptr<run_d>> runs;
   auto pool = std::make_shared<BS::thread_pool>();
+  std::vector<std::string> channel_types;
+  const double median_limit = 0.7; // for median limit
+  bool lowres = false;             // low resolution plot only
+  size_t wl = 0;
+  size_t rl = 0;
+
+  // get the runtime path of this executable
+  fs::path ptspc_path = fs::canonical(argv[0]);
+  // cd up to bin
+  ptspc_path = ptspc_path.parent_path().parent_path();
+  // cd to doc
+  ptspc_path = ptspc_path / "data";
+  fs::path sqlfile = ptspc_path / "info.sql3";
+
+  if (!fs::exists(sqlfile)) {
+    std::cerr << "could not find " << sqlfile.string() << std::endl;
+    return EXIT_FAILURE;
+  }
 
   unsigned l = 1;
   try {
@@ -85,6 +103,14 @@ int main(int argc, char *argv[]) {
           std::ostringstream err_str(__func__, std::ios_base::ate);
           err_str << " secondly use -s station_name in order to init station";
           throw std::runtime_error(err_str.str());
+        }
+      }
+
+      if ((marg.compare("-c") == 0) && (l < unsigned(argc - 2))) {
+
+        while (l < unsigned(argc - 2) && *argv[l + 1] != '-') {
+          std::string channel_type = std::string(argv[++l]);
+          channel_types.emplace_back(channel_type);
         }
       }
 
@@ -135,70 +161,35 @@ int main(int argc, char *argv[]) {
 
   std::vector<std::shared_ptr<fftw_freqs>> fft_freqs;
   std::vector<std::shared_ptr<raw_spectra>> raws;
-
   std::vector<std::shared_ptr<channel>> channels;
-  std::vector<std::shared_ptr<channel>> channels_padded;
-  std::vector<std::shared_ptr<channel>> channels_noise;
 
-  std::string channel_type("Ex");
-
-  size_t min_wl = 1024;
-  size_t min_rl = 256;
-  size_t wl = 0;
-  size_t padded = 1024; // min padded
-
-  std::random_device rd{};
-  std::mt19937 gen{rd()};
-  std::normal_distribution<> dist{0, 2}; // mean 0, sigma 2
-
-  for (auto &run : runs) {
-
-    // shared pointer from survey
-    try {
-      channels.emplace_back(run->get_channel(channel_type)); // that is a link, NOT a copy; you can do it only ONCE
-      wl = (size_t)channels.back()->get_sample_rate();
-      if (wl < min_wl)
-        wl = min_wl; // min is rl 256, wl 256
-      fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), wl, wl));
-      channels.back()->init_fftw(fft_freqs.back());
-      raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
-
-      // want that for zero padding
-      if (channels.back()->get_sample_rate() < 1024) { // min is rl 256, wl 1024
+  // all selected runs
+  for (const auto &run : runs) {
+    for (const auto &channel_type : channel_types) {
+      try {
         channels.emplace_back(std::make_shared<channel>(run->get_channel(channel_type)));
-        fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), wl * 4, wl));
-        channels.back()->init_fftw(fft_freqs.back());
+        wl = (size_t)channels.back()->get_sample_rate();
+        // bandwidth 1 Hz
+        fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), wl, wl));
+        channels.back()->set_fftw_plan(fft_freqs.back());
+        // raws are connected to the thread pool
         raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
+      } catch (const std::runtime_error &error) {
+        std::cerr << error.what() << std::endl;
+        return EXIT_FAILURE;
+      } catch (const std::exception &e) {
+        std::cerr << "error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+
+      } catch (...) {
+        std::cerr << "could not allocate all channels" << std::endl;
+        return EXIT_FAILURE;
       }
-      /*
-      wl *= 4;  // sharper fft, at least 1024                  min is rl 1024, wl 1024
-      // a new instance - not a copy/link; the readbuffer is inside the class
-      channels.emplace_back(std::make_shared<channel>(run->get_channel(channel_type)));
-      fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), wl, wl));
-      channels.back()->init_fftw(fft_freqs.back());
-      raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
-
-      // add noise channels
-
-      for (auto &chan : channels) {
-          channels_noise.emplace_back(std::make_shared<channel>(chan)); // these are linked
-      }
-*/
-
-    } catch (const std::runtime_error &error) {
-      std::cerr << error.what() << std::endl;
-      return EXIT_FAILURE;
-    } catch (const std::exception &e) {
-      std::cerr << "error: " << e.what() << std::endl;
-      return EXIT_FAILURE;
-
-    } catch (...) {
-      std::cerr << "could not allocate all channels" << std::endl;
-      return EXIT_FAILURE;
     }
   }
-  std::string unit;
+
   double f_or_s;
+  std::string unit;
 
   // example usage  fft with auto & channels
   auto fft_res_iter = fft_freqs.begin();

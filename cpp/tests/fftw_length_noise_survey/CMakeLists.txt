@@ -10,14 +10,15 @@ include_directories(${CMAKE_INSTALL_PREFIX}/include ${CMAKE_SOURCE_DIR}/mt/ac_sp
 
 
 find_package(SQLite3 REQUIRED)
+# find_package(FFTW3)
 set(SOURCES main.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_link_libraries (${PROJECT_NAME}
     PRIVATE fftw3
     PRIVATE sqlite3
-    PUBLIC raw_spectra
-    PUBLIC math_vector
+    PRIVATE raw_spectra
+    PRIVATE math_vector
 )
 
 

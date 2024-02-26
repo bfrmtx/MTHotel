@@ -36,7 +36,7 @@ size_t parzen_vector(const std::vector<double> &freqs, const std::vector<double>
 
   if (!freqs.size() || !target_freqs.size()) {
     std::ostringstream err_str(__func__, std::ios_base::ate);
-    err_str << "::no frequencies or target frequncies given";
+    err_str << "::no frequencies or target frequencies given";
     throw std::runtime_error(err_str.str());
   }
   const double max_parzen = 0.31;
@@ -100,8 +100,10 @@ size_t parzen_vector(const std::vector<double> &freqs, const std::vector<double>
             iter_upr_bnds.push_back(high);
             // all freqs belong to that
             selected_freqs.push_back(target_freqs[i]);
-            std::cout << *high << " < " << target_freqs[i] << " > " << *low << std::endl;
-            std::cout << 1.0 / (*high) << " < " << 1.0 / target_freqs[i] << " > " << 1.0 / (*low) << " target: " << std::endl;
+            // if (target_freqs[i] > 1.0)
+            //   std::cout << *high << " < " << target_freqs[i] << " > " << *low << " :target " << std::endl;
+            // else
+            //   std::cout << 1.0 / (*high) << " < " << 1.0 / target_freqs[i] << " > " << 1.0 / (*low) << " :target " << std::endl;
 
           } else {
             std::cout << "slot_parzen_vector -> no bounds " << lower_prz_bounds[i] << " " << *min_freq << " " << upper_prz_bounds[i] << " " << *max_freq << std::endl;

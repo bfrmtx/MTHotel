@@ -12,17 +12,17 @@
 #include <thread>
 #include <vector>
 
-#include "atsheader.h"
-#include "survey.h"
-
+#include "BS_thread_pool.h"
 #include "atmheader.h"
 #include "atsheader.h"
 #include "atsheader_def.h"
 #include "atsheader_xml.h"
-
-#include "BS_thread_pool.h"
+#include "survey.h"
 
 #include "../../ats/atstools/pt_tojson.h"
+//
+// pt2surv -outdir /home/bfr/tmp/ptr /home/bfr_mount/geo-nas/GEOFertigung/Feldmessdaten/2023/MFS-06e/2023-11-28/
+// scans all ats files;
 
 int main(int argc, char *argv[]) {
 
@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
   fs::path json_caldir; //!< find directory with JSON cal files
 
   bool no_create = true;
+  bool no_echannel = false;
 
   unsigned l = 1;
   while (argc > 1 && (l < unsigned(argc)) && *argv[l] == '-') {
@@ -40,6 +41,16 @@ int main(int argc, char *argv[]) {
     if (marg.compare("-") == 0) {
       std::cerr << "\nunrecognized option " << argv[l] << std::endl;
       return EXIT_FAILURE;
+    }
+
+    if ((marg.compare("--help") == 0) || (marg.compare("-help") == 0)) {
+      std::cout << "pt2surv -outdir /home/bfr/tmp/ptr /home/bfr_mount/2023/MFS-06e/2023-11-28/" << std::endl;
+      std::cout << "scans all ats files from that directory and their subdirectories which may contain the pt data" << std::endl;
+      std::cout << "e.g. folder input names such as 1064-257-1065, indicating the coils used in the ats subs" << std::endl;
+      std::cout << "the output directory will be created if it does not exist" << std::endl;
+      std::cout << "the site numbers will be increased when f or sub has changed" << std::endl;
+      std::cout << "-no_e : do not use E channel" << std::endl;
+      return EXIT_SUCCESS;
     }
 
     if (marg.compare("-outdir") == 0) {
@@ -53,7 +64,20 @@ int main(int argc, char *argv[]) {
         std::cerr << "could not create outdir " << argv[l - 1] << std::endl;
         return EXIT_FAILURE;
       }
+      // try if outdir exists but is empty
+      try {
+        if (fs::is_empty(outdir) && fs::exists(outdir) && fs::is_directory(outdir)) {
+          fs::create_directories(outdir);
+          no_create = false;
+        }
+      } catch (...) {
+        std::cerr << "outdir exists but can not create sub dirs " << argv[l - 1] << std::endl;
+        return EXIT_FAILURE;
+      }
       outdir = fs::canonical(outdir);
+    }
+    if (marg.compare("-no_e") == 0) {
+      no_echannel = true;
     }
     ++l;
   }
@@ -140,7 +164,14 @@ int main(int argc, char *argv[]) {
   for (auto const &dir_entry : fs::recursive_directory_iterator(clone_dir)) {
     if (dir_entry.is_regular_file() && ((dir_entry.path().extension() == extension_lower) || (dir_entry.path().extension() == extension_upper))) {
       // file_names.push_back( entry.path().string() ) ;
-      atsheaders.emplace_back(std::make_shared<atsheader>(dir_entry.path()));
+
+      if (no_echannel && (dir_entry.path().filename().string().find("_TE") == std::string::npos)) {
+        std::cout << "found E channel, skip" << std::endl;
+        atsheaders.emplace_back(std::make_shared<atsheader>(dir_entry.path()));
+      }
+      if (!no_echannel) {
+        atsheaders.emplace_back(std::make_shared<atsheader>(dir_entry.path()));
+      }
     }
   }
 

@@ -41,7 +41,7 @@ int main() {
       wl *= 4;
       rl = wl;
       ++i;
-      chan->set_fftw_plan(fft_freqs.back());
+      chan->init_fftw(fft_freqs.back());
       // here each channel is treated as single result - by default it would contain 5 channels
       raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
     }
@@ -51,7 +51,7 @@ int main() {
 
     channels.emplace_back(std::make_shared<channel>(channel_type, 1024));
     fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), wl, rl));
-    channels.back()->set_fftw_plan(fft_freqs.back());
+    channels.back()->init_fftw(fft_freqs.back());
     // here each channel is treated as single result - by default it would contain 5 channels
     raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
   } catch (const std::runtime_error &error) {
@@ -76,7 +76,7 @@ int main() {
     auto fft_fres = *fft_res_iter++;
     mstr::sample_rate_to_str(chan->get_sample_rate(), f_or_s, unit);
     std::cout << "use sample rates of " << f_or_s << " " << unit << " wl:" << fft_fres->get_wl() << "  read length:" << fft_fres->get_rl() << std::endl;
-    chan->set_fftw_plan(fft_fres);
+    chan->init_fftw(fft_fres);
   }
 
   std::random_device rd{};
@@ -145,7 +145,7 @@ int main() {
 
   i = 0;
   for (auto &chan : channels) {
-    raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->bw, chan->is_remote, chan->is_emap);
+    raws[i++]->set_raw_spectra(chan);
   }
 
   for (auto &raw : raws) {

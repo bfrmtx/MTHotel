@@ -4,6 +4,7 @@
 #include <bitset>
 #include <cstddef>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -16,15 +17,19 @@
 #include <string_view>
 #include <vector>
 
+#include "atmm.h"
 #include "base_constants.h"
 #include "cal_base.h"
+#include "freqs.h"
 #include "json.h"
 #include "strings_etc.h"
-#include <atmm.h>
-#include <filesystem>
-#include <freqs.h>
 
 #include <fftw3.h>
+
+/**
+ * @file atss.h
+ * @brief provides the atss format and the JSON description of the atss format and the timer class
+ */
 
 using jsn = nlohmann::ordered_json;
 
@@ -291,10 +296,16 @@ public:
   size_t spos = 0;          //!< sample pos
 };
 
+//
+//
+//
 // *****************************************************  C H A N N E L *********************************************************
+//
+//
+//
 
 /*!
- * \brief The atss_file class is the FILENAME part of the atss format consisting of binary .atss, JSON .json
+ * \brief The channel class is the FILENAME part of the atss format consisting of binary .atss, JSON .json
  *  the tags of the filename are NOT repeated in the JSON
  */
 class channel {
@@ -311,6 +322,8 @@ public:
       this->infile.close();
     if (this->outfile.is_open())
       this->outfile.close();
+    if (this->fft_freqs != nullptr)
+      this->fft_freqs.reset();
   }
 
   /*!
@@ -364,6 +377,10 @@ public:
 
     std::filesystem::path json_file(in_json_file);
     if (!json_file.has_extension())
+      json_file.replace_extension(".json");
+
+    // if extension is .atss, replace it with .json
+    if (json_file.extension() == ".atss")
       json_file.replace_extension(".json");
 
     if (this->parse_json_filename(json_file)) {
@@ -630,7 +647,7 @@ public:
   double latitude = 0.0;    //!< decimal degree such as 52.2443, ISO 6709, +/- 90
   double longitude = 0.0;   //!< decimal degree such as 10.5594, ISO 6709, +/- 180
   double elevation = 0.0;   //!< elevation in meter
-  double angle = 0.0;       //!< orientaion from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
+  double angle = 0.0;       //!< orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
   double dip = 0.0;         //!< angle positive down 90 = down, 0 = horizontal - in case it had been measured
   double resistance = 0.0;  //!< e.g. contact resistance of the electrodes
   std::string filter;       //!< comma separated string; system board name and filter like ADB-LF_LF-RF-1_LF-LP-4Hz which is the LF board with Radio Filter 1 and 4Hz low pass switched on
@@ -665,8 +682,20 @@ public:
   std::ifstream infile;  //!< read binary data
   std::ofstream outfile; //!< write binary data
   fftw_plan plan;
+  std::shared_ptr<fftw_freqs> fft_freqs; //!< frequencies for FFT SHARE this pointer with other channels from the SAME RUN!
   bool is_remote = false;
   bool is_emap = false;
+
+  void init_fftw(std::shared_ptr<fftw_freqs> in_fft_freqs, const size_t &wl = 0, const size_t &rl = 0) {
+    if (in_fft_freqs != nullptr)
+      this->fft_freqs = in_fft_freqs;
+    else {
+      if ((wl == 0) || (rl == 0))
+        throw std::runtime_error(std::string(__func__) + " :: you must provide a valid window length and a valid resolution length");
+      this->fft_freqs = std::make_shared<fftw_freqs>(this->pt.sample_rate, wl, rl);
+    }
+    this->set_fftw_plan();
+  }
 
   /*!
    * \brief set_lat_lon_elev according to ISO 6709, +/- 90, +/- 180, elevation in meter
@@ -732,30 +761,38 @@ public:
     return filepath;
   }
 
-  bool write_data(const std::vector<double> &data, std::ofstream &file) const {
+  bool write_data(const std::vector<double> &data) {
     // write a slice in case
-    if (file.is_open()) {
+    if (this->outfile.is_open()) {
       for (auto dat : data) {
-        file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
+        this->outfile.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
       }
       return true;
     } else {
       std::filesystem::path filepath = this->filepath_wo_ext;
       filepath.replace_extension(".atss");
-      file.open(filepath, std::ios::out | std::ios::trunc | std::ios::binary);
+      this->outfile.open(filepath, std::ios::out | std::ios::trunc | std::ios::binary);
 
-      if (!file.is_open()) {
-        file.close();
+      if (!this->outfile.is_open()) {
+        this->outfile.close();
         std::ostringstream err_str(__func__, std::ios_base::ate);
         err_str << "::file not open " << filepath;
         throw std::runtime_error(err_str.str());
       }
       for (auto dat : data) {
-        file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
+        this->outfile.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
       }
     }
 
     return true;
+  }
+
+  bool outfile_is_good() const {
+    return this->outfile.good();
+  }
+  void close_outfile() {
+    if (this->outfile.is_open())
+      this->outfile.close();
   }
 
   bool write_all_data(const std::vector<double> &data) const {
@@ -841,10 +878,24 @@ public:
     return true;
   }
 
+  void close_atss_read() {
+    if (this->infile.is_open())
+      this->infile.close();
+  }
+
   int64_t skip_samples(const int64_t &samples) {
+    if (!samples)
+      return this->infile.tellg();
+
     if (!this->infile.is_open()) {
       std::ostringstream err_str(__func__, std::ios_base::ate);
       err_str << "::file is NOT open! " << this->get_atss_filepath();
+      throw std::runtime_error(err_str.str());
+    }
+
+    if (samples > this->samples()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << "::samples to skip are more than total samples " << this->get_atss_filepath();
       throw std::runtime_error(err_str.str());
     }
 
@@ -896,6 +947,28 @@ public:
     return -1;
   }
 
+  std::vector<double> single_read(const size_t &read_samples, const size_t &skip_samples_read, const bool bdetrend) {
+    if (!read_samples) {
+      throw std::runtime_error(std::string(__func__) + " :: read_samples is zero");
+    }
+    this->open_atss_read();
+    if (this->samples() < (read_samples + skip_samples_read)) {
+      throw std::runtime_error(std::string(__func__) + " :: read_samples + skip_samples_read is larger than total samples");
+    }
+    if (skip_samples_read)
+      this->skip_samples(skip_samples_read);
+    this->ts_slice.resize(read_samples);
+    int64_t control = 0;
+    control = this->read_bin(this->ts_slice, this->infile, false);
+    this->infile.close();
+    if (control < 0) {
+      throw std::runtime_error(std::string(__func__) + " :: read error");
+    }
+    if (bdetrend)
+      detrend<double>(this->ts_slice.begin(), this->ts_slice.end());
+    return this->ts_slice;
+  }
+
   /*!
    * \brief read_all_fftw that includes the COMPLETE spectra inclusive DC part and Nyquist; executes this->plan and stores INSIDE channel
    * \param read_last_chunk false for MT processing - last chunk has != read length (fft) size
@@ -918,6 +991,8 @@ public:
       this->qspc.push(this->spc_slice);
 
     } while (reads > 0);
+    if (this->infile.is_open())
+      this->infile.close();
   }
 
   void read_all_fftw_gussian_noise(const std::vector<double> double_noise, const bool bdetrend_hanning = true) {
@@ -980,12 +1055,12 @@ public:
    * \param fft_freqs where the fft settings are stored;
    * \param bcal
    */
-  void prepare_to_raw_spc(const std::shared_ptr<fftw_freqs> &fft_freqs, const bool bcal = true, const bool bwincal = true) {
+  void prepare_raw_spc(const bool bcal = true, const bool bwincal = true) {
 
     this->spc.reserve(this->qspc.size());
     size_t j = 0;
     while (!this->qspc.empty()) {
-      this->spc.emplace_back(fft_freqs->trim_fftw_result(this->qspc.front()));
+      this->spc.emplace_back(this->fft_freqs->trim_fftw_result(this->qspc.front()));
       if (bcal && !j) {
         // create cal
       }
@@ -993,28 +1068,36 @@ public:
         // cal
       }
       if (bwincal)
-        fft_freqs->scale(this->spc.back());
+        this->fft_freqs->scale(this->spc.back());
       this->qspc.pop();
       ++j;
     }
 
-    fft_freqs->set_raw_stacks(j);
+    this->fft_freqs->set_raw_stacks(j);
 
     return;
   }
+  void prepare_to_raw_spc(const std::shared_ptr<fftw_freqs> &in_fft_freqs, const bool bcal = true, const bool bwincal = true) {
 
-  void set_fftw_plan(const std::shared_ptr<fftw_freqs> &fftwf) {
-    this->ts_slice.resize(fftwf->get_rl());
-    this->spc_slice.resize(fftwf->get_fl());
-    if (fftwf->get_rl() == fftwf->get_wl()) {
-      this->plan = fftw_plan_dft_r2c_1d(fftwf->get_wl(), &this->ts_slice[0], reinterpret_cast<fftw_complex *>(&this->spc_slice[0]), FFTW_ESTIMATE);
-    }
-    if (fftwf->get_wl() > fftwf->get_rl()) {
-      this->ts_slice_padded.resize(fftwf->get_wl(), 0.0);
-      this->plan = fftw_plan_dft_r2c_1d(fftwf->get_wl(), &this->ts_slice_padded[0], reinterpret_cast<fftw_complex *>(&this->spc_slice[0]), FFTW_ESTIMATE);
+    this->spc.reserve(this->qspc.size());
+    size_t j = 0;
+    while (!this->qspc.empty()) {
+      this->spc.emplace_back(in_fft_freqs->trim_fftw_result(this->qspc.front()));
+      if (bcal && !j) {
+        // create cal
+      }
+      if (bcal) {
+        // cal
+      }
+      if (bwincal)
+        in_fft_freqs->scale(this->spc.back());
+      this->qspc.pop();
+      ++j;
     }
 
-    this->bw = fftwf->get_bw();
+    in_fft_freqs->set_raw_stacks(j);
+
+    return;
   }
 
   size_t samples(const std::filesystem::path &filepath_wo_ext = "") {
@@ -1059,7 +1142,7 @@ private:
    * \brief read_bin binary core routine
    * \param data data slice to read
    * \param file ifstream
-   * \param read_last_chunk - false in case of fft, true incase you want to read all and the last data vector is smaller than the pervious ones
+   * \param read_last_chunk - false in case of fft, true incase you want to read all and the last data vector is smaller than the previous ones
    * \return -1 in case of failure
    */
   int64_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
@@ -1067,6 +1150,7 @@ private:
     // too much checking ?
     if (file.peek() == EOF) {
       data.resize(0);
+      this->infile.close();
       return -1;
     }
 
@@ -1084,10 +1168,11 @@ private:
         data.resize(i); // keeps the elements; i was incremented BEFORE the while loop above terminated
       } else if ((i == 1) || !i) {
         data.resize(0);
+        this->infile.close();
         return -1;
       }
     }
-
+    // we read chunks, so ts_data can be 471 and ts_chunk 32
     else {
       while (!file.eof() && i < this->ts_chunk.size()) {
         file.read(static_cast<char *>(static_cast<void *>(&this->ts_chunk[i++])), 8);
@@ -1099,6 +1184,7 @@ private:
         this->ts_chunk.resize(i);  // keeps the elements; i was incremented BEFORE the while loop above terminated
       } else if ((i == 1) || !i) { // here we can take the original data
         data.resize(0);
+        this->infile.close();
         return -1;
       }
 
@@ -1108,10 +1194,10 @@ private:
       else {
         size_t j = 0;
         for (i = ts_chunk.size(); i < data.size(); ++i) {
-          data[j++] = data[i];
+          data[j++] = data[i]; // that moves the data to the beginning
         }
         for (i = 0; i < this->ts_chunk.size(); ++i) {
-          data[j++] = this->ts_chunk[i];
+          data[j++] = this->ts_chunk[i]; // and now we append the new data
         }
       }
     }
@@ -1119,8 +1205,25 @@ private:
     return file.tellg();
   }
 
+  void set_fftw_plan() {
+    this->ts_slice.resize(this->fft_freqs->get_rl());
+    this->spc_slice.resize(this->fft_freqs->get_fl());
+    if (this->fft_freqs->get_rl() == this->fft_freqs->get_wl()) {
+      this->plan = fftw_plan_dft_r2c_1d(this->fft_freqs->get_wl(), &this->ts_slice[0], reinterpret_cast<fftw_complex *>(&this->spc_slice[0]), FFTW_ESTIMATE);
+    }
+    if (this->fft_freqs->get_wl() > this->fft_freqs->get_rl()) {
+      this->ts_slice_padded.resize(this->fft_freqs->get_wl(), 0.0);
+      this->plan = fftw_plan_dft_r2c_1d(this->fft_freqs->get_wl(), &this->ts_slice_padded[0], reinterpret_cast<fftw_complex *>(&this->spc_slice[0]), FFTW_ESTIMATE);
+    }
+
+    this->bw = this->fft_freqs->get_bw();
+  }
+
 }; // end channel class
 
+/*!
+ * \brief operator == for std::shared_ptr<channel>
+ */
 bool operator==(const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) {
   if (lhs->latitude != rhs->latitude)
     return false;

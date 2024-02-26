@@ -1,6 +1,7 @@
 #ifndef CAL_ENTRY
 #define CAL_ENTRY
 
+#include <cmath>
 #include <complex>
 #include <memory>
 #include <string>
@@ -21,18 +22,18 @@ public:
     this->cap.clear();
   }
 
-/*!
- * @brief 
- * 
- * @param f double f_unit = "Hz"
- * @param a double a_unit = "V/(nT*Hz)"
- * @param p double p_unit = "deg"
- * @return actual data size
- */
+  /*!
+   * @brief
+   *
+   * @param f double f_unit = "Hz"
+   * @param a double a_unit = "V/(nT*Hz)"
+   * @param p double p_unit = "deg"
+   * @return actual data size
+   */
   size_t add_from_mtx(const double &f, const double &a, const double &p) {
 
     if (f <= 0.0 || a < 0.0) {
-        this->clear();
+      this->clear();
     }
     this->f.push_back(f);
     this->cap.push_back(std::polar(a * 1000.0 * f, (p * M_PI) / 180.0));
@@ -40,15 +41,15 @@ public:
     return true;
   }
 
-/*!
- * @brief 
- * 
- * @param f vector f_unit = "Hz";
- * @param a vector a_unit = "V/(nT*Hz)";
- * @param p vector p_unit = "deg"
- * @return true if size availabe
- */
-  size_t to_mtx(std::vector<double>& fm, std::vector<double>& am, std::vector<double>& pm) {
+  /*!
+   * @brief
+   *
+   * @param f vector f_unit = "Hz";
+   * @param a vector a_unit = "V/(nT*Hz)";
+   * @param p vector p_unit = "deg"
+   * @return true if size availabe
+   */
+  size_t to_mtx(std::vector<double> &fm, std::vector<double> &am, std::vector<double> &pm) {
     if (!this->check_fcap()) {
       return 0;
     }
@@ -57,16 +58,16 @@ public:
     pm.resize(this->f.size());
     size_t i = 0;
     for (auto const &fd : this->f) {
-            fm[i] = fd;
-            am[i] = (std::fabs(this->cap.at(i)) / 1000.0) / fd;
-            pm[i] = std::arg(this->cap.at(i)) * (180.0 / M_PI);
-            ++i;
+      fm[i] = fd;
+      am[i] = (std::abs(this->cap.at(i)) / 1000.0) / fd;
+      pm[i] = std::arg(this->cap.at(i)) * (180.0 / M_PI);
+      ++i;
     }
 
     return fm.size();
   }
 
-  void mtx_units(std::string& f_unit_m, std::string& a_unit_m, std::string& p_unit_m) const {
+  void mtx_units(std::string &f_unit_m, std::string &a_unit_m, std::string &p_unit_m) const {
     f_unit_m = "Hz";
     a_unit_m = "V/(nT*Hz)";
     p_unit_m = "deg";
@@ -85,17 +86,16 @@ public:
   std::string a_unit = "mV/nT";     //!< amplitude vector unit
   std::string p_unit = "deg";       //!< phase vector unit (deg = 0 ... 360, rad 0 .. 2 * PI)
 
-  std::vector<double> f;                 //!< frequency vector Hz
-  std::vector<double> a;                 //!< amplitude vector mV/nT
-  std::vector<double> p;                 //!< phase vector deg
-  
+  std::vector<double> f; //!< frequency vector Hz
+  std::vector<double> a; //!< amplitude vector mV/nT
+  std::vector<double> p; //!< phase vector deg
+
   std::vector<std::complex<double>> cap; //!< [mV/nT] in the complex plane
 
   std::string sensor_name;
   int serial = 0;
 
 private:
-
   bool check_fcap() const {
     if (!this->f.size())
       return false;

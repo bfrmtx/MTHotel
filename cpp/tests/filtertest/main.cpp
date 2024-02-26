@@ -3,109 +3,265 @@
 #include <string>
 #include <vector>
 
-#include "fir_filter.h"
-#include "sqlite_handler.h"
-#include <survey.h>
-using namespace std;
+#include "../../include/sqlite_handler.h"
+#include "../../include/survey.h"
+#include "../../mt/fir_filter/fir_filter.h"
+namespace fs = std::filesystem;
 
 int main(int argc, char **argv) {
 
-  std::filesystem::path sqlfile("/usr/local/mthotel/data/filter.sql3");
-  auto sql_info = std::make_unique<sqlite_handler>(sqlfile);
-  std::vector<double> coeff;
-  std::filesystem::path fileoutpath(std::filesystem::temp_directory_path() / "aa/filter");
-  auto exec_path = std::filesystem::path(argv[0]);
+  std::string filter_name;
+  std::shared_ptr<survey_d> survey;
+  std::shared_ptr<station_d> station;
+  std::vector<std::shared_ptr<run_d>> runs;
+  std::vector<std::shared_ptr<channel>> channels;
+  std::vector<std::shared_ptr<channel>> filter_channels;
+  fs::path out_dir;
 
-  std::cout << "filter calc:" << std::endl;
+  auto pool = std::make_shared<BS::thread_pool>();
 
-  std::vector<size_t> coeffs{471, 71};
-  std::vector<double> samples{1024, 64, 1.5, 1, 0.5, 0.55, 0.0625};
+  bool br = false; // prepare for runs
 
-  for (const auto &cf : coeffs) {
+  unsigned l = 1;
+  try {
 
-    for (const auto &samp : samples) {
-      size_t hlen = (cf - 1) / 2;
-      double delay_time = double(hlen) / samp; // time needed for 1/2 filter length
-      // if it is 1.1 -> we need 2 seconds
-      double shift_time = (ceil(delay_time));
+    while (argc > 1 && (l < unsigned(argc)) && *argv[l] == '-') {
+      std::string marg(argv[l]);
 
-      double fill_in_time = shift_time - delay_time;
+      if (marg.compare("-u") == 0) {
+        fs::path survey_name = std::string(argv[++l]);
+        if (!fs::is_directory(survey_name)) {
+          std::ostringstream err_str(__func__, std::ios_base::ate);
+          err_str << " -u survey_dir needs an existing directory with stations inside" << std::endl;
+          err_str << " given: " << survey_name.string() << std::endl;
+          throw std::runtime_error(err_str.str());
+        }
+        survey_name = fs::canonical(survey_name);
+        survey = std::make_shared<survey_d>(survey_name);
+        if (survey == nullptr) {
+          std::ostringstream err_str(__func__, std::ios_base::ate);
+          err_str << " first use -u survey_name in order to init the survey";
+          throw std::runtime_error(err_str.str());
+        }
+      }
+      if (marg.compare("-s") == 0) {
+        if (survey == nullptr) {
+          std::ostringstream err_str(__func__, std::ios_base::ate);
+          err_str << " first use -u surveyname in order to init the survey";
+          throw std::runtime_error(err_str.str());
+        }
+        auto station_name = std::string(argv[++l]);
+        station = survey->get_station(station_name); // that is a shared pointer from survey
+        if (station == nullptr) {
+          std::ostringstream err_str(__func__, std::ios_base::ate);
+          err_str << " secondly use -s station_name in order to init station";
+          throw std::runtime_error(err_str.str());
+        }
+      }
+      if (marg.compare("-r") == 0) {
+        br = true; // prepare for runs
+      }
 
-      ;
+      if (marg.compare("-fil") == 0) {
+        filter_name = std::string(argv[++l]);
+      }
 
-      std::cout << mstr::sample_rate_to_str_simple(samp) << " fill: " << fill_in_time << "  delay: " << delay_time << "  (test: " << fill_in_time + delay_time << ")"
-                << "  shift time: " << shift_time << std::endl;
+      if (marg.compare("-o") == 0) {
+        out_dir = (argv[++l]);
+        if (!fs::is_directory(out_dir)) {
+          // create it recursive
+          fs::create_directories(out_dir);
+        }
+        // check if it was created
+        if (!fs::is_directory(out_dir)) {
+          std::ostringstream err_str(__func__, std::ios_base::ate);
+          err_str << " -o out_dir needs an existing directory; could not create it" << std::endl;
+          throw std::runtime_error(err_str.str());
+        }
+        out_dir = fs::canonical(out_dir);
+      }
 
-      size_t samples_shift = size_t(fill_in_time * samp);
-      size_t samples_delay = size_t(delay_time * samp);
-      size_t samples_control = samples_shift + samples_delay;
-      size_t samples_at_new_start_time = size_t(shift_time * samp);
+      if ((marg.compare("-h") == 0) || marg.compare("--help") == 0) {
+        std::cout << "usage: " << argv[0] << " [options] [run numbers] [filenames]" << std::endl;
+        std::cout << "options:" << std::endl;
+        std::cout << "  -u survey_dir" << std::endl;
+        std::cout << "  -s station_name" << std::endl;
+        std::cout << "  -r run_number(s)" << std::endl;
+        std::cout << "  -fil filter_name" << std::endl;
+        std::cout << "  -h, --help" << std::endl;
+        std::cout << "-fil mtx32 -u /ats_data/Northern_Mining -s Sarıçam -r 7 8" << std::endl;
+        std::cout << "\nOR\n"
+                  << std::endl;
+        std::cout << "-fil mtx32 -o out_dir filename1 filename2 filename3 ..." << std::endl;
+        return EXIT_SUCCESS;
+      }
 
-      std::cout << mstr::sample_rate_to_str_simple(samp) << " fill: " << samples_shift << "  delay: " << samples_delay << "  (test: " << samples_control << ")"
-                << "  shift time: " << samples_at_new_start_time << std::endl;
+      if (marg.compare("-") == 0) {
+        std::cerr << "\nunrecognized option " << argv[l] << std::endl;
+        return EXIT_FAILURE;
+      }
 
-      // test if new start time is a full second
-
-      auto rem = fmod((double(samples_at_new_start_time) / samp), 1.0);
-
-      std::cout << "-->f: " << samp << " len/2: " << cf / 2 << ", time:" << delay_time << " shift:" << shift_time << "s, rem: " << rem << std::endl;
-      if (rem != 0.0)
-        std::cout << "    ERROR ********************************************" << std::endl;
-      std::cout << std::endl
-                << std::endl;
+      ++l;
     }
 
-    std::cout << std::endl;
-    std::cout << "--------------------------------------------------------------------------" << std::endl;
-    std::cout << std::endl;
-  }
-
-  string sql_query("SELECT * FROM mtx4;");
-  try {
-    coeff = sql_info->sqlite_vector_double(sql_query);
+    // all options including the last -r is here, now get the runs
+    while ((l < unsigned(argc))) {
+      std::string marg(argv[l]);
+      if ((survey != nullptr) && (station != nullptr) && br) {
+        size_t ri = stoul(marg);
+        runs.emplace_back(station->get_run(ri));
+      }
+      // else take file names as channels
+      else {
+        channels.emplace_back(std::make_shared<channel>(marg));
+      }
+      ++l;
+    }
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
-    sql_info.reset();
+    return EXIT_FAILURE;
+  } catch (const std::invalid_argument &ia) {
+    std::cerr << ia.what() << std::endl;
+    std::cerr << "invalid run number" << std::endl;
+    return EXIT_FAILURE;
+  } catch (...) {
+    std::cerr << "general error" << std::endl;
+    return EXIT_FAILURE;
+  }
+  if (!runs.size() && br) {
+    std::cerr << "no run numbers given" << std::endl;
+    return EXIT_FAILURE;
+  } else if (!channels.size() && !br) {
+    std::cerr << "no filenames for channels given" << std::endl;
+    return EXIT_FAILURE;
   }
 
-  size_t i = 1;
-  //    for (const auto v: coeff) {
-  //        std::cout << i++ << ": " << v << std::endl;
-  //    }
-  std::filesystem::path home_dir(getenv("HOME"));
-  auto survey = std::make_shared<survey_d>(home_dir.string() + "/devel/ats_data/Northern_Mining");
-  auto station = survey->get_station("Sarıçam"); // that is a shared pointer from survey
-  auto run = station->get_run(5);
-  auto channels = run->get_channels();
+  // check if out_dir is set above and not empty
+  if (out_dir.empty() && !br) {
+    std::cerr << "no output directory given" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   std::vector<std::shared_ptr<fir_filter>> filters;
-  std::vector<std::shared_ptr<channel>> channels_filtered;
 
-  for (auto &chan : channels) {
-    std::cout << chan->get_datetime() << std::endl;
-    chan->open_atss_read();
+  // *************************** start with the simple file i/o without survey ********************************
+  if (!br) {
+
+    if (channels.size()) {
+      for (auto &chan : channels) {
+        filters.emplace_back(std::make_shared<fir_filter>());
+        try {
+          auto out_chan = filters.back()->set_filter(chan, filter_name);
+          out_chan->set_dir(out_dir);
+          filter_channels.emplace_back(out_chan);
+        } catch (const std::runtime_error &error) {
+          std::cerr << error.what() << std::endl;
+          return EXIT_FAILURE;
+        }
+      }
+    }
+
+    for (const auto &chan : channels) {
+      std::cout << chan->get_datetime() << std::endl;
+      std::cout << chan->get_sample_rate() << std::endl;
+      std::cout << chan->filename() << std::endl;
+    }
+
+    size_t i = 0;
+    for (const auto &chan : filter_channels) {
+      std::cout << filters[i++]->get_info() << std::endl;
+      std::cout << chan->get_datetime() << std::endl;
+      std::cout << chan->get_sample_rate() << std::endl;
+      std::cout << chan->get_filepath_wo_ext() << std::endl;
+      chan->write_header();
+    }
+
+    try {
+      size_t thread_index = 0;
+      for (auto &filter : filters) {
+        std::cout << "emplacing thread " << thread_index++ << std::endl;
+        // filter
+        pool->push_task(&fir_filter::filter, filter);
+      }
+      pool->wait_for_tasks();
+
+    } catch (const std::runtime_error &error) {
+      std::cerr << error.what() << std::endl;
+      std::cerr << "could not execute filter" << std::endl;
+      return EXIT_FAILURE;
+    } catch (...) {
+      std::cerr << "could not execute filter" << std::endl;
+      return EXIT_FAILURE;
+    }
+    std::cout << "done" << std::endl;
+    return EXIT_SUCCESS;
   }
+  // *************************** end with the simple file i/o without survey ********************************
 
-  for (auto chan : channels) {
-    filters.emplace_back(std::make_shared<fir_filter>());
-    channels_filtered.emplace_back(filters.back()->set_filter(chan, "mtx4"));
-    // std::cout << chan->skip_samples(300) << std::endl;
-    //  watch out that the filterd pt has already the new sample freq
-    std::cout << chan->shift_to_read_time(channels_filtered.back()->pt) << std::endl;
+  // *************************** start with the survey ********************************
+
+  // get the runs
+  std::vector<std::shared_ptr<channel>> temp_channels;
+  std::vector<fs::path> new_runs;
+  if (runs.size()) {
+    for (auto &run : runs) {
+      auto chan = run->get_channels();
+      if (chan.size()) {
+        for (auto &ch : chan) {
+          filters.emplace_back(std::make_shared<fir_filter>());
+          try {
+            auto out_chan = filters.back()->set_filter(ch, filter_name);
+            out_chan->set_dir(out_dir);
+            filter_channels.emplace_back(out_chan);
+            temp_channels.emplace_back(out_chan);
+          } catch (const std::runtime_error &error) {
+            std::cerr << error.what() << std::endl;
+            return EXIT_FAILURE;
+          }
+        }
+        for (auto &tchan : temp_channels) {
+          // if new
+          auto new_run = station->add_create_run(tchan);
+          if (!new_run.empty()) {
+            // if new_run is not in new_runs then add it
+            if (std::find(new_runs.begin(), new_runs.end(), new_run) == new_runs.end())
+              new_runs.emplace_back(new_run);
+          }
+          tchan->write_header();
+        }
+        temp_channels.clear();
+      }
+      // channels.insert(channels.end(), chan.begin(), chan.end());
+    }
   }
-
-  // create directories recursive
-  std::filesystem::create_directories(fileoutpath);
-  for (auto &chan : channels_filtered) {
-    std::cout << chan->get_datetime() << std::endl;
-    chan->set_dir(fileoutpath);
-    chan->write_header();
+  std::vector<std::pair<std::string, size_t>> new_runs_with_index;
+  // for (const auto &r : new_runs) {
+  //   std::cout << "new run: " << r << std::endl;
+  //   new_runs_with_index.emplace_back(survey->get_station_run(r));
+  // }
+  for (const auto &r : new_runs_with_index) {
+    std::cout << "new run: " << r.first << " " << r.second << std::endl;
   }
 
   try {
+    size_t thread_index = 0;
+    for (auto &filter : filters) {
+      std::cout << "emplacing thread " << thread_index++ << std::endl;
+      // filter
+      pool->push_task(&fir_filter::filter, filter);
+    }
+    pool->wait_for_tasks();
 
+  } catch (const std::runtime_error &error) {
+    std::cerr << error.what() << std::endl;
+    std::cerr << "could not execute filter" << std::endl;
+    return EXIT_FAILURE;
   } catch (...) {
+    std::cerr << "could not execute filter" << std::endl;
+    return EXIT_FAILURE;
   }
+  std::cout << "done" << std::endl;
+  return EXIT_SUCCESS;
 
   return (0);
 }

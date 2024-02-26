@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
       // create the fftw interface with individual window length and read length
       for (auto &chan : channels) {
         auto fft_fres = *fft_res_iter++;
-        chan->set_fftw_plan(fft_fres);
+        chan->init_fftw(fft_fres);
 
         // here each channel is treated as single result - by default it would contain 5 channels
         raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_fres));
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
     if (!files)
       gplt_ts->set_qt_terminal(basename, ++file_count);
     else
-      gplt_ts->set_svg_terminal(outpath, basename, 1, ++file_count);
+      gplt_ts->set_svg_terminal(outpath, basename, "", 1, ++file_count);
 
     if (loop)
       gplt_ts->cmd << "set title 'TS Data \\@ 50 + 50.5 Hz + small noise'" << std::endl;
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
 
     i = 0;
     for (auto &chan : channels) {
-      raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->bw, chan->is_remote, chan->is_emap);
+      raws[i++]->set_raw_spectra(chan);
     }
 
     for (auto &raw : raws) {
@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
     if (!files)
       gplt->set_qt_terminal(basename, ++file_count);
     else
-      gplt->set_svg_terminal(outpath, basename, 1, ++file_count);
+      gplt->set_svg_terminal(outpath, basename, "", 1, ++file_count);
 
     if (loop)
       gplt->cmd << "set title 'FFT \\@ 50 + 50.5 Hz'" << std::endl;

@@ -2,6 +2,7 @@
 #define CAL_BASE_H
 
 #include <climits>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -15,12 +16,14 @@
 // #define _USE_MATH_DEFINES // for C++ and MSVC
 //
 #include "../xml/tinyxmlwriter/tinyxmlwriter.h"
+#include "cal_synthetic.h"
 #include "json.h"
 #include "mt_base.h"
 #include "strings_etc.h"
-#include <cmath>
+#include "vector_math.h"
 
-struct calibration {
+class calibration {
+public:
   std::string sensor;
   uint64_t serial = 0;
   ChopperStatus chopper = ChopperStatus::off;
@@ -38,11 +41,156 @@ struct calibration {
   calibration() {
     this->clear();
   }
-
-  calibration(const std::string &sensor, const uint64_t &serial, const CalibrationType ct) :
-      sensor(sensor), serial(serial) {
+  calibration(const std::string &sensor, const uint64_t &serial, const ChopperStatus chopper = ChopperStatus::off, const CalibrationType ct = CalibrationType::mtx) : sensor(sensor), serial(serial) {
 
     this->set_format(ct, false);
+    this->chopper = chopper;
+  }
+
+  std::vector<double> get_f() const {
+    return this->f;
+  }
+
+  std::vector<double> get_a() const {
+    return this->a;
+  }
+
+  std::vector<double> get_p() const {
+    return this->p;
+  }
+
+  std::vector<double> get_f(std::pair<double, double> &range) const {
+    if ((range.first == range.second) && (range.first == 0)) // this is maybe an uninitialized range -> return all
+      return this->f;
+    if (range.first > range.second) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: range.first > range.second ->";
+      throw std::runtime_error(err_str.str());
+    }
+
+    std::vector<double> ret;
+    ret.reserve(this->f.size());
+    for (auto const &v : this->f) {
+      if ((v >= range.first) && (v <= range.second))
+        ret.push_back(v);
+    }
+    return ret;
+  }
+
+  std::vector<double> get_a(std::pair<double, double> &range) const {
+    if ((range.first == range.second) && (range.first == 0)) // this is maybe an uninitialized range -> return all
+      return this->a;
+    if (range.first > range.second) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: range.first > range.second ->";
+      throw std::runtime_error(err_str.str());
+    }
+
+    std::vector<double> ret;
+    ret.reserve(this->a.size());
+    for (auto const &v : this->a) {
+      if ((v >= range.first) && (v <= range.second))
+        ret.push_back(v);
+    }
+    return ret;
+  }
+
+  std::vector<double> get_p(std::pair<double, double> &range) const {
+    if ((range.first == range.second) && (range.first == 0)) // this is maybe an uninitialized range -> return all
+      return this->p;
+    if (range.first > range.second) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: range.first > range.second ->";
+      throw std::runtime_error(err_str.str());
+    }
+
+    std::vector<double> ret;
+    ret.reserve(this->p.size());
+    for (auto const &v : this->p) {
+      if ((v >= range.first) && (v <= range.second))
+        ret.push_back(v);
+    }
+    return ret;
+  }
+
+  /*!
+   * \brief squeeze .. remove all entries which are not in the range
+   * \param f_range min max frequency
+   * \return size of the altered calibration
+   */
+  size_t squeeze(std::pair<double, double> &f_range) {
+    if ((f_range.first == f_range.second) && (f_range.first == 0)) // this is maybe an uninitialized range -> return all
+      return this->f.size();
+    if (f_range.first > f_range.second) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: range.first > range.second ->";
+      throw std::runtime_error(err_str.str());
+    }
+
+    // swap the internal f,a,p vectors
+    std::vector<double> tmpf;
+    std::vector<double> tmpa;
+    std::vector<double> tmpp;
+    std::swap(tmpf, this->f);
+    std::swap(tmpa, this->a);
+    std::swap(tmpp, this->p);
+
+    this->f.reserve(tmpf.size());
+    this->a.reserve(tmpa.size());
+    this->p.reserve(tmpp.size());
+
+    for (size_t i = 0; i < tmpf.size(); ++i) {
+      if ((tmpf[i] >= f_range.first) && (tmpf[i] <= f_range.second)) {
+        this->f.emplace_back(tmpf[i]);
+        this->a.emplace_back(tmpa[i]);
+        this->p.emplace_back(tmpp[i]);
+      }
+    }
+
+    this->f.shrink_to_fit();
+    this->a.shrink_to_fit();
+    this->p.shrink_to_fit();
+
+    return f.size();
+  }
+
+  // find value range inside frequency range and cout to console
+
+  void find_fRange_valueRange(const std::pair<double, double> &f_range, const std::pair<double, double> &v_range, bool use_phase = true) const {
+    if ((f_range.first == f_range.second) && (f_range.first == 0)) // this is maybe an uninitialized range -> return all
+      return;
+    if (f_range.first > f_range.second) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: range.first > range.second ->";
+      throw std::runtime_error(err_str.str());
+    }
+
+    if ((v_range.first == v_range.second) && (v_range.first == 0)) // this is maybe an uninitialized range -> return all
+      return;
+    if (v_range.first > v_range.second) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: range.first > range.second ->";
+      throw std::runtime_error(err_str.str());
+    }
+
+    size_t cnt = 0;
+    for (size_t i = 0; i < this->f.size(); ++i) {
+      if ((this->f[i] >= f_range.first) && (this->f[i] <= f_range.second)) {
+        if (use_phase) {
+          if ((this->p[i] >= v_range.first) && (this->p[i] <= v_range.second)) {
+            std::cout << "f: " << this->f[i] << " a: " << this->a[i] << " p: " << this->p[i] << std::endl;
+            ++cnt;
+          }
+        } else {
+          if ((this->a[i] >= v_range.first) && (this->a[i] <= v_range.second)) {
+            std::cout << "f: " << this->f[i] << " a: " << this->a[i] << " p: " << this->p[i] << std::endl;
+            ++cnt;
+          }
+        }
+      }
+    }
+    if (cnt)
+      std::cout << this->sensor << " " << this->serial2string() << " " << this->chopper2string() << " found " << cnt << " entries" << std::endl;
   }
 
   std::string gen_json_filename_from_blank(const ChopperStatus &chopper) {
@@ -55,6 +203,21 @@ struct calibration {
     else
       fname += ".json";
 
+    return fname;
+  }
+
+  std::string basename() const {
+    if (this->sensor.empty())
+      return std::string();
+
+    std::string fname(this->sensor);
+    fname += "-" + mstr::zero_fill_field(this->serial, 4);
+    if (this->chopper == ChopperStatus::on)
+      fname += "_chopper_on";
+    else if (this->chopper == ChopperStatus::off)
+      fname += "_chopper_off";
+    else
+      fname += "_ukn";
     return fname;
   }
 
@@ -75,6 +238,9 @@ struct calibration {
     }
   }
 
+  /*!
+   * @brief clear all values
+   */
   void clear() {
     this->sensor.clear();
     this->serial = 0;
@@ -180,9 +346,9 @@ struct calibration {
     return std::string("off");
   }
 
-  std::string serial2string() const {
-
-    return std::to_string(this->serial);
+  std::string serial2string(const int digits = 4) const {
+    return mstr::zero_fill_field(this->serial, 4);
+    // return std::to_string(this->serial);
   }
 
   CalibrationType cal_type() const {
@@ -380,6 +546,22 @@ struct calibration {
       std::ostringstream err_str(__func__, std::ios_base::ate);
       err_str << ":: calibration vecors f,a, are inconsistent ->" << std::filesystem::absolute(filepath);
       throw std::runtime_error(err_str.str());
+    }
+    bool go_mtx_f = false;
+    bool go_mtx_p = false;
+    if (this->units_frequency == "Hz")
+      go_mtx_f = true;
+    if (this->units_phase == "degrees")
+      go_mtx_p = true;
+
+    if ((this->units_amplitude == "V/(nT*Hz)") && go_mtx_f && go_mtx_p) {
+
+      this->ct = CalibrationType::mtx_old;
+    }
+
+    if ((this->units_amplitude == "mV/nT") && go_mtx_f && go_mtx_p) {
+
+      this->ct = CalibrationType::mtx;
     }
 
     return this->f.size();
@@ -582,7 +764,212 @@ struct calibration {
     return ss.str();
   }
 
-}; // end calibration
+  /*!
+   * @brief interpolate the calibration data to a new frequency vector - which is the same as the FFT; do this FIRST!
+   * @param new_f e.g. the frequency vector of the FFT
+   * @return size of the new frequency vector
+   */
+  size_t interpolate(const std::vector<double> &new_f) {
+
+    if (!new_f.size()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: new_f.size() == 0 ->";
+      throw std::runtime_error(err_str.str());
+    }
+
+    if (!this->f.size()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: this->f.size() == 0 ->";
+      throw std::runtime_error(err_str.str());
+    }
+
+    // use the range of this->f and create a new vector from new_f
+    std::vector<double> new_xf;
+    new_xf.reserve(new_f.size());
+    for (auto const &v : new_f) {
+      if ((v >= this->f.front()) && (v <= this->f.back()))
+        new_xf.push_back(v);
+    }
+
+    // to small to interpolate; delete my data; hence that cal is attached to the time series individually
+    // we don't care about other calibrations or runs
+    if (new_xf.size() < min_cal_size) {
+      this->f.clear();
+      this->a.clear();
+      this->p.clear();
+      return 0;
+    }
+
+    std::vector<double> new_a;
+    std::vector<double> new_p;
+    bvec::akima_vector_double(this->f, this->a, new_xf, new_a);
+    bvec::akima_vector_double(this->f, this->p, new_xf, new_p);
+    if (new_a.size() != new_xf.size()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: interpolation amplitude failed ->";
+      throw std::runtime_error(err_str.str());
+    }
+    if (new_p.size() != new_xf.size()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: interpolation phase failed ->";
+      throw std::runtime_error(err_str.str());
+    }
+
+    this->f = new_xf;
+    this->a = new_a;
+    this->p = new_p;
+
+    return this->f.size();
+  }
+
+  /*!
+   * @brief generate a calibration for the sensor; always use the mtx format by default; decide to convert at the end!
+   * @param f_in new frequency vector OR the existing one
+   * the result is stored in f_theo, a_theo, p_theo and is ON THE FREQUENCY GRID OF f_in which is same as FFT!
+   *
+   */
+  void gen_cal_sensor(const std::vector<double> &f_in) {
+
+    if (!f_in.size()) {
+      this->f_theo = this->f;
+    } else {
+      this->f_theo = f_in;
+    }
+    if (this->sensor.empty()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: sensor is empty";
+      throw std::runtime_error(err_str.str());
+    }
+    if ((this->sensor == "MFS-06") || (this->sensor == "MFS-06e")) {
+      auto trf = gen_trf_mfs06e(this->f_theo, this->chopper);
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+    } else if ((this->sensor == "MFS-07")) {
+      auto trf = gen_trf_mfs07(this->f_theo, this->chopper);
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+    } else if ((this->sensor == "MFS-07e")) {
+      auto trf = gen_trf_mfs07e(this->f_theo, this->chopper);
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+    } else if ((this->sensor == "MFS-12e")) {
+      auto trf = gen_trf_mfs12e(this->f_theo, this->chopper);
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+    } else if ((this->sensor == "FGS-02")) {
+      auto trf = gen_trf_fgs02(this->f_theo);
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+    } else if ((this->sensor == "FGS-03e")) {
+      auto trf = gen_trf_fgs03e(this->f_theo);
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+    } else if ((this->sensor == "FGS-05e")) {
+      auto trf = gen_trf_fgs05e(this->f_theo);
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+    } else if ((this->sensor == "SHFT-02e") || (this->sensor == "SHFT-02")) {
+      auto trf = gen_trf_shft02e(this->f_theo);
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+    } else if ((this->sensor == "SHFT-03e")) {
+      auto trf = gen_trf_mfs07e(this->f_theo, this->chopper);
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: SHFT-03e not implemented ->" << this->sensor;
+      throw std::runtime_error(err_str.str());
+    } else {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: unknown sensor ->" << this->sensor;
+      throw std::runtime_error(err_str.str());
+    }
+  }
+
+  size_t get_theo_cal(std::vector<double> &f, std::vector<double> &a, std::vector<double> &p) const {
+    if (!this->f_theo.size()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: f_theo.size() is 0, use gen_cal_sensor() first! ->" << this->sensor;
+      throw std::runtime_error(err_str.str());
+    }
+    f = this->f_theo;
+    a = this->a_theo;
+    p = this->p_theo;
+    return f.size();
+  }
+
+  /*!
+   * @brief BOTH f_theo and f must be sorted and BOTH must be on the same frequency grid (FFT); INTERPOLATE the measured FIRST!
+   * @return size of the joined vector
+   */
+  size_t join_lower_theo_and_measured_interpolated() {
+    if (!this->f_theo.size()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: f_theo.size() is 0";
+      throw std::runtime_error(err_str.str());
+    }
+    if (!this->f.size()) {
+      // take the theoretical frequency and use it as measured frequency
+      this->f = this->f_theo;
+      this->a = this->a_theo;
+      this->p = this->p_theo;
+      return this->f.size();
+    }
+    if (this->f.size() < min_cal_size) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: f.size() is < min_cal_size (mt_base.h) (6)";
+      throw std::runtime_error(err_str.str());
+    }
+
+    std::vector<double> new_f;
+    std::vector<double> new_a;
+    std::vector<double> new_p;
+
+    // iterate over the theoretical frequency and find the first measured frequency
+    // theoretical and "measured - interpolated" are on the same frequency grid
+    // so first we iterate over the theoretical frequency and find the first measured - interpolated frequency
+    size_t i, last_f = SIZE_MAX;
+    for (i = 0; i < this->f_theo.size(); ++i) {
+      if (this->f_theo[i] < this->f.front()) {
+        new_f.push_back(this->f_theo[i]);
+        new_a.push_back(this->a_theo[i]);
+        new_p.push_back(this->p_theo[i]);
+        last_f = i;
+      }
+    }
+    // for two iterations we sum the measured - interpolated frequency and divide by 2.0
+    size_t j = 0;
+    // as long we are completely in the measured, we can not join the theoretical and measured - interpolated; so skip
+    if (last_f < SIZE_MAX) {
+      ++last_f; // next theoretical frequency
+      if (last_f >= this->f_theo.size() + overlapping_cal) {
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << ":: last_f >= this->f_theo.size() + overlapping_cal - theoretical frequency is too short";
+        throw std::runtime_error(err_str.str());
+      }
+      for (size_t k = 0; k < overlapping_cal; ++k) {
+        new_f.push_back(this->f[j]);
+        new_a.push_back((this->a_theo[last_f] + this->a[j]) / 2.0);
+        new_p.push_back((this->p_theo[last_f++] + this->p[j++]) / 2.0);
+      }
+    }
+    // continue with the measured - interpolated frequency
+    for (; j < this->f.size(); ++j) {
+      new_f.push_back(this->f[j]);
+      new_a.push_back(this->a[j]);
+      new_p.push_back(this->p[j]);
+    }
+    // swap the internal f,a,p vectors with new_f,new_a,new_p
+    std::swap(new_f, this->f);
+    std::swap(new_a, this->a);
+    std::swap(new_p, this->p);
+
+    return this->f.size();
+  }
+
+private:
+  // vectors for the theoretical calibration
+  std::vector<double> f_theo;
+  std::vector<double> a_theo;
+  std::vector<double> p_theo;
+
+  // vectors for the calibration file as backup
+  std::vector<double> f_cal;
+  std::vector<double> a_cal;
+  std::vector<double> p_cal;
+
+}; // end calibration    ************************************************************************************************
 
 bool operator==(const std::shared_ptr<calibration> &lhs, const std::shared_ptr<calibration> &rhs) {
 

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iterator>
 #include <locale>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -513,7 +514,7 @@ std::string iso8601_time_t(const time_t &ti, const int iso_0_date_1_time_2 = 0, 
   time += zero_fill_field(tt.tm_min, 2) + ":";
 
   time += zero_fill_field(tt.tm_sec, 2);
-  if (std::fabs(fracs) > zero_frac) {
+  if (std::abs(fracs) > zero_frac) {
     sfracs = std::to_string(fracs);
     sfracs.erase(0, 1);
     removeTrailingCharacters(sfracs, '0');
@@ -608,9 +609,8 @@ std::string run2string(const auto &run) {
  * \return
  */
 size_t string2run(const std::string &srun) {
-  if (srun.at(3) != '_')
-    return SIZE_MAX;
-  std::string ssrun = srun.substr(4);
+  // split the string at the last '_' and take the rest
+  std::string ssrun = srun.substr(srun.find_last_of('_') + 1);
   if (ssrun.empty() || (ssrun.size() > 6))
     return SIZE_MAX;
   return size_t(std::stoul(ssrun));
@@ -619,7 +619,7 @@ size_t string2run(const std::string &srun) {
 /*!
  * \brief field_width_right_adjusted_freqs_periods - this is for frequencies wich can be converted to INT!!!!
  * \param fs
- * \return field witdth
+ * \return field width
  */
 std::vector<std::stringstream> field_width_right_adjusted_freqs_periods(const std::vector<double> &fs) {
   std::vector<std::stringstream> sss(fs.size());

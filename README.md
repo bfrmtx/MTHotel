@@ -154,3 +154,7 @@ then build the code
 * `win_build_release_prj_bfr.bat`
 
 
+# MacOS FFTW3
+
+Make your own build; the find_package is buggy;
+I have included /usr/local .... for self-made FFTW3

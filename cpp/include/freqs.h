@@ -3,6 +3,7 @@
 
 #include <cfloat>
 #include <climits>
+#include <cmath>
 #include <complex>
 #include <cstddef>
 #include <cstdint>
@@ -174,6 +175,7 @@ std::vector<double> gen_equidistant_logvector(const double &start, const double 
 
 /*!
  * \brief The fftw_freqs class stores the FFT parameters for FFTW; the fftw plan is INSIDE the channel as well as the result of the FFTW
+ * the class DOES NOT contain a vector of frequencies - this is done by the channel
  */
 class fftw_freqs {
 
@@ -193,6 +195,15 @@ public:
     this->wincal = sqrt(1. / (sample_rate * frl)); // zero padding does not count, take the read length
   }
 
+  fftw_freqs(const std::shared_ptr<fftw_freqs> &other) {
+    // call constructor from above with values from other
+    *this = fftw_freqs(other->sample_rate, other->wl, other->rl);
+  }
+
+  /*!
+   * @brief get the bandwidth of the fft - that is half the sample rate; devide by rl to get the frequency resolution of fft
+   * @return
+   */
   double get_bw() const {
     return this->sample_rate / 2.;
   }
@@ -238,13 +249,17 @@ public:
   }
 
   /*!
-   * \brief get_delta_f frequency resolution
+   * \brief get_delta_f frequency resolution - spacing between samples in the frequency domain
    * \return
    */
   double get_delta_f() const {
     return this->sample_rate / (double(this->wl));
   }
 
+  /*!
+   * @brief get the range of the USED / SET frequencies; f can be calculated by index * (sample_rate / wl)
+   * @return
+   */
   std::pair<double, double> get_frange() const {
     return std::make_pair<double, double>((double(this->idx_range.first) * (this->sample_rate / double(this->wl))),
                                           (double(this->idx_range.second - 1) * (this->sample_rate / double(this->wl))));
@@ -503,9 +518,9 @@ public:
   bool almost_equal(double x, double y, int ulp = 2) const {
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::fabs(x - y) <= std::numeric_limits<double>::epsilon() * std::fabs(x + y) * ulp
+    return std::abs(x - y) <= std::numeric_limits<double>::epsilon() * std::abs(x + y) * ulp
            // unless the result is subnormal
-           || std::fabs(x - y) < std::numeric_limits<double>::min();
+           || std::abs(x - y) < std::numeric_limits<double>::min();
   }
 
   template <class T>
@@ -530,6 +545,12 @@ public:
     std::cout << std::endl;
   }
 
+  /*!
+   * @brief
+   * @param fin sorted vector of frequencies from low to high ( == standard sort order)
+   * @param prz_radius
+   * @return
+   */
   size_t set_target_freqs(const std::vector<double> &fin, const double &prz_radius) {
     double lf = (double(this->idx_range.first) * (this->sample_rate / double(this->wl)));
     double hf = (double(this->idx_range.second) * (this->sample_rate / double(this->wl)));
@@ -550,6 +571,14 @@ public:
     }
 
     this->prz_radius = prz_radius;
+
+    if (this->target_freqs.size() < 2) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: less than 2 frequencies found! - decide what to do when catch this message";
+      err_str << std::endl
+              << this->sample_rate << " wl:" << this->wl;
+      throw std::runtime_error(err_str.str());
+    }
 
     return target_freqs.size();
   }
@@ -621,13 +650,14 @@ std::vector<std::stringstream> gnuplot_labels(const std::vector<std::shared_ptr<
   std::vector<size_t> rls(fftws.size());
   std::vector<double> bws(fftws.size());
   std::vector<double> dfs(fftws.size());
+  std::vector<double> df_by_rl(fftws.size());
   std::vector<double> rmss;
 
   std::vector<std::stringstream> ssv(fftws.size());
   size_t i = 0;
   if (in_rmss != nullptr) {
     if (in_rmss->size() != fftws.size()) {
-      std::cerr << "gnuplot_labels-> sizes different" << fftws.size() << " " << in_rmss->size() << std::endl;
+      std::cerr << "gnuplot_labels-> sizes different " << fftws.size() << " " << in_rmss->size() << std::endl;
       return ssv;
     }
     rmss.resize(fftws.size());
@@ -642,6 +672,7 @@ std::vector<std::stringstream> gnuplot_labels(const std::vector<std::shared_ptr<
     rls[i] = fftw->get_rl();
     bws[i] = fftw->get_bw();
     dfs[i] = fftw->get_delta_f();
+    df_by_rl[i] = fss[i] / double(rls[i]);
     ++i;
   }
 
@@ -650,14 +681,15 @@ std::vector<std::stringstream> gnuplot_labels(const std::vector<std::shared_ptr<
   auto srls = mstr::field_width_right_adjusted_ints(rls);
   auto sbws = mstr::field_width_right_adjusted_freqs_periods(bws);
   auto sdfs = mstr::field_width_right_adjusted_freqs_periods(dfs);
+  auto sdf_by_rl = mstr::field_width_right_adjusted_freqs_periods(df_by_rl);
 
   i = 0;
   for (auto &ss : ssv) {
-    ss << "fs: " << sfss.at(i).str();
-    ss << " wl: " << swls.at(i).str();
-    ss << " rl: " << srls.at(i).str();
+    ss << "fs: " << sfss.at(i).str();  // sample rate in Hz or period in s
+    ss << " wl: " << swls.at(i).str(); // window length
+    ss << " rl: " << srls.at(i).str(); // read length of time series data
     ss << " bw: " << sbws.at(i).str();
-    ss << " Δf/Δp: " << sfss.at(i).str();
+    ss << " Δf/Δp: " << sdf_by_rl.at(i).str();
     ++i;
   }
 
@@ -665,7 +697,7 @@ std::vector<std::stringstream> gnuplot_labels(const std::vector<std::shared_ptr<
     i = 0;
     auto srmss = mstr::field_width_right_adjusted_doubles(rmss);
     for (auto &ss : ssv) {
-      ss << "rms: " << srmss.at(i).str();
+      ss << " rms: " << srmss.at(i).str();
       ++i;
     }
   }
@@ -685,9 +717,9 @@ almost_equal(T x, T y, int ulp)
 {
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::fabs(x-y) <= std::numeric_limits<T>::epsilon() * std::fabs(x+y) * ulp
+    return std::abs(x-y) <= std::numeric_limits<T>::epsilon() * std::abs(x+y) * ulp
            // unless the result is subnormal
-           || std::fabs(x-y) < std::numeric_limits<T>::min();
+           || std::abs(x-y) < std::numeric_limits<T>::min();
 }
 
 

@@ -6,10 +6,11 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <ostream>
+#include <sqlite3.h>
+#include <sstream>
 #include <string>
 #include <vector>
-
-#include <sqlite3.h>
 
 /**
  * @file sqlite_handler.h

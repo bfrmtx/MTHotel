@@ -1,10 +1,12 @@
 #ifndef GNUPLOTTER_H
 #define GNUPLOTTER_H
 
+#include <algorithm>
 #include <cstdio>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <list>
 #include <ostream>
 #include <queue>
 #include <sstream>
@@ -12,6 +14,147 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+// a vector of point types "pt 1", "pt 2", "pt 3" and so on
+
+class gnuplot_next_meas_point_type {
+public:
+  gnuplot_next_meas_point_type() = default;
+  ~gnuplot_next_meas_point_type() = default;
+  std::vector<std::string> pt_types_gnuplot = {"pt 6", "pt 4", "pt 8", "pt 10", "pt 1", "pt 2"};
+  size_t pt_types_gnuplot_index = 0;
+  std::list<double> f_processed_gnuplot;
+  std::string meas_point_type(const std::string &channel_type_trigger, const std::string &channel_type, const double &f) {
+
+    if (channel_type_trigger == channel_type) {
+      // if list does not contain f, add it
+      if (std::find(f_processed_gnuplot.begin(), f_processed_gnuplot.end(), f) == f_processed_gnuplot.end()) {
+        f_processed_gnuplot.push_back(f);
+        // return the current index as long as it is in the list
+        return pt_types_gnuplot[pt_types_gnuplot_index];
+      } else {
+        // clear list
+        f_processed_gnuplot.clear();
+        // increment index as long as it is in pt_types_gnuplot
+        if (pt_types_gnuplot_index < pt_types_gnuplot.size() - 1) {
+          return pt_types_gnuplot.at(pt_types_gnuplot_index++);
+        } else {
+          // clear reset index
+          pt_types_gnuplot_index = 0;
+          // std::cout << "reset index" << std::endl;
+          return pt_types_gnuplot.at(pt_types_gnuplot_index++);
+        }
+      }
+    }
+    return "pt 6";
+  }
+};
+
+class next_color {
+public:
+  next_color(const std::string &base_color) :
+      base_color(base_color) {
+    this->set_base_color(base_color);
+  }
+
+  void set_base_color(const std::string &base_color) {
+    this->base_color = base_color;
+    this->colors.clear();
+    this->colors_index = 0;
+    if (this->base_color == "blue") {
+      this->colors.push_back("blue");
+      this->colors.push_back("skyblue");
+      this->colors.push_back("slategrey");
+    }
+    if (this->base_color == "red") {
+      this->colors.push_back("red");
+      this->colors.push_back("salmon");
+      this->colors.push_back("brown");
+    }
+  }
+
+  ~next_color() = default;
+  std::string color() {
+    if (colors_index < colors.size()) {
+      return colors.at(colors_index++);
+    } else {
+      // clear reset index
+      colors_index = 0;
+      return colors.at(colors_index++);
+    }
+    return this->base_color;
+  }
+
+  void reset() { colors_index = 0; }
+
+private:
+  std::string base_color;
+  std::vector<std::string> colors;
+  size_t colors_index = 0;
+};
+
+class gnuplot_next_meas_point_type_simple {
+public:
+  gnuplot_next_meas_point_type_simple(const std::string color) {
+    // lt rgb \"red\"
+    this->nc = std::make_unique<next_color>(color);
+    this->set_color(this->nc->color()); // get the first color
+  }
+  ~gnuplot_next_meas_point_type_simple() = default;
+  void reset() {
+    pt_types_gnuplot_index = 0;
+    this->nc->reset();
+    this->set_color(this->nc->color());
+  }
+
+  void set_color(const std::string &color) {
+    this->nc->set_base_color(color);
+    this->color = "lt rgb \"" + this->nc->color() + "\" ";
+  }
+
+  std::string meas_point_type() {
+    if (pt_types_gnuplot_index < pt_types_gnuplot.size()) {
+      // std::cout << this->color + pt_types_gnuplot.at(pt_types_gnuplot_index) << std::endl;
+      return this->color + pt_types_gnuplot.at(pt_types_gnuplot_index++);
+    } else {
+      // clear reset index
+      pt_types_gnuplot_index = 0;
+      this->inc_color();
+      // std::cout << "reset index & inc color" << std::endl;
+      // std::cout << this->color + pt_types_gnuplot.at(pt_types_gnuplot_index) << std::endl;
+      return this->color + pt_types_gnuplot.at(pt_types_gnuplot_index++);
+    }
+    return "pt 6";
+  }
+
+private:
+  std::vector<std::string> pt_types_gnuplot = {"pt 6", "pt 4", "pt 8", "pt 10", "pt 1", "pt 2"};
+  size_t pt_types_gnuplot_index = 0;
+  std::string color;
+  std::unique_ptr<next_color> nc;
+  void inc_color() {
+    this->color = "lt rgb \"" + this->nc->color() + "\" ";
+  }
+};
+
+class concat_vector_xy {
+public:
+  concat_vector_xy() = default;
+  ~concat_vector_xy() = default;
+
+  void add(const std::vector<double> &f, const std::vector<double> &v) {
+    this->data.insert(this->data.end(), v.begin(), v.end());
+    this->freqs.insert(this->freqs.end(), f.begin(), f.end());
+  }
+
+  void clear() {
+    this->data.clear();
+    this->freqs.clear();
+  }
+
+  std::vector<double> data;
+  std::vector<double> freqs;
+};
 
 // ### plot timedata equidistant as xtic label
 // reset session
@@ -151,45 +294,156 @@ public:
     this->cmd = std::ostringstream();
   }
 
-  void set_x_range(const double &xmin, const double &xmax) {
+  /*!
+   * @brief set xrange - simply return if both values are 0 - that is the default
+   * @param xmin
+   * @param xmax
+   * @return false if nothing done, else throw exception
+   */
+  bool set_x_range(const double &xmin, const double &xmax) {
+    if ((xmin == xmax) && (xmin == 0))
+      return false;
 
+    if ((xmin > xmax) || (xmin == xmax)) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << "::xmin > xmax! || xmin == xmax " << xmin << ", " << xmax;
+      throw std::runtime_error(err_str.str());
+    }
     this->cmd << "set xrange [" << xmin << ":" << xmax << "]" << std::endl;
+    return true;
   }
 
-  void set_x_range(const std::pair<double, double> &min_max) {
+  /*!
+   * @brief set xrange - simply return if both values are 0 - that is the default
+   * @param min_max
+   * @return false if nothing done, else throw exception
+   */
+  bool set_x_range(const std::pair<double, double> &min_max) {
+    if ((min_max.first == min_max.second) && (min_max.first == 0))
+      return false;
 
+    if ((min_max.first > min_max.second) || (min_max.first == min_max.second)) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << "::min_max.first > min_max.second!  || min_max.first == min_max.second" << min_max.first << ", " << min_max.second;
+      throw std::runtime_error(err_str.str());
+    }
     this->cmd << "set xrange [" << min_max.first << ":" << min_max.second << "]" << std::endl;
+    return true;
   }
 
-  void set_y_range(const std::pair<double, double> &min_max) {
+  /*!
+   * @brief set yrange - simply return if both values are 0 - that is the default
+   * @param ymin
+   * @param ymax
+   * @return false if nothing done, else throw exception
+   */
 
-    this->cmd << "yrange [" << min_max.first << ":" << min_max.second << "]" << std::endl;
+  bool set_y_range(const std::pair<double, double> &min_max) {
+    if ((min_max.first == min_max.second) && (min_max.first == 0))
+      return false;
+
+    if ((min_max.first > min_max.second) || (min_max.first == min_max.second)) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << "::min_max.first > min_max.second! || min_max.first == min_max.second! " << min_max.first << ", " << min_max.second;
+      throw std::runtime_error(err_str.str());
+    }
+
+    this->cmd << "set yrange [" << min_max.first << ":" << min_max.second << "]" << std::endl;
+    return true;
   }
 
-  void set_y_range(const double &ymin, const double &ymax) {
+  /*!
+   * @brief set yrange - simply return if both values are 0 - that is the default
+   * @param ymin
+   * @param ymax
+   * @return false if nothing done, else throw exception
+   */
+  bool set_y_range(const double &ymin, const double &ymax) {
+    if ((ymin == ymax) && (ymin == 0))
+      return false;
+
+    if ((ymin > ymax) || (ymin == ymax)) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << "::ymin > ymax! || ymin == ymax" << ymin << ", " << ymax;
+      throw std::runtime_error(err_str.str());
+    }
 
     this->cmd << "set yrange [" << ymin << ":" << ymax << "]" << std::endl;
+    return true;
   }
 
-  void set_qt_terminal(const std::string &name = "", const size_t &file_count = 0) {
-    this->cmd << "set terminal qt size 2048,1536 enhanced font 'Noto Sans, 10'";
-    if (name.size())
-      this->cmd << " title '" << name;
-    if (file_count)
-      this->cmd << "_" << file_count;
-    else
-      this->cmd << "'";
+  std::string default_color(const std::string &channel_type, const std::string formats = "") const {
+    std::string color;
+    if (channel_type == "Ex") {
+      color = "lc rgbcolor \"yellow\"";
+    }
+    if (channel_type == "Ey") {
+      color = "lc rgbcolor \"orange\"";
+    }
+    if (channel_type == "Ez") {
+      color = "lc rgbcolor \"black\"";
+    }
+    if (channel_type == "Hx") {
+      color = "lc rgbcolor \"blue\"";
+    }
+    if (channel_type == "Hy") {
+      color = "lc rgbcolor \"red\"";
+    }
+    if (channel_type == "Hz") {
+      color = "lc rgbcolor \"green\"";
+    }
+
+    return color + " " + formats;
+  }
+
+  void set_qt_terminal(const std::string &title = "", const size_t &file_count = 0) {
+    this->cmd << "set terminal qt size 1024,768 enhanced font 'Noto Sans, 10'";
+    if (title.size()) {
+      this->cmd << " title '" << title;
+      if (file_count)
+        this->cmd << "_" << file_count;
+      else
+        this->cmd << "'";
+    }
     this->cmd << std::endl;
   }
 
-  void set_svg_terminal(const std::filesystem::path &path, const std::string &name, const size_t &max_sizes, const size_t &file_count = 0) {
+  void set_svg_terminal(const std::filesystem::path &path, const std::filesystem::path &file_name, const std::string &title = "", const size_t &max_sizes = 1, const size_t &file_count = 0) {
+    std::ostringstream nam;
+    this->cmd << "set terminal svg size 1024,768 enhanced dynamic font 'Noto Sans, 14'" << std::endl;
+    if (title.size()) {
+      this->cmd << "set title '" << title;
+      if (file_count)
+        this->cmd << "_" << file_count;
+      else
+        this->cmd << "'" << std::endl;
+    }
+    if (!file_count)
+      nam << "set output '" << (path / file_name).string() << ".svg'";
+    else
+      nam << "set output '" << (path / file_name).string() << "_" << file_count << ".svg'";
+    this->cmd << nam.str() << std::endl;
+
+    this->max_sizes = max_sizes; // take 1 for svg - lines and symbol thickness are bad
+  }
+
+  void set_pdf_terminal(const std::filesystem::path &path, const std::filesystem::path &file_name, const std::string &title = "", const size_t &max_sizes = 1, const size_t &file_count = 0) {
     std::ostringstream nam;
 
-    this->cmd << "set terminal svg size 1024,768 dynamic enhanced font 'Noto Sans, 14' name '" << name << "'" << std::endl;
+    this->cmd << "set terminal pdf size 29.00cm,21.00cm enhanced font 'Noto Sans, 14'" << std::endl;
+    if (title.size()) {
+      this->cmd << "set title '" << title;
+      if (file_count)
+        this->cmd << "_" << file_count;
+      else
+        this->cmd << "'" << std::endl;
+    }
+    this->cmd << std::endl;
+
     if (!file_count)
-      nam << "set output '" << path.string() << "/" << name << ".svg'";
+      nam << "set output '" << (path / file_name).string() << ".pdf'";
     else
-      nam << "set output '" << path.string() << "/" << name << "_" << file_count << ".svg'";
+      nam << "set output '" << (path / file_name).string() << "_" << file_count << ".pdf'";
     this->cmd << nam.str() << std::endl;
 
     this->max_sizes = max_sizes; // take 1 for svg - lines and symbol thickness are bad

@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
   std::vector<std::shared_ptr<channel>> channels;
   std::vector<std::shared_ptr<channel>> channels_padded;
 
-  std::string channel_type("Ex");
+  std::string channel_type("Hx");
 
   size_t min_wl = 256;
   size_t min_rl = 256;
@@ -136,14 +136,14 @@ int main(int argc, char *argv[]) {
       if (wl < min_wl)
         wl = min_wl; // min is rl 256, wl 256
       fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), wl, wl));
-      channels.back()->set_fftw_plan(fft_freqs.back());
+      channels.back()->init_fftw(fft_freqs.back());
       raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
 
       // want that for zero padding
       if (channels.back()->get_sample_rate() < 1024) { // min is rl 256, wl 1024
         channels.emplace_back(std::make_shared<channel>(run->get_channel(channel_type)));
         fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), padded, wl));
-        channels.back()->set_fftw_plan(fft_freqs.back());
+        channels.back()->init_fftw(fft_freqs.back());
         raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
       }
 
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
       // a new instance - not a copy/link; the readbuffer is inside the class
       channels.emplace_back(std::make_shared<channel>(run->get_channel(channel_type)));
       fft_freqs.emplace_back(std::make_shared<fftw_freqs>(channels.back()->get_sample_rate(), wl, wl));
-      channels.back()->set_fftw_plan(fft_freqs.back());
+      channels.back()->init_fftw(fft_freqs.back());
       raws.emplace_back(std::make_shared<raw_spectra>(pool, fft_freqs.back()));
     } catch (const std::runtime_error &error) {
       std::cerr << error.what() << std::endl;
@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
 
   i = 0;
   for (auto &chan : channels) {
-    raws[i++]->get_raw_spectra(chan->spc, chan->channel_type, chan->bw, chan->is_remote, chan->is_emap);
+    raws[i++]->set_raw_spectra(chan);
   }
 
   std::cout << "stacking" << std::endl;
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  gplt->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
+  gplt->cmd << "set terminal qt size 1024,768 enhanced" << std::endl;
   gplt->cmd << "set title 'FFT length'" << std::endl;
   // gplt->cmd << "set key off" << std::endl;
 

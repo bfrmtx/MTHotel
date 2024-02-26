@@ -7,6 +7,7 @@
  *
  */
 
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -397,9 +398,9 @@ struct ats_header_json {
     double diplength = this->pos2length();
 
     // avoid calculation noise
-    if (std::fabs(tx) < 0.001)
+    if (std::abs(tx) < 0.001)
       tx = 0.0;
-    if (std::fabs(ty) < 0.001)
+    if (std::abs(ty) < 0.001)
       ty = 0.0;
 
     // many user do not set coordiantes for the coils
