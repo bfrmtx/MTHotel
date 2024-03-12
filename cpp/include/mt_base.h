@@ -53,7 +53,18 @@ enum class CalibrationType : int {
   mtx_old = 2, //!< mtx format: f [Hz], amplitude [V/(nT*Hz)], phase [deg] (0...360)
   nn = 3,      //!< f [Hz], amplitude [V/(nT)], phase [deg] (0...360)
   scalar = 4   //!< multiply by factor only
+};
 
+enum class plot_types : int {
+  nothing = 0,         //!< nothing
+  amplitude = 1,       //!< amplitude
+  phase = 2,           //!< phase
+  coherency = 3,       //!< coherency
+  impedance = 4,       //!< impedance
+  calibration = 5,     //!< calibration
+  master_cal = 6,      //!< master calibration
+  interpolate_cal = 7, //!< interpolated calibration
+  theo_cal = 8         //!< theoretical calibration
 };
 
 enum class ChopperStatus : int {
@@ -100,12 +111,12 @@ enum class ADU : std::uint8_t {
 
 };
 
-std::vector<std::string> survey_dirs_old() {
+static std::vector<std::string> survey_dirs_old() {
 
   return std::vector<std::string>({"cal", "config", "db", "dump", "edi", "filters", "jle", "jobs", "log", "processings", "shell", "tmp", "ts"});
 }
 
-std::vector<std::string> survey_dirs() {
+static std::vector<std::string> survey_dirs() {
   // filters would also contain calibration functions of coils and boards
   // they are multiplied all together in order to get a final filter / calibration
   // meta information with log from the system etc, mirror of stations; espicially when data was converted from old files
@@ -120,7 +131,7 @@ std::vector<std::string> survey_dirs() {
  * \param stations
  * \return
  */
-bool create_survey_dirs(const std::filesystem::path survey, const std::vector<std::string> sub_dirs, const std::vector<std::string> stations = {}) {
+static bool create_survey_dirs(const std::filesystem::path survey, const std::vector<std::string> sub_dirs, const std::vector<std::string> stations = {}) {
   if (!sub_dirs.size()) {
     std::ostringstream err_str(__func__, std::ios_base::ate);
     err_str << ":: sub dirs provided! ->";

@@ -2,6 +2,7 @@
 #define ATSS_H
 
 #include <bitset>
+#include <complex>
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
@@ -357,10 +358,10 @@ public:
       this->longitude = rhs->longitude;
       this->elevation = rhs->elevation;
       this->angle = rhs->angle;
-      this->filter = rhs->filter;
-      this->resistance = rhs->resistance;
       this->dip = rhs->dip;
+      this->resistance = rhs->resistance;
       this->units = rhs->units;
+      this->filter = rhs->filter;
       this->source = rhs->source;
       this->serial = rhs->serial;
       this->system = rhs->system;
@@ -726,8 +727,8 @@ public:
     head["longitude"] = this->longitude;
     head["elevation"] = this->elevation;
     head["angle"] = this->angle;
-    head["resistance"] = this->resistance;
     head["dip"] = this->dip;
+    head["resistance"] = this->resistance;
     head["units"] = this->units;
     head["filter"] = this->filter;
     head["source"] = this->source;
@@ -1059,13 +1060,17 @@ public:
 
     this->spc.reserve(this->qspc.size());
     size_t j = 0;
+    std::vector<std::complex<double>> caldata;
+    std::vector<double> fcal;
+
     while (!this->qspc.empty()) {
       this->spc.emplace_back(this->fft_freqs->trim_fftw_result(this->qspc.front()));
       if (bcal && !j) {
-        // create cal
+        this->cal->get_cplx_cal(fcal, caldata);
       }
       if (bcal) {
-        // cal
+        // divide this->spc.back() by caldata
+        std::transform(this->spc.back().begin(), this->spc.back().end(), caldata.begin(), this->spc.back().begin(), std::divides<std::complex<double>>());
       }
       if (bwincal)
         this->fft_freqs->scale(this->spc.back());

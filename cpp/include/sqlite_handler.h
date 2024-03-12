@@ -30,7 +30,7 @@ int sqlite3_exec(
 */
 
 // does nothing - a prototype (not used)
-//    static int sqlite_handler_create_callback(void* ptr, int argc, char** argv, char** col_name) {
+//    inline int sqlite_handler_create_callback(void* ptr, int argc, char** argv, char** col_name) {
 
 //    for (int i = 0; i < argc; i++) {
 //        printf("%s = %s\n", col_name[i], argv[i] ? argv[i] : "NULL");
@@ -49,7 +49,7 @@ int sqlite3_exec(
  * \param col_name
  * \return
  */
-static int sqlite_handler_str_callback(void *ptr, int argc, char **argv, char **col_name) {
+inline int sqlite_handler_str_callback(void *ptr, int argc, char **argv, char **col_name) {
 
   std::vector<std::vector<std::string>> *table = static_cast<std::vector<std::vector<std::string>> *>(ptr);
   std::vector<std::string> row;
@@ -63,6 +63,15 @@ static int sqlite_handler_str_callback(void *ptr, int argc, char **argv, char **
   return SQLITE_OK;
 }
 
+inline int sqlite_handler_str_callback_single_column(void *ptr, int argc, char **argv, char **col_name) {
+  std::vector<std::string> *vec = static_cast<std::vector<std::string> *>(ptr);
+  std::string str_val = (argv[0]) ? (argv[0]) : "NULL";
+  if (str_val == "NULL")
+    return SQLITE_ERROR;
+  vec->push_back(str_val);
+  return SQLITE_OK;
+}
+
 /*!
  * \brief sqlite_handler_scolumn_double_callback
  * \param ptr std::vector<double> with results only - as we use for frequencies
@@ -71,7 +80,7 @@ static int sqlite_handler_str_callback(void *ptr, int argc, char **argv, char **
  * \param col_name
  * \return
  */
-static int sqlite_handler_scolumn_double_callback(void *ptr, int argc, char **argv, char **col_name) {
+inline int sqlite_handler_scolumn_double_callback(void *ptr, int argc, char **argv, char **col_name) {
 
   std::vector<double> *vec = static_cast<std::vector<double> *>(ptr);
 
@@ -80,7 +89,10 @@ static int sqlite_handler_scolumn_double_callback(void *ptr, int argc, char **ar
     return SQLITE_ERROR;
   double num = 0;
   try {
-    num = std::stod(std::string(argv[0]));
+    // num = std::stod(std::string(argv[0])); can not debug that
+    std::stringstream ss;
+    ss << argv[0];
+    ss >> num;
 
   } catch (std::invalid_argument const &ia) {
     std::cout << "sqlite_handler_scolumn_double_callback: " << ia.what() << std::endl;
@@ -95,6 +107,74 @@ static int sqlite_handler_scolumn_double_callback(void *ptr, int argc, char **ar
 }
 
 /*!
+ * \brief sqlite_handler_scolumn_three_doubles_column_callback
+ * \param ptr std::vector<std::vector<double>> with results only - as we use for frequencies, amplitudes, phases for example
+ * \param argc
+ * \param argv
+ * \param col_name
+ * \return
+ */
+inline int sqlite_handler_scolumn_three_doubles_column_callback(void *ptr, int argc, char **argv, char **col_name) {
+
+  std::vector<std::vector<double>> *vec = static_cast<std::vector<std::vector<double>> *>(ptr);
+  std::vector<double> row;
+  row.reserve(3);
+  double num;
+  for (int i = 0; i < 3; i++) {
+    std::string snum = (argv[i]) ? (argv[i]) : "NULL";
+    if (snum == "NULL")
+      return SQLITE_ERROR;
+    num = 0;
+    try {
+      // num = std::stod(std::string(argv[i])); can not debug that
+      std::stringstream ss;
+      ss << snum;
+      ss >> num;
+      row.push_back(num);
+
+    } catch (std::invalid_argument const &ia) {
+      std::cout << "sqlite_handler_scolumn_three_doubles_column_callback: " << ia.what() << std::endl;
+      return SQLITE_ERROR;
+    } catch (...) {
+      std::cout << "sqlite_handler_scolumn_three_doubles_column_callback: out of range or other error" << std::endl;
+      return SQLITE_ERROR;
+    }
+  }
+  vec->push_back(row);
+  return SQLITE_OK;
+}
+
+inline int sqlite_handler_scolumn_two_doubles_column_callback(void *ptr, int argc, char **argv, char **col_name) {
+
+  std::vector<std::vector<double>> *vec = static_cast<std::vector<std::vector<double>> *>(ptr);
+  std::vector<double> row;
+  row.reserve(2);
+  double num;
+  for (int i = 0; i < 2; i++) {
+    std::string snum = (argv[i]) ? (argv[i]) : "NULL";
+    if (snum == "NULL")
+      return SQLITE_ERROR;
+    num = 0;
+    try {
+      // num = std::stod(std::string(argv[i])); can not debug that
+      std::stringstream ss;
+      ss << snum;
+      ss >> num;
+      row.push_back(num);
+
+    } catch (std::invalid_argument const &ia) {
+      std::cout << "sqlite_handler_scolumn_three_doubles_column_callback: " << ia.what() << std::endl;
+      return SQLITE_ERROR;
+    } catch (...) {
+      std::cout << "sqlite_handler_scolumn_three_doubles_column_callback: out of range or other error" << std::endl;
+      return SQLITE_ERROR;
+    }
+  }
+  vec->push_back(row);
+  return SQLITE_OK;
+}
+
+/*!
  * \brief sqlite_handler_scolumn_int64_t_callback
  * \param ptr std::vector<int64_t> with results only - as we use for what?
  * \param argc
@@ -102,7 +182,7 @@ static int sqlite_handler_scolumn_double_callback(void *ptr, int argc, char **ar
  * \param col_name
  * \return
  */
-static int sqlite_handler_scolumn_int64_t_callback(void *ptr, int argc, char **argv, char **col_name) {
+inline int sqlite_handler_scolumn_int64_t_callback(void *ptr, int argc, char **argv, char **col_name) {
 
   std::vector<int64_t> *vec = static_cast<std::vector<int64_t> *>(ptr);
   std::string snum = (argv[0]) ? (argv[0]) : "NULL";
@@ -132,7 +212,7 @@ static int sqlite_handler_scolumn_int64_t_callback(void *ptr, int argc, char **a
  * \param col_name
  * \return
  */
-static int sqlite_handler_scolumn_uint64_t_callback(void *ptr, int argc, char **argv, char **col_name) {
+inline int sqlite_handler_scolumn_uint64_t_callback(void *ptr, int argc, char **argv, char **col_name) {
 
   std::vector<uint64_t> *vec = static_cast<std::vector<uint64_t> *>(ptr);
   std::string snum = (argv[0]) ? (argv[0]) : "NULL";
@@ -218,6 +298,20 @@ public:
     return stable;
   }
 
+  std::vector<std::string> sqlite_vector_get_column(const std::string query, const bool close_after_read = true) {
+
+    if (this->open_mode != SQLITE_OPEN_READONLY) {
+      this->close();
+      this->open(SQLITE_OPEN_READONLY);
+    }
+    std::vector<std::string> data;
+
+    this->exec_query_error(sqlite3_exec(this->DB, query.c_str(), sqlite_handler_str_callback_single_column, &data, NULL));
+    if (close_after_read)
+      this->close();
+    return data;
+  }
+
   std::vector<double> sqlite_vector_double(const std::string query, const bool close_after_read = true) {
 
     if (this->open_mode != SQLITE_OPEN_READONLY) {
@@ -230,6 +324,54 @@ public:
     if (close_after_read)
       this->close();
     return data;
+  }
+
+  std::vector<std::vector<double>> sqlite_vector_three_doubles_column(const std::string query, const bool close_after_read = true) {
+
+    if (this->open_mode != SQLITE_OPEN_READONLY) {
+      this->close();
+      this->open(SQLITE_OPEN_READONLY);
+    }
+    std::vector<std::vector<double>> data;
+
+    this->exec_query_error(sqlite3_exec(this->DB, query.c_str(), sqlite_handler_scolumn_three_doubles_column_callback, &data, NULL));
+    if (close_after_read)
+      this->close();
+    return data;
+  }
+
+  std::vector<std::vector<double>> sqlite_vector_two_doubles_column(const std::string query, const bool close_after_read = true) {
+
+    if (this->open_mode != SQLITE_OPEN_READONLY) {
+      this->close();
+      this->open(SQLITE_OPEN_READONLY);
+    }
+    std::vector<std::vector<double>> data;
+
+    this->exec_query_error(sqlite3_exec(this->DB, query.c_str(), sqlite_handler_scolumn_two_doubles_column_callback, &data, NULL));
+    if (close_after_read)
+      this->close();
+    return data;
+  }
+
+  inline void vec_vec_to_two_vec(const std::vector<std::vector<double>> &vec, std::vector<double> &v1, std::vector<double> &v2) {
+    v1.reserve(vec.size());
+    v2.reserve(vec.size());
+    for (const auto &row : vec) {
+      v1.push_back(row[0]);
+      v2.push_back(row[1]);
+    }
+  }
+
+  inline void vec_vec_to_three_vec(const std::vector<std::vector<double>> &vec, std::vector<double> &v1, std::vector<double> &v2, std::vector<double> &v3) {
+    v1.reserve(vec.size());
+    v2.reserve(vec.size());
+    v3.reserve(vec.size());
+    for (const auto &row : vec) {
+      v1.push_back(row[0]);
+      v2.push_back(row[1]);
+      v3.push_back(row[2]);
+    }
   }
 
   std::vector<int64_t> sqlite_vector_int64_t(const std::string query, const bool close_after_read = true) {

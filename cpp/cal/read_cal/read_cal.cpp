@@ -4,6 +4,7 @@
 #include "../../include/strings_etc.h"
 #include "../../xml/tinyxml2/tinyxml2.h"
 #include "sqlite_handler.h"
+#include <sstream>
 
 read_cal::read_cal() {
   std::filesystem::path dbfile;
@@ -11,7 +12,8 @@ read_cal::read_cal() {
   dbfile = working_dir_data("info.sql3");
 
   if (!std::filesystem::exists(dbfile)) {
-    std::ostringstream err_str(__func__, std::ios_base::ate);
+    std::stringstream err_str;
+    err_str << __func__ << ":: no database loaded, e.g info.sql3 missing";
     err_str << ":: read_cal() missing sql database " << dbfile;
     throw std::runtime_error(err_str.str());
   }
@@ -24,11 +26,6 @@ read_cal::read_cal() {
   auto table = this->sqldb->sqlite_select_strs("SELECT * FROM sensor_aliases");
 
   for (const auto &row : table) {
-    //                for (auto &col : row) {
-    //                    std::cout << col << " ";
-    //                }
-    //                std::cout << std::endl;
-
     if (row.size() == 2)
       this->sensor_aliases.emplace_back(std::make_pair(row.at(0), row.at(1)));
   }
@@ -73,6 +70,12 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
       this->fmagtype = pairs.second;
       // remove substring
       xcal.erase(0, pairs.first.size());
+      // check for underscore
+      if (xcal.size() > 0) {
+        if (xcal.at(0) == '_') {
+          xcal.erase(0, 1);
+        }
+      }
       if (std::isdigit(xcal[0]))
         ok = true; // we have a number and not an e
       if (std::isalpha(xcal[0]))
@@ -94,7 +97,9 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
     chopper_tag = "chopper off";
   }
 
-  cal->set_format(CalibrationType::mtx_old);
+#include <sstream>
+
+  cal->set_format(CalibrationType::mtx_old); // that is the only format we have
   std::size_t found = 0;
   bool failed = false;
   std::ifstream file(filename);
@@ -165,12 +170,16 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
         if (values.size() == 3) {
           // data line never starts with ABC.. and also frequencies are not negative -
           // if the number is +123 ... I don't know where it is coming from - change the files
-          if (!mstr::isdigit_first_char(values[0])) {
+          if (!mstr::isdigit_first_char(values.at(0))) {
             stop = true;
           } else {
-            this->f.emplace_back(std::stod(values[0]));
-            this->a.emplace_back(std::stod(values[1]));
-            this->p.emplace_back(std::stod(values[2]));
+            std::stringstream ss;
+            ss << values.at(0) << ' ' << values.at(1) << ' ' << values.at(2);
+            double f, a, p;
+            ss >> f >> a >> p;
+            this->f.push_back(f);
+            this->a.push_back(a);
+            this->p.push_back(p);
           }
         }
       }
@@ -191,9 +200,10 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
       cal->f = this->f;
       cal->a = this->a;
       cal->p = this->p;
-    } else {
-      failed = true;
-      this->clear();
+    }
+    // convert to new format
+    if (cal->f.size() > 0) {
+      cal->tasks_todo(false, false, false, true, false);
     }
   }
 
@@ -235,7 +245,7 @@ std::string read_cal::get_sensor_name(const std::string name) const {
     }
   }
 
-  return std::string("");
+  return name;
 }
 
 std::string read_cal::get_units_mtx_old() const {
@@ -449,6 +459,12 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml(const fs::path 
   //    } catch (const std::runtime_error &error) {
   //        std::cerr << error.what << std::endl;
   //    }
+  for (auto &cal : cal_entries) {
+    cal->sensor = this->get_sensor_name(cal->sensor);
+    if (cal->f.size() > 0) {
+      cal->tasks_todo(false, false, false, true, false);
+    }
+  }
 
   return cal_entries;
 }
@@ -573,6 +589,12 @@ std::vector<std::shared_ptr<calibration>> read_cal::read_std_xml_single(const st
 
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
+  }
+
+  for (auto &cal : cal_entries) {
+    if (cal->f.size() > 0) {
+      cal->tasks_todo(false, false, false, true, false);
+    }
   }
 
   return cal_entries;

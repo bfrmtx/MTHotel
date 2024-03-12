@@ -53,7 +53,7 @@ void ri2cplx(const std::vector<T> &real, const std::vector<T> &imag,
  * @param phz phase vector returned
  * @param deg if true, phase is returned in degrees (not radians)
  */
-void cplx2ap(const std::vector<std::complex<double>> &cplx, std::vector<double> &ampl, std::vector<double> &phz, const bool deg = false) {
+inline void cplx2ap(const std::vector<std::complex<double>> &cplx, std::vector<double> &ampl, std::vector<double> &phz, const bool deg = false) {
   if (!cplx.size())
     return;
   ampl.resize(cplx.size());
@@ -73,7 +73,7 @@ void cplx2ap(const std::vector<std::complex<double>> &cplx, std::vector<double> 
   }
 }
 
-void cplx2_vap(const std::vector<std::complex<double>> &cplx, std::vector<std::vector<double>> &ampls, std::vector<std::vector<double>> &phzs, const bool deg = false) {
+inline void cplx2_vap(const std::vector<std::complex<double>> &cplx, std::vector<std::vector<double>> &ampls, std::vector<std::vector<double>> &phzs, const bool deg = false) {
   if (!cplx.size())
     return;
   ampls.emplace_back(std::vector<double>(cplx.size()));
@@ -212,7 +212,7 @@ T median_range_mean(const std::vector<T> &v, const double &fraction_to_use) {
   return sum;
 }
 
-double median_range_mean_cplx(const std::vector<std::complex<double>> &v, const double &fraction_to_use) {
+inline double median_range_mean_cplx(const std::vector<std::complex<double>> &v, const double &fraction_to_use) {
 
   double sum = 0.0;
   std::vector<double> w(bvec::absv(v));
@@ -237,7 +237,6 @@ double median_range_mean_cplx(const std::vector<std::complex<double>> &v, const 
  * \return swapped a) v[f][stacks], b) v[stacks][f]
  */
 template <typename T>
-
 std::vector<std::vector<T>> swap_vec_vec(const std::vector<std::vector<T>> &in) {
 
   std::vector<std::vector<T>> out(in.at(0).size());
@@ -283,8 +282,8 @@ std::vector<T> get_fslice(const std::vector<std::vector<T>> &in, const size_t f_
  * @param y_out
  * @return
  */
-size_t akima_vector_double(const std::vector<double> &x_in, const std::vector<double> &y_in,
-                           const std::vector<double> &new_x_in, std::vector<double> &y_out) {
+inline size_t akima_vector_double(const std::vector<double> &x_in, const std::vector<double> &y_in,
+                                  const std::vector<double> &new_x_in, std::vector<double> &y_out) {
 
   // new_x_in                        // the new x-axis or frequencies
   y_out.resize(new_x_in.size()); // the result - the new y axis or amplitude / phase
@@ -348,7 +347,7 @@ size_t akima_vector_double(const std::vector<double> &x_in, const std::vector<do
   return y_out.size();
 }
 
-double fold(const std::vector<double> &v, const std::vector<double> &w) {
+inline double fold(const std::vector<double> &v, const std::vector<double> &w) {
   double sum = 0.0;
   if (!v.size())
     throw std::runtime_error("fold: data vector size zero");

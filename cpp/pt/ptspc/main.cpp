@@ -18,6 +18,7 @@
 #include "mini_math.h"
 #include "raw_spectra.h"
 #include "sqlite_handler.h"
+#include "strings_etc.h"
 #include "vector_math.h"
 
 // remark:
@@ -84,6 +85,7 @@ int main(int argc, char *argv[]) {
   bool no_cal_plot = true;  // skip the calibration plots at the end
   bool railway = false;     // railway data 16 2/3 Hz
   bool power_lines = false; // power line data 50, 150 Hz
+  size_t min_wl = 256;      // minimum window length for fftw
   std::vector<std::pair<double, double>> power_lines_ranges = {{12, 20}, {46, 54}, {146, 154}};
 
   bool exit_flag = false;
@@ -162,15 +164,15 @@ int main(int argc, char *argv[]) {
         inner_range = true; // prepare for runs
       }
       if (marg.compare("-cplt") == 0) {
-        no_cal_plot = false; //  activate calibration plots
+        no_cal_plot = false; //  activate calibration plots AND the calibration of the spectra!
       }
       if (marg.compare("-n") == 0) {
         normalize = true; //  activate calibration plots normalized by f
       }
 
       if (marg.compare("-f_range") == 0) {
-        f_range.first = std::stod(std::string(argv[++l]));
-        f_range.second = std::stod(std::string(argv[++l]));
+        f_range.first = mstr::mystod(std::string(argv[++l]));
+        f_range.second = mstr::mystod(std::string(argv[++l]));
         if (f_range.first > f_range.second) {
           std::cout << " must be min max: f_range.first < f_range.second" << std::endl;
           exit_flag = true;
@@ -182,8 +184,8 @@ int main(int argc, char *argv[]) {
       }
 
       if (marg.compare("-a_range") == 0) {
-        a_range.first = std::stod(std::string(argv[++l]));
-        a_range.second = std::stod(std::string(argv[++l]));
+        a_range.first = mstr::mystod(std::string(argv[++l]));
+        a_range.second = mstr::mystod(std::string(argv[++l]));
         if (a_range.first > a_range.second) {
           std::cout << " must be min max: a_range.first < a_range.second" << std::endl;
           exit_flag = true;
@@ -195,8 +197,8 @@ int main(int argc, char *argv[]) {
       }
 
       if (marg.compare("-p_range") == 0) {
-        p_range.first = std::stod(std::string(argv[++l]));
-        p_range.second = std::stod(std::string(argv[++l]));
+        p_range.first = mstr::mystod(std::string(argv[++l]));
+        p_range.second = mstr::mystod(std::string(argv[++l]));
         if (p_range.first > p_range.second) {
           std::cout << " must be min max: p_range.first < p_range.second" << std::endl;
           exit_flag = true;
@@ -253,7 +255,6 @@ int main(int argc, char *argv[]) {
   // ******************************** read data *************************************************************************************
 
   size_t wl;
-  size_t min_wl = 256;
 
   // channels, fft_freqs and raws are connected by index !!!
   // the have the same order - so [i] is the same for all
@@ -263,11 +264,12 @@ int main(int argc, char *argv[]) {
   for (const auto &irun : run_numbers) {
     for (const auto &schan : channel_types) {
       try {
-        wl = (size_t)station->at(irun, schan)->get_sample_rate();
+        wl = (size_t)station->at(irun, schan)->get_sample_rate(); // want 1 Hz bandwidth if possible
         if (wl < min_wl)
-          wl = min_wl;
+          wl = min_wl; // else use min_wl
         // init a fftw for each run - all channels have the same sample rate
         // bandwidth 1 Hz ; during the first loop / irun fft_freqs are created, otherwise copied
+        // if nullptr is given, the fft_freqs are created INSIDE the channel (best practice)
         station->at(irun, schan)->init_fftw(nullptr, wl, wl);
 
       } catch (const std::runtime_error &error) {
@@ -300,6 +302,7 @@ int main(int argc, char *argv[]) {
     for (const auto &schan : channel_types) {
       try {
         std::cout << "push thread " << thread_index++ << std::endl;
+        // the read_all_fftw pushes the fftw slices into a queue inside the channel object
         pool->push_task(&channel::read_all_fftw, station->at(irun, schan), false, nullptr); // each channel is read in parallel
       }
 
@@ -333,9 +336,16 @@ int main(int argc, char *argv[]) {
             innerouter.set_low_high(chan->fft_freqs->set_lower_upper_f(10, 200, true)); // cut off spectra; we need these values later
         } else
           innerouter.set_low_high(chan->fft_freqs->auto_range(0.01, 0.7)); // cut off spectra; we need these values later
+        if (no_cal_plot == false) {
+          std::cout << "calibration" << std::endl;
+          chan->cal->interpolate(chan->fft_freqs->get_frequencies());
+          chan->cal->gen_cal_sensor(chan->fft_freqs->get_frequencies());
+          chan->cal->join_lower_theo_and_measured_interpolated();
+        }
         // chan->prepare_raw_spc(false); // no calibration yet
         // push task can not use default arguments, supply all arguments
-        pool->push_task(&channel::prepare_raw_spc, chan, false, true); // no calibration yet
+        // the prepare_raw_spc pushes the raw spectra queue into a vector spc inside the channel object
+        pool->push_task(&channel::prepare_raw_spc, chan, !no_cal_plot, true); // no calibration yet
       }
 
       catch (const std::runtime_error &error) {

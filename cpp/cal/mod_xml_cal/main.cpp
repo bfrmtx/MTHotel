@@ -6,6 +6,7 @@
 
 #include "../../xml/tinyxml2/tinyxml2.h"
 #include "base_xml.h"
+#include "strings_etc.h"
 
 void set_xml_dvalue(tinyxml2::XMLElement *top_node, const std::string node, const double &value, std::string *attr = nullptr, const std::string attr_name = "") {
   auto new_node = top_node->FirstChildElement(node.c_str());
@@ -53,14 +54,14 @@ int main(int argc, char **argv) {
         chopper = ChopperStatus::on;
     }
     if (marg.compare("-ampl_mul") == 0) {
-      ampl_mul = std::stod(argv[++l]);
+      ampl_mul = mstr::mystod(argv[++l]);
     }
     if (marg.compare("-phase_mul") == 0) {
       phase_mul = stod(argv[++l]);
     }
 
     if (marg.compare("-ampl_add") == 0) {
-      ampl_add = std::stod(argv[++l]);
+      ampl_add = mstr::mystod(argv[++l]);
     }
     if (marg.compare("-phase_mul") == 0) {
       phase_add = stod(argv[++l]);

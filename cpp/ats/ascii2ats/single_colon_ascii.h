@@ -30,7 +30,11 @@ std::vector<double> read_single_colon_ascii(const std::filesystem::path filename
   data.reserve(10000000);
 
   while (std::getline(afile, str)) {
-    data.push_back(std::stod(str));
+    std::stringstream ss;
+    ss << str;
+    double d;
+    ss >> d;
+    data.push_back(d);
   }
   data.shrink_to_fit();
   return data;

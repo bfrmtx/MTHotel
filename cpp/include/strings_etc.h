@@ -15,13 +15,25 @@
 
 namespace mstr {
 
+/*!
+ * @brief mystod converts a string to a double; std::stod does not wok in debug mode (March 2024)
+ * @param s
+ * @return
+ */
+inline double mystod(const std::string &s) {
+  std::stringstream ss(s);
+  double d;
+  ss >> d;
+  return d;
+}
+
 static const double zero_frac = 1.0 / 4194304.0; // 4194304 is 4 MHz sample frequency;
 
-static void removeTrailingCharacters(std::string &str, const char charToRemove) {
+inline void removeTrailingCharacters(std::string &str, const char charToRemove) {
   str.erase(str.find_last_not_of(charToRemove) + 1, std::string::npos);
 }
 
-static void removeLeadingCharacters(std::string &str, const char charToRemove) {
+inline void removeLeadingCharacters(std::string &str, const char charToRemove) {
   str.erase(0, std::min(str.find_first_not_of(charToRemove), str.size() - 1));
 }
 
@@ -221,7 +233,7 @@ inline bool contains(std::string const &str, std::string const &search, bool cas
   return false;
 }
 
-std::string string_replace(const std::string &in, const std::string &search, const std::string &replace) {
+inline std::string string_replace(const std::string &in, const std::string &search, const std::string &replace) {
   std::string s = in;
   size_t pos = 0;
   while (pos += replace.length()) {
@@ -281,7 +293,7 @@ inline const char *IntToChopper(const int64_t b) {
   return b ? "on" : "off";
 }
 
-std::vector<std::string> split(const std::string &s, char delim) {
+inline std::vector<std::string> split(const std::string &s, char delim) {
   std::vector<std::string> elems;
   std::stringstream ss(s);
   std::string item;
@@ -291,7 +303,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
   return elems;
 }
 
-std::vector<std::string> split(const std::string &s, const std::string delim) {
+inline std::vector<std::string> split(const std::string &s, const std::string delim) {
 
   std::vector<std::string> elems;
 
@@ -317,7 +329,7 @@ std::vector<std::string> split(const std::string &s, const std::string delim) {
  * \param round_f_or_s round - 0 in case of flawless conversion; example: 4.00001Hz may be a numrical error, 4Hz wanted
  * \return difference between rounded and not rounded sample rate; should be zero for most cases; if not you must take a decision
  */
-double sample_rate_to_str(const double &sample_rate, double &f_or_s, std::string &unit, const bool round_f_or_s = false) {
+inline double sample_rate_to_str(const double &sample_rate, double &f_or_s, std::string &unit, const bool round_f_or_s = false) {
 
   double diff_s;
   if (sample_rate > 0.999999) {
@@ -339,7 +351,7 @@ double sample_rate_to_str(const double &sample_rate, double &f_or_s, std::string
   return f_or_s - diff_s; // would be 0.001 for 5.001 input
 }
 
-double str_to_sample_rate(const std::string &srate) {
+inline double str_to_sample_rate(const std::string &srate) {
   std::string snum;
   std::string sunit;
   double rate = 0.0;
@@ -353,7 +365,7 @@ double str_to_sample_rate(const std::string &srate) {
   }
 
   try {
-    rate = std::stod(snum);
+    rate = mystod(snum);
     if (sunit == "Hz")
       isok = 1;
     if (sunit == "s")
@@ -369,7 +381,7 @@ double str_to_sample_rate(const std::string &srate) {
   return rate;
 }
 
-std::string sample_rate_to_str_simple(const double &sample_rate, bool add_space_for_s = false) {
+inline std::string sample_rate_to_str_simple(const double &sample_rate, bool add_space_for_s = false) {
   double f_or_s = 0;
   std::string unit;
   bool round_f_or_s = true;
@@ -387,7 +399,7 @@ std::string sample_rate_to_str_simple(const double &sample_rate, bool add_space_
   return sval;
 }
 
-std::string f_to_string(const double &f, bool add_space_for_s = false) {
+inline std::string f_to_string(const double &f, bool add_space_for_s = false) {
   std::stringstream ss;
   if ((f < 1) && add_space_for_s)
     ss << (1. / f) << " "
@@ -407,7 +419,7 @@ template <class T>
  * \param width field width
  * \return string with at least width characters, starting with 0 or -0 in case
  */
-std::string zero_fill_field(const T num, unsigned int width) {
+inline std::string zero_fill_field(const T num, unsigned int width) {
   std::ostringstream ostr;
 
   if (num < 0) {
@@ -426,7 +438,7 @@ std::string zero_fill_field(const T num, unsigned int width) {
  * \param fracs positive numberlike 0.012 and greater as zero_frac
  * \return
  */
-std::string iso_8601_str_d_str_d(const std::string &date, const std::string &time, const double &fracs = 0.0) {
+inline std::string iso_8601_str_d_str_d(const std::string &date, const std::string &time, const double &fracs = 0.0) {
   std::string dt = date + "T" + time;
   std::string sfracs;
   if (fracs > zero_frac) {
@@ -446,7 +458,7 @@ std::string iso_8601_str_d_str_d(const std::string &date, const std::string &tim
  * \param fracs accepted if > zero_frac - otherwise a roundind error is assumed
  * \return
  */
-std::string iso_8601_str_d(const std::string &datetime, const double &fracs = 0.0) {
+inline std::string iso_8601_str_d(const std::string &datetime, const double &fracs = 0.0) {
   std::string sfracs;
   if (fracs > zero_frac) {
     sfracs = std::to_string(fracs);
@@ -464,7 +476,7 @@ std::string iso_8601_str_d(const std::string &datetime, const double &fracs = 0.
  * \param datetime ISO date string w or /wo ending Z os seconds like 00 or 00.4
  * \return time_t struct; time_t can NOT hold fractions of seconds
  */
-time_t time_t_iso_8601_str(const std::string &datetime) {
+inline time_t time_t_iso_8601_str(const std::string &datetime) {
   // maybe not thread safe?
   struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   double dseconds = 0.0;
@@ -481,7 +493,7 @@ time_t time_t_iso_8601_str(const std::string &datetime) {
   return mktime(&tt) - timezone;
 }
 
-time_t time_t_iso_8601_str_fracs(const std::string &datetime, double &remaining_fracs) {
+inline time_t time_t_iso_8601_str_fracs(const std::string &datetime, double &remaining_fracs) {
   // maybe not thread safe?
   struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   double dseconds;
@@ -498,7 +510,7 @@ time_t time_t_iso_8601_str_fracs(const std::string &datetime, double &remaining_
   return mktime(&tt) - timezone;
 }
 
-std::string iso8601_time_t(const time_t &ti, const int iso_0_date_1_time_2 = 0, const double &fracs = 0.0) {
+inline std::string iso8601_time_t(const time_t &ti, const int iso_0_date_1_time_2 = 0, const double &fracs = 0.0) {
   // maby not thread safe?
   struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   std::string sfracs;
@@ -528,13 +540,13 @@ std::string iso8601_time_t(const time_t &ti, const int iso_0_date_1_time_2 = 0, 
   return date + "T" + time;
 }
 
-std::string get_date_from_iso8601(const std::string &datetime) {
+inline std::string get_date_from_iso8601(const std::string &datetime) {
   auto splits = mstr::split(datetime, 'T');
   if (splits.size() > 1)
     return splits.at(0);
   return std::string();
 }
-std::string get_time_from_iso8601(const std::string &datetime) {
+inline std::string get_time_from_iso8601(const std::string &datetime) {
   auto splits = mstr::split(datetime, 'T');
   if (splits.size() > 1) {
     auto splitss = mstr::split(splits.at(1), '.');
@@ -544,14 +556,14 @@ std::string get_time_from_iso8601(const std::string &datetime) {
   return std::string();
 }
 
-std::string get_time_fracs_from_iso8601(const std::string &datetime) {
+inline std::string get_time_fracs_from_iso8601(const std::string &datetime) {
   auto splits = mstr::split(datetime, 'T');
   if (splits.size() > 1)
     return splits.at(1);
   return std::string();
 }
 
-double get_fracs_from_iso8601(const std::string &datetime) {
+inline double get_fracs_from_iso8601(const std::string &datetime) {
   auto splits = mstr::split(datetime, '.');
   if (splits.size() > 1) {
     std::string s("0.");
@@ -561,7 +573,7 @@ double get_fracs_from_iso8601(const std::string &datetime) {
   return 0.0;
 }
 
-std::string measdir_time(const time_t &ti) {
+inline std::string measdir_time(const time_t &ti) {
   struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   tt = *std::gmtime(&ti);
   std::string date("meas_");
@@ -576,7 +588,7 @@ std::string measdir_time(const time_t &ti) {
   return date + time;
 }
 
-void date_and_time(const time_t &ti, std::string &date, std::string &time) {
+inline void date_and_time(const time_t &ti, std::string &date, std::string &time) {
   struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   tt = *std::gmtime(&ti);
   date.clear();
@@ -589,7 +601,7 @@ void date_and_time(const time_t &ti, std::string &date, std::string &time) {
   time += mstr::zero_fill_field(tt.tm_sec, 2);
 }
 
-bool isdigit_first_char(const std::string &str) {
+inline bool isdigit_first_char(const std::string &str) {
   return (str.at(0) == '-' || std::isdigit(str.at(0)) || str.at(0) == '+');
 }
 
@@ -598,7 +610,7 @@ bool isdigit_first_char(const std::string &str) {
  * \param run
  * \return run_001 or run_012 and so on
  */
-std::string run2string(const auto &run) {
+inline std::string run2string(const auto &run) {
   std::string srun("run_");
   return srun + mstr::zero_fill_field(run, 3);
 }
@@ -608,7 +620,7 @@ std::string run2string(const auto &run) {
  * \param srun run_001 or run_012 and so on
  * \return
  */
-size_t string2run(const std::string &srun) {
+inline size_t string2run(const std::string &srun) {
   // split the string at the last '_' and take the rest
   std::string ssrun = srun.substr(srun.find_last_of('_') + 1);
   if (ssrun.empty() || (ssrun.size() > 6))
@@ -621,7 +633,7 @@ size_t string2run(const std::string &srun) {
  * \param fs
  * \return field width
  */
-std::vector<std::stringstream> field_width_right_adjusted_freqs_periods(const std::vector<double> &fs) {
+inline std::vector<std::stringstream> field_width_right_adjusted_freqs_periods(const std::vector<double> &fs) {
   std::vector<std::stringstream> sss(fs.size());
   size_t i = 0;
   size_t max_l = 0;
@@ -723,7 +735,7 @@ std::vector<std::stringstream> field_width_right_adjusted_doubles(const std::vec
   return sss;
 }
 
-std::string escape_undersorce(const std::string &in) {
+inline std::string escape_undersorce(const std::string &in) {
   std::string out;
   out.reserve(in.size() + 8); // in most cases we have 4 '_' to be replaced by '\\_'
   std::string replace = "\\_";

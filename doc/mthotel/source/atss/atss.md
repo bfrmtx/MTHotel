@@ -57,7 +57,9 @@ additional there may appear [atmm](#atmm)  mask files:
 - elevation: in meter, e.g. WGS84 referenced
 - angle: North to East of the measured direction; 0 = North, 90 = East
 - dip: positive downwards; 0 = horizontal, 90 positive down
+- resistance: in Ohm, e.g. the contact resistance of the electrodes or internal resistance of the sensor
 - units: text string, e.g. mV/km or mV
+- filter: text string, e.g. like ADB-LF,LF-RF-4 -> filter used during recording
 - source: text string, e.g. empty or CSAMT
 - sensor: name of sensor like EFP-06, MFS-06e and so on
 - serial: positive number
@@ -93,7 +95,9 @@ For the electric field *without* calibration the entries for f, a, p are there b
 "elevation": 1088.31,
 "angle": 0.0,
 "dip": 0.0,
+"resistance": 572.3670043945313,
 "units": "mV/km",
+"filter": "ADB-LF,LF-RF-4",
 "source": "",
 "sensor_calibration": {
    "sensor": "EFP-06",
@@ -121,7 +125,9 @@ For a magnetic file *with* calibration:
 "elevation": 1088.31,
 "angle": 0.0,
 "dip": 0.0,
+"resistance": 684052.0,
 "units": "mV",
+"filter": "ADB-LF,LF-RF-4",
 "source": "",
 "sensor_calibration": {
    "sensor": "MFS-06",

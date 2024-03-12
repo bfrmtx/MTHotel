@@ -96,6 +96,9 @@ message ( "adding subdirs" )
 # add_definitions(-DPMTSQLPATH_UNIX="${CMAKE_INSTALL_PREFIX}/bin")
 #
 ## templates FIRST
+# add include path for xml/tinyxmlwriter
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/xml/tinyxmlwriter)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/xml/tinyxml2)
 add_subdirectory(include)
 add_subdirectory(math_vector)
 # stop here for now

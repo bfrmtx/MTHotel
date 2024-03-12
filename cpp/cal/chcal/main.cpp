@@ -8,6 +8,7 @@
 #include "gnuplotter.h"
 #include "read_cal.h"
 #include "sqlite_handler.h" // get reference data from sqlite
+#include "strings_etc.h"
 
 /// test
 #include "vector_math.h"
@@ -107,8 +108,8 @@ int main(int argc, char **argv) {
     }
     bool exit_flag = false;
     if (marg.compare("-f_range") == 0) {
-      f_range.first = std::stod(argv[++l]);
-      f_range.second = std::stod(argv[++l]);
+      f_range.first = mstr::mystod(argv[++l]);
+      f_range.second = mstr::mystod(argv[++l]);
       if (f_range.first > f_range.second) {
         std::cout << " must be min max: f_range.first < f_range.second" << std::endl;
         exit_flag = true;
@@ -120,8 +121,8 @@ int main(int argc, char **argv) {
     }
 
     if (marg.compare("-a_range") == 0) {
-      a_range.first = std::stod(argv[++l]);
-      a_range.second = std::stod(argv[++l]);
+      a_range.first = mstr::mystod(argv[++l]);
+      a_range.second = mstr::mystod(argv[++l]);
       if (a_range.first > a_range.second) {
         std::cout << " must be min max: a_range.first < a_range.second" << std::endl;
         exit_flag = true;
@@ -133,8 +134,8 @@ int main(int argc, char **argv) {
     }
 
     if (marg.compare("-p_range") == 0) {
-      p_range.first = std::stod(argv[++l]);
-      p_range.second = std::stod(argv[++l]);
+      p_range.first = mstr::mystod(argv[++l]);
+      p_range.second = mstr::mystod(argv[++l]);
       if (p_range.first > p_range.second) {
         std::cout << " must be min max: p_range.first < p_range.second" << std::endl;
         exit_flag = true;

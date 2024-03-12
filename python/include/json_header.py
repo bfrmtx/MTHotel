@@ -1,5 +1,5 @@
-from datetime import datetime
-from datetime import timezone
+# from datetime import datetime
+# from datetime import timezone
 import math
 import sqlite3
 from os.path import exists
@@ -7,7 +7,7 @@ from os.path import getsize
 from os.path import basename
 import json
 import copy
-from numpy import array
+# from numpy import array
 
 
 # ##################################################################################################################
@@ -99,7 +99,9 @@ def atss_header():
         'elevation': 0.0,       # elevation in meter
         'angle': 0.0,           # orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
         'dip': 0.0,             # angle positive down - in case it had been measured
+        'resistance': 0.0,      # resistance of the sensor in Ohm or contact resistance of electrode in Ohm
         'units': "mV",          # for ADUs it will be mV H or other -  or scaled E mV/km
+        'filter': "",           # comma separated list of filters such as "ADB-LF,LF-RF-4" or "ADB-HF,HF-RF-1"
         'source': "",           # empty or indicate as, ns, ca, cp, tx or what ever
     }
     return header
@@ -221,70 +223,6 @@ def write_atssheader(channel):
         f.write(json.dumps(tchannel, indent=2, sort_keys=False, ensure_ascii=False))
         f.close()
 
-
-# ##################################################################################################################
-
-
-def channel_form_oldheader(oldheader):
-    # copy the mimimum neccessary parts to the new header
-    # most of the old header is not needed for processing
-    chan = channel()
-    dt = datetime.fromtimestamp(oldheader['start'], timezone.utc)  # utc is important
-    chan['date'] = dt.strftime("%Y-%m-%d")
-    chan['time'] = dt.strftime("%H:%M:%S")
-    chan['sample_rate'] = oldheader['sample_rate']
-    chan['channel_no'] = oldheader['channel_number']
-    chan['channel_type'] = oldheader['channel_type']
-    chan['run'] = 1       # get from filename
-    chan['latitude'] = (oldheader['iLat_ms'] / 1000.) / 3600.
-    chan['longitude'] = (oldheader['iLong_ms'] / 1000.) / 3600.
-    str = oldheader['SystemType']
-    if str.startswith("ADU") and not(str.startswith("ADU-")):
-        str = str.replace("ADU", "ADU-")
-        chan['system'] = str
-    else:
-        chan['system'] = oldheader['SystemType']  # change not
-    chan['serial'] = oldheader['serial_number']
-    chan['site'] = oldheader['SiteName']
-    chan['elevation'] = oldheader['iElev_cm'] / 100.
-    # since 15 years we do use pos
-    p = pos_to_dip(oldheader['x1'], oldheader['x2'], oldheader['y1'], oldheader['y2'], oldheader['z1'], oldheader['z2'])
-    chan['dipole_length'] = p[0]
-    chan['angle'] = p[1]
-    chan['dip'] = p[2]
-    # ADU uses mV without mentioning it
-    chan['units'] = "mV"          # H, E -> change that if you scale E to mV/km
-    # remove ancient MS DOS shortened names
-    str = oldheader['sensor_type']
-    if str.startswith("MFS") and not(str.startswith("MFS-")):
-        str = str.replace("MFS", "MFS-")
-        chan['sensor_calibration']['sensor'] = str
-
-    elif str.startswith("FGS") and not(str.startswith("FGS-")):
-        str = str.replace("FGS", "FGS-")
-        chan['sensor_calibration']['units_amplitude'] = "mV"                # maybe mV or temperature
-        chan['sensor_calibration']['sensor'] = str
-
-    elif str.startswith("SHFT") and not(str.startswith("SHFT-")):
-        str = str.replace("SHFT", "SHFT-")
-        chan['sensor_calibration']['sensor'] = str
-
-    elif str.startswith("EFP") and not(str.startswith("EFP-")):
-        str = str.replace("EFP", "EFP-")
-        chan['sensor_calibration']['sensor'] = str
-        chan['sensor_calibration']['units_amplitude'] = "mV"                # maybe mV or temperature
-
-    else:
-        chan['sensor_calibration']['sensor'] = oldheader['sensor_type']
-
-    chan['sensor_calibration']['serial'] = oldheader['sensor_serial_number']
-    chan['sensor_calibration']['chopper'] = oldheader['chopper']
-    chan['lsb'] = oldheader['lsbval']            # temporary
-    chan['samples'] = oldheader['samples']       # temporary
-
-    return chan
-
-
 def sample_rate_to_string(sample_rate):
     sname = "failed"
     if sample_rate > 0.99:
@@ -308,20 +246,9 @@ def to_json(channel):
         f.close()
 
 
-def aduboard_from_sample_rate(sample_rate):
-    # the data processing does not make use of the board
-    # the LF, MF and HF filters are only informal, so a fake board is ok
-    sname = "failed"
-    if sample_rate > 4096:
-        sname = "H"
-    else:
-        sname = "L"
-    return sname
-
-
-def cal_mfs06e(i, f, spc, chopper):
-    # we stay with V/(nT*Hz) because we have millions of old files and this format is inside the coils
-    # this formula doe NOT normalize by f - because the next step is naturally all against the spectra
+def cal_mfs06e(f, spc, chopper):
+    # we use mV/nT as unit, this also the unit of the time series
+    # this formula does NOT normalize by f - because the next step is naturally all against the spectra
     # as we do here inside
     if f == 0:
         return spc
@@ -329,17 +256,36 @@ def cal_mfs06e(i, f, spc, chopper):
         p1 = complex(0.0, (f / 4.))
         p2 = complex(0.0, (f / 8192.))
         p4 = complex(0.0, (f / 28300.0))
-        trf = 0.8 * ((p1 / (1. + p1)) * (1. / (1. + p2)) * (1. / (1. + p4)))
-        return (spc / trf) / 1000.  # cal is in V, data in mV
+        trf = 800. * ((p1 / (1. + p1)) * (1. / (1. + p2)) * (1. / (1. + p4)))
+        return (spc / trf)   # cal is in mV, data in mV
     else:
         p1 = complex(0.0, (f / 4.))
         p2 = complex(0.0, (f / 8192.))
-        p3 = complex(0.0, (f / 0.72))
-        p4 = complex(0.0, (f / 25000.0))
-        trf = 0.8 * ((p1 / (1. + p1)) * (1. / (1. + p2)) * (p3 / (1. + p3)) * (1. / (1. + p4)))
-        return (spc / trf) / 1000.  # cal is in V, data in mV
+        p3 = complex(0.0, (f / 0.720))
+        p4 = complex(0.0, (f / 28300.0))
+        trf = 800.0 * ((p1 / (1. + p1)) * (1. / (1. + p2)) * (p3 / (1. + p3)) * (1. / (1. + p4)))
+        return (spc / trf)   # cal is in mV, data in mV
 
-
+def cal_mfs07e(f, spc, chopper):
+    # we use mV/nT as unit, this also the unit of the time series
+    # this formula does NOT normalize by f - because the next step is naturally all against the spectra
+    # as we do here inside
+    if f == 0:
+        return spc
+    if chopper == 1:
+        p1 = complex(0.0, (f / 32.0))
+        p2 = complex(0.0, (f / 40000.0))
+        p4 = complex(0.0, (f / 50000.0))
+        trf = 640. * ((p1 / (1. + p1)) * (1. / (1. + p2)) * (1. / (1. + p4)))
+        return (spc / trf)   # cal is in mV, data in mV
+    else:
+        p1 = complex(0.0, (f / 32.0))
+        p2 = complex(0.0, (f / 40000.0))
+        p3 = complex(0.0, (f / 0.720))
+        p4 = complex(0.0, (f / 50000.0))
+        trf = 640.0 * ((p1 / (1. + p1)) * (1. / (1. + p2)) * (p3 / (1. + p3)) * (1. / (1. + p4)))
+        return (spc / trf)   # cal is in mV, data in mV
+    
 def pos_to_dip(x1, x2, y1, y2, z1, z2):
     tx = x2 - x1
     ty = y2 - y1
@@ -358,80 +304,7 @@ def pos_to_dip(x1, x2, y1, y2, z1, z2):
     return dip
 
 
-def dip_to_pos(length, angle, dip):
-    pos = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    dp = dip
-    if math.abs(length) < 0.0001:
-        return pos
-    if math.abs(dip) < 0.1:
-        dp = 0.0
-    x = length * math.cos(math.pi / 180. * angle) * math.cos(math.pi / 180. * dp)
-    y = length * math.sin(math.pi / 180. * angle) * math.cos(math.pi / 180. * dp)
-    z = length * math.sin(math.pi / 180. * dp)
-
-    pos[0] = -0.5 * x
-    pos[1] = 0.5 * x
-    pos[2] = -0.5 * y
-    pos[3] = 0.5 * y
-    pos[4] = 0.0
-    pos[5] = z
-
-    return pos
 
 # ##################################################################################################################
 
 
-def system_channel():
-    # these values are not used for processing
-    # they are logged from the ADU system
-    sys = {
-        'lsbval': 0.0,                          # the lsb value is ONLY evaluated when converting to double
-        'ADB_board_name': "",                   # MF, LF, HF, BB
-        'ADB_board_serial': 0,
-        'ADB_board_RevMain': "",
-        'ADB_board_RevSub': "",
-        'ADB_board_FW': "",
-        'rho_probe_ohm': 0.0,
-        'DC_offset_voltage_mV': 0.0,
-        'gain_stage1': 0.0,
-        'gain_stage2': 0.0,
-        'gps_clock_status': "",
-        'GPS_accuracy': 0,
-        'survey_header_filename': "",
-        'type_of_meas': "",
-        'DCOffsetCorrValue': 0.0,
-        'DCOffsetCorrOn': 0,                    # controlls if the DCOffsetCorrValue was on and used
-        'InputDivOn': 0,
-        'Input': 0,
-        'calon': 0,
-        'atton': 0,
-        'calref': 0,
-        'calint': 0,
-        'calfreq': 0.0,
-        'short_circuit': 0,
-        'decimation': 0,
-        'ADB_board_type': "",
-        'external_gain': 0.0,
-        'LF_LP_4Hz': "off",             # php needs at a lower case letter
-        'HF_HP_500Hz': "off",
-        'HF_HP_1Hz': "off",
-        'LF_RF_1': "off",              # radio filters php needs "_"
-        'LF_RF_2': "off",
-        'LF_RF_3': "off",
-        'LF_RF_4': "off",              # switch on for buffer !!
-        'MF_RF_1': "off",
-        'MF_RF_2': "off",
-        'Client': "",                   # values below can be taken if wanted
-        'Contractor': "",
-        'Area': "",
-        'SurveyID': "",
-        'Operator': "",
-        'SiteName': "",
-        'Line': "",
-        'XmlHeader': "",
-        'Comments': "",
-        'SiteNameRR': "",
-        'SiteNameEMAP': "",
-    }
-
-    return sys

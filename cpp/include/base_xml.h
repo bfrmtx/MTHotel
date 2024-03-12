@@ -38,7 +38,9 @@ double xml_dvalue(tinyxml2::XMLElement *top_node, const std::string node, std::s
   auto new_node = top_node->FirstChildElement(node.c_str());
   if (new_node != nullptr) {
     std::string str(new_node->GetText());
-    d = std::stod(str);
+    // d = std::stod(str); can't debug this line
+    std::stringstream ss(str);
+    ss >> d;
     if (attr != nullptr && (d != DBL_MAX) && (attr_name.size())) {
       const char *cattr = new_node->Attribute(attr_name.c_str());
       if (cattr != nullptr) {
