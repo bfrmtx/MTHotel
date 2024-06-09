@@ -10,31 +10,103 @@
 #include "freqs.h"
 #include "gnuplotter.h"
 //
-#include "../mt/raw_spectra/raw_spectra.h"
+#include "raw_spectra.h"
 //
 
 class channel_collector_gplt {
 public:
-  channel_collector_gplt(std::shared_ptr<gnuplotter<double, double>> gplt, std::string channel_type, bool use_selected = true) :
-      gplt(gplt),
-      channel_type(channel_type), use_selected(use_selected) {
+  /*!
+   * @brief constructor for a channel plotter for x y plots
+   * @param gplt
+   * @param channel_type
+   * @param use_selected
+   */
+  channel_collector_gplt(std::shared_ptr<gnuplotter<double, double>> gplt, std::string channel_type, bool use_selected = true)
+      : gplt(gplt), channel_type(channel_type), use_selected(use_selected) {
     if (channel_type == "Ex") {
-      color = "lc rgbcolor \"yellow\"";
-    }
-    if (channel_type == "Ey") {
+      this->color = "lc rgbcolor \"yellow\"";
+    } else if (channel_type == "Ey") {
       color = "lc rgbcolor \"orange\"";
-    }
-    if (channel_type == "Ez") {
+    } else if (channel_type == "Ez") {
       color = "lc rgbcolor \"black\"";
-    }
-    if (channel_type == "Hx") {
+    } else if (channel_type == "Hx") {
       color = "lc rgbcolor \"blue\"";
-    }
-    if (channel_type == "Hy") {
+    } else if (channel_type == "Hy") {
       color = "lc rgbcolor \"red\"";
-    }
-    if (channel_type == "Hz") {
+    } else if (channel_type == "Hz") {
       color = "lc rgbcolor \"green\"";
+    } else {
+      color = "lc rgbcolor \"grey\"";
+    }
+  }
+  /*!
+   * @brief constructor for a channel plotter for x y SPECTRA plots
+   * @param gplt
+   * @param spectra_type
+   * @param use_selected
+   */
+  channel_collector_gplt(std::shared_ptr<gnuplotter<double, double>> gplt, std::pair<std::string, std::string> spectra_type, bool use_selected = true)
+      : gplt(gplt), spectra_type(spectra_type), use_selected(use_selected) {
+    if (spectra_type == std::make_pair<std::string, std::string>("Ex", "Ex")) {
+      color = "lc rgbcolor \"yellow\"";
+    } else if (spectra_type == std::make_pair<std::string, std::string>("Ey", "Ey")) {
+      color = "lc rgbcolor \"orange\"";
+    } else if (spectra_type == std::make_pair<std::string, std::string>("Ez", "Ez")) {
+      color = "lc rgbcolor \"black\"";
+    } else if (spectra_type == std::make_pair<std::string, std::string>("Hx", "Hx")) {
+      color = "lc rgbcolor \"blue\"";
+    } else if (spectra_type == std::make_pair<std::string, std::string>("Hy", "Hy")) {
+      color = "lc rgbcolor \"red\"";
+    } else if (spectra_type == std::make_pair<std::string, std::string>("Hz", "Hz")) {
+      color = "lc rgbcolor \"green\"";
+    }
+
+    std::vector<std::string> ac = {"Hx", "Hy", "Hz", "Ex", "Ey", "Ez"};
+    // colour vectors must be longer than ac!
+    std::vector<std::string> colors_Hx = {"web-blue", "royalblue", "steelblue", "lightblue", "darkblue", "midnightblue", "mediumblue", "skyblue", "slateblue1"};
+    std::vector<std::string> colors_Hy = {"web-red", "firebrick", "darkred", "indianred", "maroon", "darkmagenta", "darkviolet", "purple"};
+    std::vector<std::string> colors_Hz = {"web-green", "darkgreen", "forestgreen", "limegreen", "mediumseagreen", "seagreen", "springgreen"};
+    std::vector<std::string> colors_Ex = {"web-yellow", "khaki", "lightgoldenrod", "lightgoldenrod1", "lightgoldenrod2", "lightgoldenrod3", "lightgoldenrod4", "lightyellow", "lightyellow1", "lightyellow2", "lightyellow3", "lightyellow4"};
+    std::vector<std::string> colors_Ey = {"web-orange", "darkorange", "orangered", "tomato", "coral", "darkgoldenrod", "goldenrod", "goldenrod1", "goldenrod2", "goldenrod3", "goldenrod4"};
+    std::vector<std::string> colors_Ez = {"web-black", "dimgray", "gray", "darkgray", "lightgray", "gray0", "gray1", "gray2", "gray3", "gray4", "gray5", "gray6", "gray7", "gray8", "gray9", "gray10", "gray11", "gray12", "gray13", "gray14", "gray15", "gray16", "gray17", "gray18", "gray19", "gray20", "gray21", "gray22", "gray23", "gray24", "gray25", "gray26", "gray27", "gray28", "gray29", "gray30", "gray31", "gray32", "gray33", "gray34", "gray35", "gray36", "gray37", "gray38", "gray39", "gray40", "gray41", "gray42", "gray43", "gray44", "gray45", "gray46", "gray47", "gray48", "gray49", "gray50", "gray51", "gray52", "gray53", "gray54", "gray55", "gray56", "gray57", "gray58", "gray59", "gray60", "gray61", "gray62", "gray63", "gray64", "gray65", "gray66", "gray67", "gray68", "gray69", "gray70", "gray71", "gray72", "gray73", "gray74", "gray75", "gray76", "gray77", "gray78", "gray79", "gray80", "gray81", "gray82", "gray83", "gray84", "gray85", "gray86", "gray87", "gray88", "gray89", "gray90", "gray91", "gray92", "gray93", "gray94", "gray95", "gray96", "gray97", "gray98", "gray99"};
+
+    size_t index = (std::find(ac.begin(), ac.end(), spectra_type.second) - ac.begin());
+    if (spectra_type.first == "Hx") {
+      if (index < colors_Hx.size()) {
+        color = "lc rgbcolor \"" + colors_Hx[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
+    } else if (spectra_type.first == "Hy") {
+      if (index < colors_Hy.size()) {
+        color = "lc rgbcolor \"" + colors_Hy[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
+    } else if (spectra_type.first == "Hz") {
+      if (index < colors_Hz.size()) {
+        color = "lc rgbcolor \"" + colors_Hz[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
+    } else if (spectra_type.first == "Ex") {
+      if (index < colors_Ex.size()) {
+        color = "lc rgbcolor \"" + colors_Ex[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
+    } else if (spectra_type.first == "Ey") {
+      if (index < colors_Ey.size()) {
+        color = "lc rgbcolor \"" + colors_Ey[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
+    } else if (spectra_type.first == "Ez") {
+      if (index < colors_Ez.size()) {
+        color = "lc rgbcolor \"" + colors_Ez[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
     }
   }
 
@@ -69,22 +141,22 @@ public:
     }
   }
 
-  void collect_runs(std::shared_ptr<run_d> run) {
-    // get the channels numbers
-    auto ch_nums = run->get_channel_with_spectra(use_selected);
+  // void collect_runs(std::shared_ptr<run_d> run) {
+  //   // get the channels numbers
+  //   auto ch_nums = run->get_channel_with_spectra(use_selected);
 
-    // loop over the channels
-    for (auto i = 0; i < ch_nums.size(); ++i) {
-      // get the channel
-      auto chan = run->channels[ch_nums[i]];
-      // get the freqs
-      auto freqs = chan->fft_freqs;
-      // get the raw_spectra
-      auto raw_spectra = run->raw_spc;
-      // collect the data
-      this->collect(chan, freqs, raw_spectra);
-    }
-  }
+  //   // loop over the channels
+  //   for (auto i = 0; i < ch_nums.size(); ++i) {
+  //     // get the channel
+  //     auto chan = run->channels[ch_nums[i]];
+  //     // get the freqs
+  //     auto freqs = chan->fft_freqs;
+  //     // get the raw_spectra
+  //     auto raw_spectra = run->raw_spc;
+  //     // collect the data
+  //     this->collect(chan, freqs, raw_spectra);
+  //   }
+  // }
 
   void plot() {
     if (this->f_l.size() == 0) {
@@ -126,6 +198,7 @@ public:
 
 private:
   std::string channel_type;
+  std::pair<std::string, std::string> spectra_type;
   std::string color;
   std::vector<std::vector<double>> f_l;
   std::vector<std::vector<double>> data_l;
@@ -151,9 +224,9 @@ private:
     }
     // use raw_spectra->get_abs_sa_prz_spectra() if use_selected is true
     if (use_selected) {
-      this->data_l.push_back(this->raw_spectra->get_abs_sa_prz_spectra(this->channel_type));
+      this->data_l.push_back(this->raw_spectra->get_abs_sa_prz_spectra(this->spectra_type));
     } else {
-      this->data_l.push_back(this->raw_spectra->get_abs_sa_spectra(this->channel_type));
+      this->data_l.push_back(this->raw_spectra->get_abs_sa_spectra(this->spectra_type));
     }
   }
 };

@@ -78,7 +78,10 @@ void collect_atsheaders(const std::shared_ptr<atsheader> &ats, std::unique_ptr<s
     lsb *= 1000. / atsj->pos2length();
     chan->units = "mV/km";
     chan->tmp_lsb = lsb;
-  }
+  } else {
+    chan->tmp_lsb = lsb;
+    chan->units = "mV";
+  } // no scaling
   bool has_cal = false;
   for (auto &ncal : cals) {
     if (compare_sensor_and_chopper(cal, ncal)) {
@@ -142,12 +145,28 @@ void fill_survey_tree(const std::unique_ptr<survey_d> &survey, const size_t &ind
   }
 
   size_t samples_read = 0;
+  bool check = false;
 
   try {
     do {
+      if (!samples_read) {
+        std::cout << "reading " << chan->get_atss_filepath() << " LSB : " << lsb << std::endl;
+        if (chan->channel_type == "Hz") {
+          std::cout << "E channel found" << std::endl;
+          check = true;
+        }
+      }
       dbls.resize(ats->ats_read_ints_doubles(ints));
       samples_read += dbls.size();
       std::transform(ints.begin(), ints.end(), dbls.begin(), [lsb](double v) { return (lsb * v); });
+      if (check) {
+        check = false;
+        for (size_t nx = 0; nx < 5; nx++) {
+          std::cout << ints[nx] << " <-> " << dbls[nx] << " "
+                    << "lsb:" << lsb << std::endl;
+        }
+      }
+
       chan->write_data(dbls);
     } while (dbls.size() && chan->outfile_is_good());
     chan->close_outfile();

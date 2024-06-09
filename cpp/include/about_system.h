@@ -89,6 +89,26 @@ std::shared_ptr<tm> time_from_ints(const int YYYY = 0, const int MM = 0, const i
   return dt;
 }
 
+std::filesystem::path get_data_dir() {
+  // that is the path to the executable and should be inside the bin folder, on mac below the app bundle
+  std::filesystem::path result(get_exec_dir());
+  // cd up until we have one above the bin folder
+  if (!std::filesystem::exists(result))
+    return std::filesystem::path();
+  // now loop cd up until we have the data folder
+  for (;;) {
+    if (!result.has_parent_path())
+      return std::filesystem::path();
+    else
+      result = result.parent_path();
+    if (std::filesystem::exists(result / "data")) {
+      result /= "data";
+      break;
+    }
+  }
+  return std::filesystem::canonical(result);
+}
+
 /*!
  * \brief working_dir get dirs and files of procmt, size will be 0 if not found!
  * \param append_dir append a subdirectory without slash

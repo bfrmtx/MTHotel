@@ -1,3 +1,4 @@
+// #include "BS_thread_pool.h"
 #include "atss.h"
 #include "freqs.h"
 #include <algorithm>
@@ -94,11 +95,11 @@ int main() {
   // ******************************** read all fft *******************************************************************************
 
   try {
-    std::vector<std::jthread> threads;
     for (auto &chan : channels) {
       // chan->read_all_fftw();
-      threads.emplace_back(std::jthread(&channel::read_all_fftw, chan, false, nullptr));
+      pool->push_task(&channel::read_all_fftw, chan, false, nullptr);
     }
+    pool->wait();
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
     return EXIT_FAILURE;
@@ -121,15 +122,14 @@ int main() {
   // ******************************** queue to vector *******************************************************************************
 
   try {
-    std::vector<std::jthread> threads;
-
     fft_res_iter = fft_freqs.begin();
     for (auto &chan : channels) {
       auto fft_fres = *fft_res_iter++;
       // chan->prepare_to_raw_spc(fft_fres, false);
       //  we have a pointer and don't need std::ref
-      threads.emplace_back(std::jthread(&channel::prepare_to_raw_spc, chan, fft_fres, false, true));
+      pool->push_task(&channel::prepare_to_raw_spc, chan, fft_fres, false, true);
     }
+    pool->wait();
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
     return EXIT_FAILURE;
@@ -145,7 +145,7 @@ int main() {
 
   i = 0;
   for (auto &chan : channels) {
-    raws[i++]->set_raw_spectra(chan);
+    raws[i++]->move_raw_spectra(chan);
   }
 
   std::cout << std::endl;
@@ -165,10 +165,8 @@ int main() {
       fftr->set_target_freqs(target_freqs, 0.15);
       fftr->create_parzen_vectors();
     }
-    std::vector<std::jthread> threads;
-
     for (auto &fftr : fft_freqs) {
-      threads.emplace_back(std::jthread(&fftw_freqs::create_parzen_vectors, fftr));
+      pool->push_task(&fftw_freqs::create_parzen_vectors, fftr);
       // fftr->create_parzen_vectors();
     }
   } catch (const std::runtime_error &error) {
@@ -187,11 +185,11 @@ int main() {
   // ******************************** stack all *******************************************************************************
 
   try {
-    std::vector<std::jthread> threads;
     for (auto &rw : raws) {
-      threads.emplace_back(std::jthread(&raw_spectra::advanced_stack_all, rw, std::ref(median_limit)));
+      pool->push_task(&raw_spectra::advanced_stack_all, rw, std::ref(median_limit));
       // rw->advanced_stack_all(0.7);
     }
+    pool->wait();
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
     return EXIT_FAILURE;
@@ -207,11 +205,11 @@ int main() {
 
   // ******************************** parzen stack *******************************************************************************
   try {
-    std::vector<std::jthread> threads;
     for (auto &rw : raws) {
-      threads.emplace_back(std::jthread(&raw_spectra::parzen_stack_all, rw));
+      pool->push_task(&raw_spectra::parzen_stack_all, rw);
       // rw->parzen_stack_all();
     }
+    pool->wait();
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
     return EXIT_FAILURE;

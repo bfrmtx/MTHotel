@@ -1,10 +1,9 @@
-#ifndef ATMHEADER_XML
-#define ATMHEADER_XML
+#ifndef ATSHEADER_XML
+#define ATSHEADER_XML
 
-#include "../xml/tinyxmlwriter/tinyxmlwriter.h"
 #include "atsheader.h"
 #include "atsheader_def.h"
-
+#include "tinyxmlwriter.h"
 
 // code snippets for generating xml files from ats
 
@@ -111,4 +110,4 @@ void ATSWriter_comments_xml(std::shared_ptr<tinyxmlwriter> &tix, const std::shar
   tix->pop("comments");
 }
 
-#endif // ATMHEADER_XML
+#endif // ATSHEADER_XML

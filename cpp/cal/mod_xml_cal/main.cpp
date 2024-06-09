@@ -4,9 +4,9 @@
 #include <iostream>
 #include <memory>
 
-#include "../../xml/tinyxml2/tinyxml2.h"
 #include "base_xml.h"
 #include "strings_etc.h"
+#include "tinyxml2.h"
 
 void set_xml_dvalue(tinyxml2::XMLElement *top_node, const std::string node, const double &value, std::string *attr = nullptr, const std::string attr_name = "") {
   auto new_node = top_node->FirstChildElement(node.c_str());

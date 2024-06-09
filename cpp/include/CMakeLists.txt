@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(mt_base VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-include_directories(${CMAKE_SOURCE_DIR}/include)
+# include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/xml/tinyxml2 ${CMAKE_SOURCE_DIR}/tinyxmlwriter )
 
 
 if(NOT DEFINED HEADERS)

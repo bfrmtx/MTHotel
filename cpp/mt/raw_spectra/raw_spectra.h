@@ -11,58 +11,21 @@
 
 #include "BS_thread_pool.h"
 #include "atss.h"
+#include "base_constants.h"
 #include "freqs.h"
 #include "prz_vector.h"
+#include "spc_base.h"
 #include "vector_math.h"
 
-// for beeing accessable as jthreads core math stays outside if possible
+#include <filesystem>
+namespace fs = std::filesystem;
 
-void simple_ampl_stack(const std::vector<std::vector<std::complex<double>>> &in, std::vector<double> &out) {
-  size_t n = in.at(0).size(); // n = f size
-  out.resize(n, 0.0);         // f size
+// ***************************************************** R A W   S P E C T R A ****************************************************************
 
-  for (size_t i = 0; i < n; ++i) {                 //   for frequencies
-    auto ff = bvec::absv(bvec::get_fslice(in, i)); // get all stacks
-    out[i] = bvec::mean(ff);
-  }
-}
-
-void simple_ampl_stack_div(const std::vector<std::vector<std::complex<double>>> &in_nom, const std::vector<std::vector<std::complex<double>>> &in_denom, std::vector<double> &out) {
-
-  if (in_nom.size() != in_denom.size()) {
-    throw std::runtime_error("simple_ampl_stack: in_nom.size() != in_denom.size()");
-  }
-
-  size_t n = in_nom.at(0).size(); // n = f size
-  out.resize(n, 0.0);             // f size
-
-  for (size_t i = 0; i < n; ++i) {                       //   for frequencies
-    auto ff = bvec::absv(bvec::get_fslice(in_nom, i));   // get all stacks
-    auto dd = bvec::absv(bvec::get_fslice(in_denom, i)); // get all stacks
-    for (size_t j = 0; j < ff.size(); ++j) {
-      ff[j] /= dd[j];
-    }
-    out[i] = bvec::mean(ff);
-  }
-}
-
-void advanced_ampl_stack(const std::vector<std::vector<std::complex<double>>> &in, std::vector<double> &out, const double &fraction_to_use) {
-
-  size_t n = in.at(0).size(); // n = f size
-  out.resize(n, 0.0);         // f size
-
-  for (size_t i = 0; i < n; ++i) { //   for frequencies
-
-    auto ff = bvec::absv(bvec::get_fslice(in, i)); // get all stacks
-                                                   //        two_pass_variance var;
-                                                   //        var.variance(ff.cbegin(), ff.cend());
-                                                   //        out[i] = var.d_mean;
-    out[i] = bvec::median_range_mean(ff, fraction_to_use);
-    // out[i] = bvec::mean(ff);
-  }
-}
-
-class raw_spectra {
+/*!
+ * \brief The raw_spectra class, map is base class
+ */
+class raw_spectra : public spc_base<std::vector<std::complex<double>>> {
 public:
   /*!
    * \brief raw_spectra
@@ -100,92 +63,72 @@ public:
   ~raw_spectra() {
     this->fft_freqs.reset();
     this->pool.reset();
+    auto it = this->channels.begin();
+    for (auto &c : this->channels) {
+      c.reset();
+    }
   }
 
   /*!
-   * \brief set_raw_spectra moves the raw spectra from the channel to the raw_spectra object (after channel has read it from the file)
+   * \brief move_raw_spectra moves the raw spectra from the channel to the raw_spectra object (after channel has read it from the file)
    * \param channel
    */
-  void set_raw_spectra(std::shared_ptr<channel> chan);
+  void move_raw_spectra(std::shared_ptr<channel> chan);
 
-  void simple_stack_all();
-
-  void simple_stack_all_div(const std::shared_ptr<raw_spectra> raw, const std::string &channel_type);
-
-  void scale_by_stacked_spectra_local(std::vector<double> &nominator, const bool is_remote = false, const bool is_emap = false);
-
-  void advanced_stack_all(const double &fraction_to_use);
+  // /*!
+  //  * @brief this is a quick method, used to check the amplitude spectra of the raw data
+  //  */
+  // void simple_stack_all();
 
   /*!
-   * @brief uses previous calculated stacked spectra and smooths it with a parzen window; that can also be advanced stacked or a another method
+   * @brief this is a quick method, used to check the amplitude spectra of the raw data, e.g. use 50% of the data
+   \param fraction_to_use 0.1 - 1 - here 0.5 is best, "median limit" is used as a threshold, 1 is all data
+   the sa spectra have to be created before! then all spectra found, will be used for stacking
+   */
+  void advanced_stack_all(const double &fraction_to_use = 1.0);
+
+  // void simple_stack_all_div(const std::shared_ptr<raw_spectra> raw, const std::string &channel_type);
+
+  /*!
+   * @brief uses PREVIOUS calculated stacked spectra and smooths it with a parzen window; that can also be advanced stacked or a another method
    */
   void parzen_stack_all();
 
-  std::vector<double> get_abs_sa_spectra(const std::string &channel_type, const bool is_remote = false, const bool is_emap = false) const;
-  std::pair<double, double> get_abs_sa_spectra_min_max(const std::string &channel_type, const bool is_remote = false, const bool is_emap = false) const;
-  std::vector<double> get_abs_sa_prz_spectra(const std::string &channel_type, const bool is_remote = false, const bool is_emap = false) const;
-  std::vector<double> get_abs_spectra(const std::string &channel_type, const size_t nstack = 0, const bool is_remote = false, const bool is_emap = false) const;
-
-  std::vector<std::vector<std::complex<double>>> ex; //!< spectra from fft, local or center site, [stacks][frequencies]
-  std::vector<std::vector<std::complex<double>>> ey; //!< spectra from fft, local or center site
-  std::vector<std::vector<std::complex<double>>> hx; //!< spectra from fft, local or center site
-  std::vector<std::vector<std::complex<double>>> hy; //!< spectra from fft, local or center site
-  std::vector<std::vector<std::complex<double>>> hz; //!< spectra from fft, local or center site
-
-  std::vector<std::vector<std::complex<double>>> rhx; //!< spectra from fft, remote site
-  std::vector<std::vector<std::complex<double>>> rhy; //!< spectra from fft, remote site
-  std::vector<std::vector<std::complex<double>>> rhz; //!< spectra from fft, remote site
-  std::vector<std::vector<std::complex<double>>> rex; //!< spectra from fft, remote site
-  std::vector<std::vector<std::complex<double>>> rey; //!< spectra from fft, remote site
-
-  std::vector<std::vector<std::complex<double>>> eex; //!< spectra from fft, emap site
-  std::vector<std::vector<std::complex<double>>> eey; //!< spectra from fft, emap site
+  std::vector<double> get_abs_sa_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const;
+  std::pair<double, double> get_abs_sa_spectra_min_max(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const;
+  std::vector<double> get_abs_sa_prz_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const;
 
   std::shared_ptr<fftw_freqs> fft_freqs;          //!< fftw_freqs object, need to know how the incoming spectra have been calculated
   std::shared_ptr<BS::thread_pool> pool;          //!< thread pool from main program
   std::vector<std::shared_ptr<channel>> channels; //!< all channels from the raw file for reference
 
+  std::string get_sensor_name(const std::pair<std::string, std::string> &name) const;
+  std::string get_sensor_serial(const std::pair<std::string, std::string> &name) const;
+  std::string get_sensor_name_serial(const std::pair<std::string, std::string> &name, const bool cat_underscore = false) const;
+  std::string get_sampling_rate(const std::pair<std::string, std::string> &name) const;
+
+  void multiply_sa_spectra(const double &factor);
+  void dump_sa_spectra() const;
+  void dump_sa_prz_spectra() const;
+
   double bw = 0; // bandwidth of fft
 
+  spc_base<double> sa;     //!< stack all amplitude spectra from fft
+  spc_base<double> sa_prz; //!< stack all amplitude spectra smoothed (parzening) from fft
 private:
-  std::vector<double> sa_ex; //!< stack all spectra from fft, local or center site
-  std::vector<double> sa_ey; //!< stack all spectra from fft, local or center site
-  std::vector<double> sa_hx; //!< stack all spectra from fft, local or center site
-  std::vector<double> sa_hy; //!< stack all spectra from fft, local or center site
-  std::vector<double> sa_hz; //!< stack all spectra from fft, local or center site
-
-  std::vector<double> sa_rhx; //!< stack all spectra from fft, remote site
-  std::vector<double> sa_rhy; //!< stack all spectra from fft, remote site
-  std::vector<double> sa_rhz; //!< stack all spectra from fft, remote site
-  std::vector<double> sa_rex; //!< stack all spectra from fft, remote site
-  std::vector<double> sa_rey; //!< stack all spectra from fft, remote site
-
-  std::vector<double> sa_eex; //!< stack all spectra from fft, emap site
-  std::vector<double> sa_eey; //!< stack all spectra from fft, emap site
-
-  std::vector<double> sa_prz_ex; //!< stack all spectra smoothed from fft, local or center site
-  std::vector<double> sa_prz_ey; //!< stack all spectra smoothed from fft, local or center site
-  std::vector<double> sa_prz_hx; //!< stack all spectra smoothed from fft, local or center site
-  std::vector<double> sa_prz_hy; //!< stack all spectra smoothed from fft, local or center site
-  std::vector<double> sa_prz_hz; //!< stack all spectra smoothed from fft, local or center site
-
-  std::vector<double> sa_prz_rhx; //!< stack all spectra smoothed from fft, remote site
-  std::vector<double> sa_prz_rhy; //!< stack all spectra smoothed from fft, remote site
-  std::vector<double> sa_prz_rhz; //!< stack all spectra smoothed from fft, remote site
-  std::vector<double> sa_prz_rex; //!< stack all spectra smoothed from fft, remote site
-  std::vector<double> sa_prz_rey; //!< stack all spectra smoothed from fft, remote site
-
-  std::vector<double> sa_prz_eex; //!< stack all spectra smoothed from fft, emap site
-  std::vector<double> sa_prz_eey; //!< stack all spectra smoothed from fft, emap site
+  void do_advanced_stack_auto(const std::pair<std::string, std::string> &name, const double &fraction_to_use);
+  void do_advanced_stack_cross(const std::pair<std::string, std::string> &name, const double &fraction_to_use);
 };
 
-std::pair<double, double> min_max_sa_spc(const std::vector<std::shared_ptr<raw_spectra>> &raws, const std::string &channel_type,
-                                         const bool is_remote = false, const bool is_emap = false) {
+// end class raw_spectra
+
+static std::pair<double, double> min_max_sa_spc(const std::vector<std::shared_ptr<raw_spectra>> &raws, const std::pair<std::string, std::string> &name,
+                                                const bool is_remote = false, const bool is_emap = false) {
 
   std::pair<double, double> result(DBL_MIN, DBL_MAX);
   std::vector<double> ampl_max_mins;
   for (const auto &raw : raws) {
-    auto mm = raw->get_abs_sa_spectra_min_max(channel_type, is_remote, is_emap);
+    auto mm = raw->get_abs_sa_spectra_min_max(name, is_remote, is_emap);
     ampl_max_mins.push_back(mm.first);
     ampl_max_mins.push_back(mm.second);
   }
@@ -196,3 +139,27 @@ std::pair<double, double> min_max_sa_spc(const std::vector<std::shared_ptr<raw_s
 }
 
 #endif // RAW_SPECTRA_H
+
+// std::vector<double> get_abs_spectra(const std::string &channel_type, const size_t nstack = 0, const bool is_remote = false, const bool is_emap = false) const;
+
+// void scale_by_stacked_spectra_local(std::vector<double> &nominator, const bool is_remote = false, const bool is_emap = false);
+
+// void simple_ampl_stack_div(const std::string &name, const std::vector<std::vector<std::complex<double>>> &in_nom, const std::vector<std::vector<std::complex<double>>> &in_denom, single_spectra<double> &xsp_out) {
+
+//   if (in_nom.size() != in_denom.size()) {
+//     throw std::runtime_error("simple_ampl_stack: in_nom.size() != in_denom.size()");
+//   }
+
+//   size_t n = in_nom.at(0).size();  // n = f size
+//   std::vector<double> out(n, 0.0); // f size
+
+//   for (size_t i = 0; i < n; ++i) {                       //   for frequencies
+//     auto ff = bvec::absv(bvec::get_fslice(in_nom, i));   // get all stacks
+//     auto dd = bvec::absv(bvec::get_fslice(in_denom, i)); // get all stacks
+//     for (size_t j = 0; j < ff.size(); ++j) {
+//       ff[j] /= dd[j];
+//     }
+//     out[i] = bvec::mean(ff);
+//   }
+//   xsp_out.add_spectra(name, out);
+// }

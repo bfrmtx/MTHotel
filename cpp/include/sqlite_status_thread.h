@@ -33,8 +33,7 @@ class sqlite_sender;
 
 class sqlite_receiver {
 public:
-  sqlite_receiver(std::filesystem::path sqlfile_status, std::filesystem::path sqlfile_log) :
-      sqlfile_status(sqlfile_status), sqlfile_log(sqlfile_log) {
+  sqlite_receiver(std::filesystem::path sqlfile_status, std::filesystem::path sqlfile_log) : sqlfile_status(sqlfile_status), sqlfile_log(sqlfile_log) {
 
     this->mtx = new std::mutex();
     this->act = new std::atomic<int>(0); // thread can not run yet
@@ -155,14 +154,12 @@ private:
 class sqlite_sender : public multiple_msg_to_sqlite {
 public:
   // remember: let the receiver create the multiple_msg_to_sqlite!! We need a valid status_index!!
-  sqlite_sender(const sqlite_receiver *msc, const std::string &sender_name, const std::vector<std::string> &keys) :
-      mtx(msc->mtx), act(msc->act), cond(msc->cond), multiple_msg_to_sqlite(sender_name, keys) {
+  sqlite_sender(const sqlite_receiver *msc, const std::string &sender_name, const std::vector<std::string> &keys) : mtx(msc->mtx), act(msc->act), cond(msc->cond), multiple_msg_to_sqlite(sender_name, keys) {
 
     this->message_queue = msc->message_queue; // shared pointer to message queue
   }
 
-  sqlite_sender(const sqlite_receiver *msc, const std::string &sender_name, const std::filesystem::path &json_file) :
-      mtx(msc->mtx), act(msc->act), cond(msc->cond), multiple_msg_to_sqlite(sender_name, json_file) {
+  sqlite_sender(const sqlite_receiver *msc, const std::string &sender_name, const std::filesystem::path &json_file) : mtx(msc->mtx), act(msc->act), cond(msc->cond), multiple_msg_to_sqlite(sender_name, json_file) {
 
     this->message_queue = msc->message_queue; // shared pointer to message queue
   }

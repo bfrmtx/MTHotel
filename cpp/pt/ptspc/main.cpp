@@ -7,14 +7,17 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <string>
 #include <survey.h>
 #include <utility>
 #include <vector>
 
+#include "cal_get_sql.h"
 #include "channel_collector.h"
 #include "gnuplotter.h"
+#include "merge_abs_spectra.h"
 #include "mini_math.h"
 #include "raw_spectra.h"
 #include "sqlite_handler.h"
@@ -27,6 +30,8 @@
 // operators are provided in the survey class to access runs and channels by index or name
 
 // /ptspc -u /home/bfr/tmp/rhd2    -c Hx Hy  -highres  -f_range 10 12000 -m6 -pl -cplt -s pt_1 -r 1  7
+// /ptspc -u /survey/mina/pcb -s  pt_7 -cplt  -highres  -c Hx Hy Hz -r  1
+// ./ptspc -u /survey/mina_easter -s  pt_69 -cplt  -highres -pl  -c Hx Hy Hz -r  1 2 3 4 5 6 7
 
 namespace fs = std::filesystem;
 
@@ -42,6 +47,7 @@ int main(int argc, char *argv[]) {
 
   bool same_base = false; // // always compare against first RMS, default no (outer), yes likely for inner f range
   bool inner_range = false;
+  bool dump = false;
   // administration
   std::shared_ptr<survey_d> survey;
   std::shared_ptr<station_d> station;
@@ -49,13 +55,13 @@ int main(int argc, char *argv[]) {
 
   // which channel types to use
   std::vector<std::string> channel_types;
+  std::vector<std::pair<std::string, std::string>> auto_cross_spectra_names; // cross spectra for Hx, Hy, Hz
 
   std::vector<std::shared_ptr<fftw_freqs>> tmp_fft_freqs; // fftw_freqs for labels
 
   std::vector<std::shared_ptr<run_d>> runs;
-  auto pool = std::make_shared<BS::thread_pool>();
+  auto pool = std::make_shared<BS::thread_pool>(8);
   // try to make a stable reference by dividing by E in general
-  std::vector<std::string> main_channel_types;
   std::string ref_channel;
 
   const double median_limit = 0.5; // for median limit
@@ -74,18 +80,21 @@ int main(int argc, char *argv[]) {
   // cd to doc
   ptspc_path = ptspc_path / "data";
   fs::path sqlfile = ptspc_path / "info.sql3";
+  fs::path master_cal_db = ptspc_path / "master_calibration.sql3";
 
   if (!fs::exists(sqlfile)) {
     std::cerr << "could not find " << sqlfile.string() << std::endl;
     return EXIT_FAILURE;
   }
 
-  bool magnify_06e = false; // take a smaller subset of the frequency data for MFS-06e
-  bool magnify_07e = false; // take a smaller subset of the frequency data for MFS-07e
-  bool no_cal_plot = true;  // skip the calibration plots at the end
-  bool railway = false;     // railway data 16 2/3 Hz
-  bool power_lines = false; // power line data 50, 150 Hz
-  size_t min_wl = 256;      // minimum window length for fftw
+  bool magnify_06e = false;    // take a smaller subset of the frequency data for MFS-06e
+  bool magnify_07e = false;    // take a smaller subset of the frequency data for MFS-07e
+  bool no_cal_plot = true;     // skip the calibration plots at the end
+  bool railway = false;        // railway data 16 2/3 Hz
+  bool power_lines = false;    // power line data 50, 150 Hz
+  bool use_master_cal = false; // use the master calibration for all channels in case we don't have a calibration inside the json file
+  std::unique_ptr<get_from_master_cal> master_cal;
+  size_t min_wl = 256; // minimum window length for fftw
   std::vector<std::pair<double, double>> power_lines_ranges = {{12, 20}, {46, 54}, {146, 154}};
 
   bool exit_flag = false;
@@ -130,9 +139,37 @@ int main(int argc, char *argv[]) {
 
         while (l < unsigned(argc - 2) && *argv[l + 1] != '-') {
           std::string channel_type = std::string(argv[++l]);
-          channel_types.emplace_back(channel_type);
+          // if channel_type is in available_channel_types
+          if (std::find(available_channel_types.begin(), available_channel_types.end(), channel_type) == available_channel_types.end()) {
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " channel type " << channel_type << " not available" << std::endl;
+            throw std::runtime_error(err_str.str());
+          }
+          channel_types.emplace_back(channel_type);                          // like Hx, Hy, Hz
+          auto_cross_spectra_names.emplace_back(channel_type, channel_type); // like HxHx, HyHy, HzHz for auto spectra
         }
       }
+      // cross spectra for Hx, Hy, Hz as pairs of strings like -cx Hx Hy Hy Hz
+      // that would be a cross spectra for Hx, Hy and Hy, Hz
+      if ((marg.compare("-cx") == 0) && (l < unsigned(argc - 3))) {
+        while (l < unsigned(argc - 3) && *argv[l + 1] != '-') {
+          std::string first_channel = std::string(argv[++l]);
+          std::string second_channel = std::string(argv[++l]);
+          if (first_channel == second_channel) {
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " first and second channel must be different, you want cross spectra with -cx option" << std::endl;
+            throw std::runtime_error(err_str.str());
+          }
+          std::string ac = first_channel + second_channel;
+          if (std::find(available_ac_spectra_types.begin(), available_ac_spectra_types.end(), ac) == available_ac_spectra_types.end()) {
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " ac spectra type " << ac << " not available" << std::endl;
+            throw std::runtime_error(err_str.str());
+          }
+          auto_cross_spectra_names.emplace_back(first_channel, second_channel);
+        }
+      }
+
       if (marg.compare("-ref") == 0) {
         ref_channel = std::string(argv[++l]);
       }
@@ -168,6 +205,10 @@ int main(int argc, char *argv[]) {
       }
       if (marg.compare("-n") == 0) {
         normalize = true; //  activate calibration plots normalized by f
+      }
+      if (marg.compare("-mc") == 0) {
+        use_master_cal = true; //  activate master calibration
+        master_cal = std::make_unique<get_from_master_cal>(master_cal_db);
       }
 
       if (marg.compare("-f_range") == 0) {
@@ -247,12 +288,14 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  if (ref_channel.size()) {
-    main_channel_types = channel_types;      // safe the main channel types
-    channel_types.emplace_back(ref_channel); // append the reference channel
+  if (lowres && highres) {
+    std::cout << "only one plot option allowed, use -lowres or -highres" << std::endl;
+    return EXIT_FAILURE;
   }
 
   // ******************************** read data *************************************************************************************
+
+  // auto_cross_spectra_names.emplace_back("Hx", "Hy");
 
   size_t wl;
 
@@ -284,7 +327,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
       }
     }
-    // raws are connected to the thread pool - one for each run
+    // raws are connected to the thread pool - one for each run; the fft_freqs are connected to the channel, first valid is taken
     station->get_run(irun)->init_raw_spectra(pool);
   }
 
@@ -303,7 +346,8 @@ int main(int argc, char *argv[]) {
       try {
         std::cout << "push thread " << thread_index++ << std::endl;
         // the read_all_fftw pushes the fftw slices into a queue inside the channel object
-        pool->push_task(&channel::read_all_fftw, station->at(irun, schan), false, nullptr); // each channel is read in parallel
+        // pool->push_task(&channel::read_all_fftw, station->at(irun, schan), false, nullptr); // each channel is read in parallel
+        pool->submit_task([irun, schan, &station]() { station->at(irun, schan)->read_all_fftw(false, nullptr); });
       }
 
       catch (const std::runtime_error &error) {
@@ -316,7 +360,7 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-  pool->wait_for_tasks(); // wait for all tasks to finish, read time series and perform fftw
+  pool->wait(); // wait for all tasks to finish, read time series and perform fftw
 
   inner_outer<double> innerouter; // inner and outer range for the resulting spectra, we do not want all frequencies
   for (const auto &irun : run_numbers) {
@@ -338,14 +382,37 @@ int main(int argc, char *argv[]) {
           innerouter.set_low_high(chan->fft_freqs->auto_range(0.01, 0.7)); // cut off spectra; we need these values later
         if (no_cal_plot == false) {
           std::cout << "calibration" << std::endl;
-          chan->cal->interpolate(chan->fft_freqs->get_frequencies());
-          chan->cal->gen_cal_sensor(chan->fft_freqs->get_frequencies());
-          chan->cal->join_lower_theo_and_measured_interpolated();
+          if (use_master_cal) {
+            if (master_cal == nullptr) {
+              std::ostringstream err_str(__func__, std::ios_base::ate);
+              err_str << " no master calibration NULLPTR " << chan->cal->sensor << " " << chan->cal->serial2string() << std::endl;
+              std::cerr << err_str.str();
+              throw std::runtime_error(err_str.str());
+            } else {
+              master_cal->get_master_cal(chan->cal);
+              chan->cal->set_master_as_caldata();
+            }
+          }
+          if (chan->cal->f.size() == 0) {
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " no calibration data available for " << chan->cal->sensor << " " << chan->cal->serial2string() << std::endl;
+            std::cerr << err_str.str();
+
+          } else {
+            chan->cal->interpolate(chan->fft_freqs->get_frequencies());
+            chan->cal->gen_cal_sensor(chan->fft_freqs->get_frequencies());
+            chan->cal->join_lower_theo_and_measured_interpolated();
+          }
         }
-        // chan->prepare_raw_spc(false); // no calibration yet
+        // all spectra a still in a queue, we have to fetch them into a vector of vectors
         // push task can not use default arguments, supply all arguments
         // the prepare_raw_spc pushes the raw spectra queue into a vector spc inside the channel object
-        pool->push_task(&channel::prepare_raw_spc, chan, !no_cal_plot, true); // no calibration yet
+        // calibration is done if !no_cal_plot -> so cal_plot is done; true at end means that the fft window calibration is on additionally
+        // pool->push_task(&channel::prepare_raw_spc, chan, !no_cal_plot, true);
+
+        // do not use &chan here, because the channel pointer is not valid in the lambda function while the main loop is calling the next channel!
+        pool->submit_task([chan, no_cal_plot]() { chan->prepare_raw_spc(!no_cal_plot, true); });
+        // after this we have the spc vector of vectors in the channel object
       }
 
       catch (const std::runtime_error &error) {
@@ -358,21 +425,51 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-  pool->wait_for_tasks(); // wait for all tasks to finish
+  pool->wait(); // wait for all tasks to finish
 
   for (auto &run : runs) {
-    run->fetch_raw_spectra(); // fetch the raw spectra from the thread pool; move operation (fast)
+    run->fetch_raw_spectra(); // fetch the raw spectra from the thread pool; move operation (fast); also initializes the ac_spectra!
+    // raw spectra also contains the channel pointer and therewith the channel name and FFT properties
   }
+  pool->wait(); // wait for all tasks to finish
+  // ******************************** F I N I S H E D  R E A D I N G  D A T A *********************************************************************
+  // ******************************** F I N I S H E D  S I N G L E  S P E C T R A *********************************************************************
 
+  // for (auto &run : runs) {
+  //   run->init_ac_spectra(pool); // init the ac_spectra for all channels
+  //   for (auto &cross : cross_spectra_names) {
+  //     run->ac_spc->add_spectra(cross["first"], cross["second"], run->raw_spc->get_raw_spectra(cross["first"]), run->raw_spc->get_raw_spectra(cross["second"]));
+  //   }
+  // }
+
+  // the data has been transformed into the raw_spectra
+  // the run->raw_spc contains the raw spectra Ex, Ey, Ez, Hx, Hy, Hz or what was given
+  // in this SW we want to calculate the STACKED auto- and cross-spectra
+  // we want not to store HxHx ... HxHz as full data, but only the stacked spectra inside the raw_spectra object as sa and sa_prz
+
+  // create the necessary auto and cross spectra; each run has its own raw_spectra object
+  for (auto &run : runs) {
+    std::cout << "setting auto- and cross- spectra ";
+    for (auto &ac : auto_cross_spectra_names) {
+      std::cout << "preparing " << ac.first << ac.second << " ";
+      run->raw_spc->sa.add_spectra(ac);
+      run->raw_spc->sa_prz.add_spectra(ac); // we may need the parzen spectra later; cost is low
+    }
+    std::cout << std::endl;
+  }
   std::cout << "stacking" << std::endl;
   thread_index = 0;
   for (auto &run : runs) {
-    // run raw spectra fires up all channels
-    run->raw_spc->advanced_stack_all(median_limit);
-    // run->raw_spc->simple_stack_all(); // run contains the raw spectra Ex, Ey, Ez, Hx, Hy, Hz or what was given
+    // run raw spectra fires up all channels; USE wait_for_tasks() after this
+    run->raw_spc->advanced_stack_all(median_limit); // stack all auto and cross spectra
   }
-  pool->wait_for_tasks(); // wait for all tasks to finish
+  pool->wait(); // wait for all tasks to finish
   std::cout << "done" << std::endl;
+  // double sd = 1.0 / (1000.0 * 1000.0 * std::sqrt(2));
+  double sd = 1.0 / (1000.0 * 1000.0);
+  for (auto &run : runs) {
+    run->raw_spc->multiply_sa_spectra(sd); // parzen stack all auto and cross spectra
+  }
 
   size_t i;
   std::string init_err;
@@ -381,19 +478,19 @@ int main(int argc, char *argv[]) {
   // for (const auto &val : v)
   //   std::cout << val << " ";
   // std::cout << std::endl;
-  // interpolate the cal data to the fft_freqs
-  for (auto &irun : run_numbers) {
-    for (auto &schan : channel_types) {
-      try {
-        station->at(irun, schan)->cal->interpolate(station->at(irun, schan)->fft_freqs->get_frequencies());
-        station->at(irun, schan)->cal->gen_cal_sensor(station->at(irun, schan)->fft_freqs->get_frequencies());
-        station->at(irun, schan)->cal->join_lower_theo_and_measured_interpolated();
-      } catch (const std::runtime_error &error) {
-        std::cerr << error.what() << std::endl;
-        return EXIT_FAILURE;
-      }
-    }
-  }
+  // interpolate the cal data to the fft_freqs; here we go channel wise
+  // for (auto &irun : run_numbers) {
+  //   for (auto &schan : channel_types) {
+  //     try {
+  //       station->at(irun, schan)->cal->interpolate(station->at(irun, schan)->fft_freqs->get_frequencies());
+  //       station->at(irun, schan)->cal->gen_cal_sensor(station->at(irun, schan)->fft_freqs->get_frequencies());
+  //       station->at(irun, schan)->cal->join_lower_theo_and_measured_interpolated();
+  //     } catch (const std::runtime_error &error) {
+  //       std::cerr << error.what() << std::endl;
+  //       return EXIT_FAILURE;
+  //     }
+  //   }
+  // }
 
   std::ostringstream all_coils;
   std::string all_coils_title;
@@ -413,6 +510,19 @@ int main(int argc, char *argv[]) {
   // overwrite the last 2 characters
   all_coils << " ";
   all_coils_title = all_coils.str().substr(0, all_coils.str().size() - 2);
+
+  // dump the raw spectra
+  dump = true;
+  if (dump) {
+    for (const auto &run : runs) {
+      try {
+        run->raw_spc->dump_sa_spectra();
+      } catch (const std::runtime_error &error) {
+        std::cerr << error.what() << std::endl;
+        return EXIT_FAILURE;
+      }
+    }
+  }
 
   // ******************************** high resolution plot *******************************************************************************
 
@@ -436,21 +546,21 @@ int main(int argc, char *argv[]) {
     gplt->cmd << "set key font \"Hack, 10\"" << std::endl;
     gplt->set_y_range(a_range);
 
-    if (!gplt->set_x_range(f_range)) { // we did not use manual range
+    if (!gplt->set_x_range(f_range)) { // we did NOT use manual range
       if (inner_range) {
         gplt->set_x_range(innerouter.get_inner());
         std::cout << "inner range: " << mstr::f_to_string(innerouter.get_inner().first) << " <-> " << mstr::f_to_string(innerouter.get_inner().second) << std::endl;
-        for (auto &irun : run_numbers) {
-          for (auto &schan : channel_types) {
-            std::cout << mstr::f_to_string(station->at(irun, schan)->fft_freqs->get_frange().first) << " <-> " << mstr::f_to_string(station->at(irun, schan)->fft_freqs->get_frange().second) << std::endl;
+        for (const auto &irun : run_numbers) {
+          for (const auto &ac : auto_cross_spectra_names) {
+            std::cout << mstr::f_to_string(station->get_run(irun)->raw_spc->fft_freqs->get_frange().first) << " <-> " << mstr::f_to_string(station->get_run(irun)->raw_spc->fft_freqs->get_frange().second) << std::endl;
           }
         }
       } else {
         gplt->set_x_range(innerouter.get_outer());
         std::cout << "outer range: " << mstr::f_to_string(innerouter.get_outer().first) << " <-> " << mstr::f_to_string(innerouter.get_outer().second) << std::endl;
-        for (auto &irun : run_numbers) {
-          for (auto &schan : channel_types) {
-            std::cout << mstr::f_to_string(station->at(irun, schan)->fft_freqs->get_frange().first) << " <-> " << mstr::f_to_string(station->at(irun, schan)->fft_freqs->get_frange().second) << std::endl;
+        for (const auto &irun : run_numbers) {
+          for (const auto &ac : auto_cross_spectra_names) {
+            std::cout << mstr::f_to_string(station->get_run(irun)->raw_spc->fft_freqs->get_frange().first) << " <-> " << mstr::f_to_string(station->get_run(irun)->raw_spc->fft_freqs->get_frange().second) << std::endl;
           }
         }
       }
@@ -458,17 +568,17 @@ int main(int argc, char *argv[]) {
     auto rmss = std::make_shared<std::vector<double>>();
 
     for (auto &irun : run_numbers) {
-      for (auto &schan : channel_types) {
+      for (auto &ac : auto_cross_spectra_names) {
         try {
           std::vector<double> f, v;
           if (inner_range)
-            f = station->at(irun, schan)->fft_freqs->get_frequency_slice(innerouter.get_inner());
+            f = station->get_run(irun)->raw_spc->fft_freqs->get_frequency_slice(innerouter.get_inner());
           else
-            f = station->at(irun, schan)->fft_freqs->get_frequency_slice(innerouter.get_outer());
+            f = station->get_run(irun)->raw_spc->fft_freqs->get_frequency_slice(innerouter.get_outer());
           if (inner_range)
-            v = trim_by_index<double>(station->get_run(irun)->raw_spc->get_abs_sa_spectra(schan), station->at(irun, schan)->fft_freqs->get_index_slice());
+            v = trim_by_index<double>(station->get_run(irun)->raw_spc->get_abs_sa_spectra(ac), station->get_run(irun)->raw_spc->fft_freqs->get_index_slice());
           else
-            v = station->get_run(irun)->raw_spc->get_abs_sa_spectra(schan);
+            v = station->get_run(irun)->raw_spc->get_abs_sa_spectra(ac);
           double rms = 0;
           for (const auto val : v)
             rms += val * val;
@@ -486,9 +596,9 @@ int main(int argc, char *argv[]) {
 
     // need all fft_freqs for the labels
 
-    for (auto &irun : run_numbers) {
-      for (auto &schan : channel_types) {
-        tmp_fft_freqs.emplace_back(station->at(irun, schan)->fft_freqs);
+    for (const auto &irun : run_numbers) {
+      for (const auto &ac : auto_cross_spectra_names) {
+        tmp_fft_freqs.emplace_back(station->get_run(irun)->raw_spc->fft_freqs);
       }
     }
 
@@ -502,16 +612,19 @@ int main(int argc, char *argv[]) {
     try {
       i = 0;
       for (auto &irun : run_numbers) {
-        for (auto &schan : channel_types) {
-          std::string label = station->at(irun, schan)->cal->sensor + " " + station->at(irun, schan)->cal->serial2string() + " " + labels.at(i++).str();
-          if (!power_lines)
-            gplt->set_xy_lines(station->at(irun, schan)->fft_freqs->get_frequencies(), station->get_run(irun)->raw_spc->get_abs_sa_spectra(schan), label, 1, gplt->default_color(schan));
-          else {
+        for (auto &ac : auto_cross_spectra_names) {
+          std::string label = station->get_run(irun)->raw_spc->get_sensor_name_serial(ac) + " " + labels.at(i++).str();
+          if (!power_lines) {
+            // if (schan == "Hz") {
+            // gplt->set_xy_points(station->at(irun, schan)->fft_freqs->get_frequencies(), station->get_run(irun)->raw_spc->get_abs_cplx_sa_spectra_ampl("Hx", "Hx"), label, 1, gplt->default_color(schan));
+            //} else
+            gplt->set_xy_lines(station->get_run(irun)->raw_spc->fft_freqs->get_frequencies(), station->get_run(irun)->raw_spc->get_abs_sa_spectra(ac), label, 1, gplt->default_color(ac));
+          } else {
             std::vector<double> f1, v1;
             std::vector<double> f2, v2;
-            remove_spectral_range(station->at(irun, schan)->fft_freqs->get_frequencies(), station->get_run(irun)->raw_spc->get_abs_sa_spectra(schan), f1, v1, power_lines_ranges);
+            remove_spectral_range(station->get_run(irun)->raw_spc->fft_freqs->get_frequencies(), station->get_run(irun)->raw_spc->get_abs_sa_spectra(ac), f1, v1, power_lines_ranges);
             remove_spectral_lines(f1, v1, f2, v2, 50, 3);
-            gplt->set_xy_lines(f2, v2, label, 1, gplt->default_color(schan));
+            gplt->set_xy_lines(f2, v2, label, 1, gplt->default_color(ac));
           }
         }
       }
@@ -524,10 +637,22 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
     }
     gplt->plot();
+    bool dump = true;
+    if (dump == true) {
+      for (const auto &run : runs) {
+        try {
+          run->raw_spc->dump_sa_spectra();
+        } catch (const std::runtime_error &error) {
+          std::cerr << error.what() << std::endl;
+          return EXIT_FAILURE;
+        }
+      }
+    }
 
-  } // end lowres only
+  } // end hires only
 
   // ******************************** parzening  *******************************************************************************
+
   // now do the same with parzening
   if (lowres) {
     std::cout << "parzening" << std::endl;
@@ -556,12 +681,13 @@ int main(int argc, char *argv[]) {
     }
 
     try {
-      for (auto &irun : run_numbers) {
-        for (auto &schan : channel_types) {
-          station->at(irun, schan)->fft_freqs->set_target_freqs(target_freqs, 0.15);
-          // fft_freq->set_target_freqs(target_freqs, 0.15);
-          pool->push_task(&fftw_freqs::create_parzen_vectors, station->at(irun, schan)->fft_freqs);
-        }
+      for (auto &irun : run_numbers) { // for each run has a raw_spc object with same pazendists vector
+        // for (auto &ac : auto_cross_spectra_names) {
+        station->get_run(irun)->raw_spc->fft_freqs->set_target_freqs(target_freqs, 0.15);
+        // fft_freq->set_target_freqs(target_freqs, 0.15);
+        // pool->push_task(&fftw_freqs::create_parzen_vectors, station->get_run(irun)->raw_spc->fft_freqs);
+        pool->submit_task([irun, &station]() { station->get_run(irun)->raw_spc->fft_freqs->create_parzen_vectors(); });
+        // }
       }
 
     } catch (const std::runtime_error &error) {
@@ -574,12 +700,11 @@ int main(int argc, char *argv[]) {
       std::cerr << "could not allocate all channels" << std::endl;
       return EXIT_FAILURE;
     }
-    pool->wait_for_tasks(); // always wait for tasks for parzening
+    pool->wait(); // always wait for tasks for parzening
 
     try {
-      for (auto &irun : run_numbers) {
-        station->get_run(irun)->raw_spc->parzen_stack_all();
-        std::cout << station->get_run(irun)->raw_spc->get_abs_sa_spectra(channel_types.at(0)).size() << std::endl;
+      for (auto &run : runs) {
+        run->raw_spc->parzen_stack_all(); // start the thread pool for parzening
       }
     } catch (const std::runtime_error &error) {
       std::cerr << error.what() << std::endl;
@@ -591,7 +716,32 @@ int main(int argc, char *argv[]) {
       std::cerr << "could not allocate all channels" << std::endl;
       return EXIT_FAILURE;
     }
-    pool->wait_for_tasks(); // always wait for tasks
+    pool->wait(); // always wait for tasks
+
+    auto merge_spc = std::make_shared<merge_spectra<double>>();
+
+    for (auto &irun : run_numbers) {
+      for (auto &ac : auto_cross_spectra_names) {
+        try {
+          merge_spc->add_spectra(ac, station->get_run(irun)->raw_spc->fft_freqs->get_selected_frequencies(), station->get_run(irun)->raw_spc->get_abs_sa_prz_spectra(ac));
+        } catch (const std::runtime_error &error) {
+          std::cerr << error.what() << std::endl;
+          return EXIT_FAILURE;
+        }
+      }
+    }
+    std::cout << "done" << std::endl;
+
+    if (dump) {
+      for (const auto &run : runs) {
+        try {
+          run->raw_spc->dump_sa_prz_spectra();
+        } catch (const std::runtime_error &error) {
+          std::cerr << error.what() << std::endl;
+          return EXIT_FAILURE;
+        }
+      }
+    }
 
     // ******************************** parzen plot *******************************************************************************
 
@@ -622,27 +772,40 @@ int main(int argc, char *argv[]) {
     // gplt_prz->set_x_range(40, 60);
 
     i = 0;
+
     try {
-      // concatenate all spectra
-
-      std::vector<std::unique_ptr<channel_collector_gplt>> channel_collectors(channel_types.size());
       i = 0;
-      for (auto &channel_collector : channel_collectors) {
-        channel_collector = std::make_unique<channel_collector_gplt>(gplt_prz, channel_types.at(i++), true);
-      }
-      for (auto &irun : run_numbers) {
-        for (auto &schan : channel_types) {
-          for (auto &cc : channel_collectors) {
-            cc->collect(station->at(irun, schan), station->at(irun, schan)->fft_freqs, station->get_run(irun)->raw_spc);
-          }
+      for (auto &ac : auto_cross_spectra_names) {
+        // std::string label = station->get_run(irun)->raw_spc->get_sensor_name_serial(ac) + " " + labels.at(i++).str();
+        std::string label = "test";
+        // if (schan == "Hz") {
+        // gplt->set_xy_points(station->at(irun, schan)->fft_freqs->get_frequencies(), station->get_run(irun)->raw_spc->get_abs_cplx_sa_spectra_ampl("Hx", "Hx"), label, 1, gplt->default_color(schan));
+        //} else
+        // gplt->set_xy_lines(station->get_run(irun)->raw_spc->fft_freqs->get_frequencies(), station->get_run(irun)->raw_spc->get_abs_sa_spectra(ac), label, 1, gplt->default_color(ac));
+        gplt_prz->set_xy_points(merge_spc->get_f_vec(ac), merge_spc->get_spectra_vec(ac), label + " parzen", 2, gplt_prz->default_color(ac));
+        // write as x y file
+        fs::path home_dir_dump(getenv("HOME"));
+        home_dir_dump /= "dump_spectra";
+        if (!std::filesystem::exists(home_dir_dump)) {
+          std::filesystem::create_directory(home_dir_dump);
         }
-      }
+        fs::path xy_file_name = home_dir_dump / "xy.dat";
+        std::ofstream xy_file(xy_file_name);
+        if (xy_file.is_open()) {
+          for (size_t i = 0; i < merge_spc->get_f_vec(ac).size(); ++i) {
+            xy_file << merge_spc->get_f_vec(ac).at(i) << " " << merge_spc->get_spectra_vec(ac).at(i) << std::endl;
+          }
+          xy_file.close();
+        } else {
+          std::cerr << "could not open xy file" << std::endl;
+        }
 
-      // plot the trailing data !
-      for (auto &cc : channel_collectors) {
-        cc->plot();
+        l = 3;
+        if (!i)
+          gplt_prz->set_xy_lines(station->get_run(l)->raw_spc->fft_freqs->get_frequencies(), station->get_run(l)->raw_spc->get_abs_sa_spectra(ac), label, 1, gplt_prz->default_color(ac));
+        // gplt_prz->set_xy_lines(station->get_run(12)->raw_spc->fft_freqs->get_frequencies(), station->get_run(12)->raw_spc->get_abs_sa_spectra(ac), label, 1, gplt_prz->default_color(ac));
+        ++i;
       }
-
     } catch (const std::runtime_error &error) {
       std::cerr << error.what() << std::endl;
       std::cerr << "could not pipe all files to gnuplot" << std::endl;
@@ -652,8 +815,38 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
     }
     gplt_prz->plot();
-  }
 
+    // try {
+    //   // concatenate all spectra
+
+    //   std::vector<std::unique_ptr<channel_collector_gplt>> channel_collectors(auto_cross_spectra_names.size());
+    //   i = 0;
+    //   for (auto &channel_collector : channel_collectors) {
+    //     channel_collector = std::make_unique<channel_collector_gplt>(gplt_prz, auto_cross_spectra_names.at(i++), true);
+    //   }
+    //   for (auto &irun : run_numbers) {
+    //     for (auto &ac : auto_cross_spectra_names) {
+    //       for (auto &cc : channel_collectors) {
+    //         cc->collect(station->at(irun, schan), station->at(irun, schan)->fft_freqs, station->get_run(irun)->raw_spc);
+    //       }
+    //     }
+    //   }
+
+    //   // plot the trailing data !
+    //   for (auto &cc : channel_collectors) {
+    //     cc->plot();
+    //   }
+
+    // } catch (const std::runtime_error &error) {
+    //   std::cerr << error.what() << std::endl;
+    //   std::cerr << "could not pipe all files to gnuplot" << std::endl;
+    //   return EXIT_FAILURE;
+    // } catch (...) {
+    //   std::cerr << "could not pipe all files to gnuplot" << std::endl;
+    //   return EXIT_FAILURE;
+    // }
+    gplt_prz->plot();
+  }
   // ******************************** calibration plots *******************************************************************************
 
   if (!no_cal_plot) {
@@ -673,26 +866,31 @@ int main(int argc, char *argv[]) {
 
           auto f = station->at(irun, schan)->cal->f;
           auto a = station->at(irun, schan)->cal->a;
-          if (normalize)
-            std::transform(a.begin(), a.end(), f.begin(), a.begin(), std::divides<double>()); // normalize the amplitude by f
+          if (!f.size()) {
+            std::ostringstream err_str(__func__, std::ios_base::ate);
+            err_str << " no calibration data available for " << station->at(irun, schan)->cal->sensor << " " << station->at(irun, schan)->cal->serial2string() << std::endl;
+          } else {
+            if (normalize)
+              std::transform(a.begin(), a.end(), f.begin(), a.begin(), std::divides<double>()); // normalize the amplitude by f
 
-          // remove values from f between 12 and 22
-          if (railway) {
-            for (auto it = f.begin(); it != f.end();) {
-              if ((*it > 12) && (*it < 22)) {
-                it = f.erase(it);
-                a.erase(a.begin() + std::distance(f.begin(), it));
-              } else
-                ++it;
+            // remove values from f between 12 and 22
+            if (railway) {
+              for (auto it = f.begin(); it != f.end();) {
+                if ((*it > 12) && (*it < 22)) {
+                  it = f.erase(it);
+                  a.erase(a.begin() + std::distance(f.begin(), it));
+                } else
+                  ++it;
+              }
             }
+            gplt_cal_a->set_xy_lines(f, a, station->at(irun, schan)->cal->sensor + " " + station->at(irun, schan)->cal->serial2string(), 1, gplt_cal_a->default_color(station->at(irun, schan)->channel_type));
+            // for testing
+            // std::vector<double> f_theo, a_theo, p_theo;
+            // create theo first
+            // if (normalize)
+            //   std::transform(a_theo.begin(), a_theo.end(), f_theo.begin(), a_theo.begin(), std::divides<double>()); // normalize the amplitude by f
+            // gplt_cal_a->set_xy_points(f_theo, a_theo, station->at(irun, schan)->cal->sensor + " " + station->at(irun, schan)->cal->serial2string() + " theo", 1, "pt 7");
           }
-          gplt_cal_a->set_xy_lines(f, a, station->at(irun, schan)->cal->sensor + " " + station->at(irun, schan)->cal->serial2string(), 1, gplt_cal_a->default_color(station->at(irun, schan)->channel_type));
-          // for testing
-          std::vector<double> f_theo, a_theo, p_theo;
-          station->at(irun, schan)->cal->get_theo_cal(f_theo, a_theo, p_theo);
-          if (normalize)
-            std::transform(a_theo.begin(), a_theo.end(), f_theo.begin(), a_theo.begin(), std::divides<double>()); // normalize the amplitude by f
-          gplt_cal_a->set_xy_points(f_theo, a_theo, station->at(irun, schan)->cal->sensor + " " + station->at(irun, schan)->cal->serial2string() + " theo", 1, "pt 7");
         }
       }
     } catch (const std::runtime_error &error) {

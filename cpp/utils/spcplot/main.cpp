@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
       std::cout << "emplacing thread " << thread_index++ << std::endl;
       pool->push_task(&channel::read_all_fftw, chan, false, nullptr);
     }
-    pool->wait_for_tasks();
+    pool->wait();
 
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
 
   i = 0;
   for (auto &chan : channels) {
-    raws[i++]->set_raw_spectra(chan);
+    raws[i++]->move_raw_spectra(chan);
   }
 
   std::cout << "stacking" << std::endl;
@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
       std::cout << "push thread " << thread_index++ << std::endl;
       raw->advanced_stack_all(0.8);
     }
-    pool->wait_for_tasks();
+    pool->wait();
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
     std::cerr << "could not execute advanced_stack_all" << std::endl;

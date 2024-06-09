@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 
     auto station = survey->get_station("Sarıçam");
 
-    std::cout << survey->get_first_ch("Sarıçam", 7777)->get_datetime() << std::endl;
+    std::cout << survey->get_first_channel("Sarıçam", 7777)->get_datetime() << std::endl;
     std::cout << " ";
 
   } catch (std::filesystem::filesystem_error &e) {

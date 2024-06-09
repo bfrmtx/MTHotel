@@ -8,7 +8,7 @@
 // using std::filesystem::directory_iterator;
 namespace fs = std::filesystem;
 
-#include "../xml/tinyxml2/tinyxml2.h"
+#include "tinyxml2.h"
 namespace xml = tinyxml2;
 
 #include "base_xml.h"

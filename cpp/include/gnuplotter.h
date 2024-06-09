@@ -17,6 +17,13 @@
 
 // a vector of point types "pt 1", "pt 2", "pt 3" and so on
 
+static std::vector<std::string> gplt_blues = {"web-blue", "royalblue", "steelblue", "light-blue", "blue", "dark-blue", "midnight-blue", "medium-blue", "skyblue", "slateblue"};
+static std::vector<std::string> gplt_reds = {"red", "dark-red", "light-red", "orange-red", "brown", "brown4", "sandybrown"};
+static std::vector<std::string> gplt_greens = {"web-green", "dark-spring-green", "light-green", "green", "dark-green", "spring-green", "forest-green", "sea-green", "dark-olivegreen", "seagreen", "greenyellow"};
+static std::vector<std::string> gplt_yellows = {"yellow", "dark-yellow", "yellow4", "light-goldenrod", "dark-goldenrod", "gold", "goldenrod"};
+static std::vector<std::string> gplt_oranges = {"orange", "dark-orange", "orange-red", "coral", "orangered4"};
+static std::vector<std::string> gplt_blacks = {"black", "grey30", "grey40", "grey50", "grey60", "grey70", "grey80", "grey90", "grey100"};
+
 class gnuplot_next_meas_point_type {
 public:
   gnuplot_next_meas_point_type() = default;
@@ -52,8 +59,7 @@ public:
 
 class next_color {
 public:
-  next_color(const std::string &base_color) :
-      base_color(base_color) {
+  next_color(const std::string &base_color) : base_color(base_color) {
     this->set_base_color(base_color);
   }
 
@@ -62,27 +68,45 @@ public:
     this->colors.clear();
     this->colors_index = 0;
     if (this->base_color == "blue") {
-      this->colors.push_back("blue");
-      this->colors.push_back("skyblue");
-      this->colors.push_back("slategrey");
-    }
-    if (this->base_color == "red") {
-      this->colors.push_back("red");
-      this->colors.push_back("salmon");
-      this->colors.push_back("brown");
+      this->colors = gplt_blues;
+    } else if (this->base_color == "red") {
+      this->colors = gplt_reds;
+    } else if (this->base_color == "green") {
+      this->colors = gplt_greens;
+    } else if (this->base_color == "yellow") {
+      this->colors = gplt_yellows;
+    } else if (this->base_color == "orange") {
+      this->colors = gplt_oranges;
+    } else if (this->base_color == "black") {
+      this->colors = gplt_blacks;
+    } else {
+      this->colors = gplt_blues;
     }
   }
 
   ~next_color() = default;
-  std::string color() {
+
+    std::string color() {
+    std::string color;
     if (colors_index < colors.size()) {
-      return colors.at(colors_index++);
+      color = colors.at(colors_index++);
     } else {
       // clear reset index
       colors_index = 0;
       return colors.at(colors_index++);
     }
-    return this->base_color;
+    return color;
+  }
+  std::string color_line() {
+    std::string color = "lc rgbcolor \"";
+    if (colors_index < colors.size()) {
+      color += colors.at(colors_index++);
+    } else {
+      // clear reset index
+      colors_index = 0;
+      color += colors.at(colors_index++);
+    }
+    return color + "\" ";
   }
 
   void reset() { colors_index = 0; }
@@ -391,6 +415,76 @@ public:
     }
     if (channel_type == "Hz") {
       color = "lc rgbcolor \"green\"";
+    }
+
+    return color + " " + formats;
+  }
+
+  std::string default_color(const std::pair<std::string, std::string> spectra_type, const std::string formats = "") const {
+    std::string color;
+    if (spectra_type == std::make_pair<std::string, std::string>("Ex", "Ex")) {
+      color = "lc rgbcolor \"yellow\"";
+    } else if (spectra_type == std::make_pair<std::string, std::string>("Ey", "Ey")) {
+      color = "lc rgbcolor \"orange\"";
+    } else if (spectra_type == std::make_pair<std::string, std::string>("Ez", "Ez")) {
+      color = "lc rgbcolor \"black\"";
+    } else if (spectra_type == std::make_pair<std::string, std::string>("Hx", "Hx")) {
+      color = "lc rgbcolor \"blue\"";
+    } else if (spectra_type == std::make_pair<std::string, std::string>("Hy", "Hy")) {
+      color = "lc rgbcolor \"red\"";
+    } else if (spectra_type == std::make_pair<std::string, std::string>("Hz", "Hz")) {
+      color = "lc rgbcolor \"green\"";
+    }
+
+    if (color.size())
+      return color + " " + formats;
+
+    std::vector<std::string> ac = {"Hx", "Hy", "Hz", "Ex", "Ey", "Ez"};
+    // colour vectors must be longer than ac!
+    std::vector<std::string> colors_Hx = {"web-blue", "royalblue", "steelblue", "lightblue", "darkblue", "midnightblue", "mediumblue", "skyblue", "slateblue1"};
+    std::vector<std::string> colors_Hy = {"web-red", "firebrick", "darkred", "indianred", "maroon", "darkmagenta", "darkviolet", "purple"};
+    std::vector<std::string> colors_Hz = {"web-green", "darkgreen", "forestgreen", "limegreen", "mediumseagreen", "seagreen", "springgreen"};
+    std::vector<std::string> colors_Ex = {"web-yellow", "khaki", "lightgoldenrod", "lightgoldenrod1", "lightgoldenrod2", "lightgoldenrod3", "lightgoldenrod4", "lightyellow", "lightyellow1", "lightyellow2", "lightyellow3", "lightyellow4"};
+    std::vector<std::string> colors_Ey = {"web-orange", "darkorange", "orangered", "tomato", "coral", "darkgoldenrod", "goldenrod", "goldenrod1", "goldenrod2", "goldenrod3", "goldenrod4"};
+    std::vector<std::string> colors_Ez = {"web-black", "dimgray", "gray", "darkgray", "lightgray", "gray0", "gray1", "gray2", "gray3", "gray4", "gray5", "gray6", "gray7", "gray8", "gray9", "gray10", "gray11", "gray12", "gray13", "gray14", "gray15", "gray16", "gray17", "gray18", "gray19", "gray20", "gray21", "gray22", "gray23", "gray24", "gray25", "gray26", "gray27", "gray28", "gray29", "gray30", "gray31", "gray32", "gray33", "gray34", "gray35", "gray36", "gray37", "gray38", "gray39", "gray40", "gray41", "gray42", "gray43", "gray44", "gray45", "gray46", "gray47", "gray48", "gray49", "gray50", "gray51", "gray52", "gray53", "gray54", "gray55", "gray56", "gray57", "gray58", "gray59", "gray60", "gray61", "gray62", "gray63", "gray64", "gray65", "gray66", "gray67", "gray68", "gray69", "gray70", "gray71", "gray72", "gray73", "gray74", "gray75", "gray76", "gray77", "gray78", "gray79", "gray80", "gray81", "gray82", "gray83", "gray84", "gray85", "gray86", "gray87", "gray88", "gray89", "gray90", "gray91", "gray92", "gray93", "gray94", "gray95", "gray96", "gray97", "gray98", "gray99"};
+
+    size_t index = (std::find(ac.begin(), ac.end(), spectra_type.second) - ac.begin());
+    if (spectra_type.first == "Hx") {
+      if (index < colors_Hx.size()) {
+        color = "lc rgbcolor \"" + colors_Hx[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
+    } else if (spectra_type.first == "Hy") {
+      if (index < colors_Hy.size()) {
+        color = "lc rgbcolor \"" + colors_Hy[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
+    } else if (spectra_type.first == "Hz") {
+      if (index < colors_Hz.size()) {
+        color = "lc rgbcolor \"" + colors_Hz[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
+    } else if (spectra_type.first == "Ex") {
+      if (index < colors_Ex.size()) {
+        color = "lc rgbcolor \"" + colors_Ex[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
+    } else if (spectra_type.first == "Ey") {
+      if (index < colors_Ey.size()) {
+        color = "lc rgbcolor \"" + colors_Ey[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
+    } else if (spectra_type.first == "Ez") {
+      if (index < colors_Ez.size()) {
+        color = "lc rgbcolor \"" + colors_Ez[index] + "\"";
+      } else {
+        color = "lc rgbcolor \"grey\"";
+      }
     }
 
     return color + " " + formats;

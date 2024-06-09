@@ -12,7 +12,7 @@
 #include <thread>
 #include <vector>
 
-#include "BS_thread_pool.h"
+// #include "BS_thread_pool.h"
 #include "atmheader.h"
 #include "atsheader.h"
 #include "atsheader_def.h"
@@ -187,13 +187,10 @@ int main(int argc, char *argv[]) {
       // pool->push_task(collect_atsheaders, std::ref(atsh), std::ref(survey), std::ref(shift_start_time));
       collect_atsheaders(atsh, survey);
     }
-    // pool->wait_for_tasks();
+    // pool->wait();
 
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
-    return EXIT_FAILURE;
-  } catch (std::filesystem::filesystem_error &e) {
-    std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
   } catch (...) {
     std::cerr << "could not execute all threads" << std::endl;
@@ -230,9 +227,6 @@ int main(int argc, char *argv[]) {
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
     return EXIT_FAILURE;
-  } catch (std::filesystem::filesystem_error &e) {
-    std::cerr << e.what() << std::endl;
-    return EXIT_FAILURE;
   } catch (...) {
     std::cerr << "could not execute all threads" << std::endl;
     return EXIT_FAILURE;
@@ -243,14 +237,13 @@ int main(int argc, char *argv[]) {
   try {
     for (size_t i = 0; i < vch.size(); ++i) {
       // fill_survey_tree(survey, i);
-      pool->push_task(fill_survey_tree, std::ref(survey), i);
+      // pool->push_task(fill_survey_tree, std::ref(survey), i);
+      pool->submit_task([&survey, i]() { fill_survey_tree(survey, i); });
     }
-    pool->wait_for_tasks();
+    pool->wait();
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
     return EXIT_FAILURE;
-  } catch (std::filesystem::filesystem_error &e) {
-    std::cerr << e.what() << std::endl;
   } catch (...) {
     std::cerr << "could not execute all threads" << std::endl;
     return EXIT_FAILURE;

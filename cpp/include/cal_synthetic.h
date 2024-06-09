@@ -11,10 +11,9 @@
 // f =  ( double(i) * (f_sample/fwl) );
 
 /*!
-@file cal_synthetic.h
-@brief  Synthetic transfer functions; not normalized; complex<double> ; mV as unit
-
-*/
+ * @file cal_synthetic.h
+ * @brief  Synthetic transfer functions; not normalized; complex<double> ; mV as unit
+ */
 
 static std::vector<std::complex<double>> gen_trf_mfs06e(const std::vector<double> &freqs, const ChopperStatus &chopper) {
   std::complex<double> im(0.0, 1.0);

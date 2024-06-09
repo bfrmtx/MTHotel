@@ -6,7 +6,7 @@
 #include <sstream>
 #include <string>
 
-#include "../xml/tinyxml2/tinyxml2.h"
+#include "tinyxml2.h"
 
 tinyxml2::XMLElement *open_node(tinyxml2::XMLElement *top_node, const std::string node, const bool can_ignore = false) {
   auto new_node = top_node->FirstChildElement(node.c_str());

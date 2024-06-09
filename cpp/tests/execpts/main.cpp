@@ -1,12 +1,29 @@
+#include "spc_base.h"
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <list>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <thread>
 #include <unordered_map>
 #include <vector>
+
+#include "vector_math.h"
+
+void mul_vec(std::vector<double> &vec, const double &mul) {
+  // deep copy of vec
+  std::vector<double> vec_in = vec;
+  for (size_t i = 0; i < vec.size(); ++i) {
+    std::cout << "mul_vec: " << vec[i] << " * " << mul << std::endl;
+    vec[i] *= mul;
+  }
+  std::cout << "result of mul_vec" << std::endl;
+  for (size_t i = 0; i < vec.size(); ++i) {
+    std::cout << vec_in[i] << " -> " << vec[i] << std::endl;
+  }
+}
 
 std::unordered_map<std::string, size_t> seat_reservation(const std::vector<std::string> &names, size_t seats) {
 
@@ -70,7 +87,7 @@ std::unordered_map<std::string, size_t> seat_reservation_wo(const std::vector<st
 int main() {
 
   std::vector<std::string> persons;
-  std::vector<size_t> seats{3, 2};
+  std::vector<size_t> seats{3, 3};
 
   persons.emplace_back("Billy");
   persons.emplace_back("Ted");
@@ -143,6 +160,90 @@ int main() {
     std::cout << std::endl;
 
     result.clear();
+  }
+
+  auto vec = std::make_shared<std::vector<double>>(std::vector<double>{1.0, 2.0, 3.0, 4.0, 5.0});
+  mul_vec(*vec, 2.0);
+
+  std::cout << "**************************************************************" << std::endl;
+  spc_base<double> spc;
+  std::vector<double> vec1{1.0, 2.0, 3.0, 4.0, 5.0};
+  // spc.add_spectra("Ex", std::move(vec1), 0.0);
+  std::pair<std::string, std::string> channel{"Ex", ""};
+  spc.add_spectra(channel.first, vec1, 0.0, true);
+  std::cout << "main moved vec1 " << std::endl;
+  for (const auto &v : vec1) {
+    std::cout << v << std::endl;
+  }
+  std::cout << "main inside spc " << std::endl;
+  for (const auto &v : spc.get_spectra_vec(channel)) {
+    std::cout << v << std::endl;
+  }
+  auto vec2 = spc.get_spectra_vec(channel);
+  for (auto &v : vec2) {
+    v *= 2.0;
+  }
+  std::cout << "main inside spc after MULt vec2" << std::endl;
+  for (const auto &v : spc.get_spectra_vec(channel)) {
+    std::cout << v << std::endl;
+  }
+  std::cout << "now using shared pointer" << std::endl;
+  auto vec3 = spc.get_spectra(channel);
+  for (auto &v : *vec3) {
+    v *= 2.0;
+  }
+  std::cout << "main inside spc after MULt vec3" << std::endl;
+  for (const auto &v : spc.get_spectra_vec(channel)) {
+    std::cout << v << std::endl;
+  }
+  std::cout << "now use the map in order to get the vector" << std::endl;
+  auto vec4 = spc[channel];
+  for (auto &v : *vec4) {
+    v *= 2.0;
+  }
+  std::cout << "main inside spc after MULt vec4" << std::endl;
+  for (const auto &v : spc.get_spectra_vec(channel)) {
+    std::cout << v << std::endl;
+  }
+  std::cout << "try to create a conventional vector" << std::endl;
+  std::vector<double> vec5 = *spc[channel]; // that is a COPY !!
+  for (auto &v : vec5) {
+    v *= 2.0;
+  }
+  std::cout << "main inside spc after MULt vec5" << std::endl;
+  for (const auto &v : spc.get_spectra_vec(channel)) {
+    std::cout << v << std::endl;
+  }
+  std::cout << "try with a function" << std::endl;
+  mul_vec(*spc[channel], 2.0);
+  std::cout << "check again, inside spc after MULt vec5" << std::endl;
+  for (const auto &v : *spc[channel]) {
+    std::cout << v << std::endl;
+  }
+  std::cout << "another trick with & operator" << std::endl;
+  auto &vec6 = *spc[channel];
+  for (auto &v : vec6) {
+    v *= 2.0;
+  }
+  std::cout << "main inside spc after MULt vec6" << std::endl;
+  for (const auto &v : spc.get_spectra_vec(channel)) {
+    std::cout << v << std::endl;
+  }
+
+  std::cout << "tesing vector_math merge_f_v_avg" << std::endl;
+  std::vector<double> v_result;
+  std::vector<double> f_result;
+
+  std::vector<double> f_1{1.0, 2.0, 3.0, 4.0, 5.0};
+  std::vector<double> v_1{10.0, 20.0, 30.0, 40.0, 50.0};
+
+  std::vector<double> f_2{2.0, 3.0, 4.0, 7.0, 9.0};
+  std::vector<double> v_2{2.0, 3.0, 4.0, 7.0, 9.0};
+
+  bvec::merge_f_v_avg(f_1, v_1, f_2, v_2, f_result, v_result);
+  std::cout << "f_result, v_result " << std::endl;
+  for (size_t i = 0; i < f_result.size(); ++i) {
+    std::cout << f_result[i] << " " << v_result[i] << std::endl;
   }
 
   std::cout << "main finished " << std::endl;

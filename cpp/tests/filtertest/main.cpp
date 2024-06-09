@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-#include "../../include/sqlite_handler.h"
-#include "../../include/survey.h"
 #include "../../mt/fir_filter/fir_filter.h"
+#include "sqlite_handler.h"
+#include "survey.h"
 namespace fs = std::filesystem;
 
 int main(int argc, char **argv) {
@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
         // filter
         pool->push_task(&fir_filter::filter, filter);
       }
-      pool->wait_for_tasks();
+      pool->wait();
 
     } catch (const std::runtime_error &error) {
       std::cerr << error.what() << std::endl;
@@ -250,7 +250,7 @@ int main(int argc, char **argv) {
       // filter
       pool->push_task(&fir_filter::filter, filter);
     }
-    pool->wait_for_tasks();
+    pool->wait();
 
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;

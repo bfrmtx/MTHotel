@@ -96,7 +96,7 @@ int main() {
 
   // **** here I do the FFT
   for (auto &chan : channels) {
-    chan->read_all_fftw_gussian_noise(noise_data, true);
+    chan->read_all_fftw_gaussian_noise(noise_data, true);
     std::cout << chan->qspc.size() << " readings" << std::endl;
   }
 
@@ -145,11 +145,11 @@ int main() {
 
   i = 0;
   for (auto &chan : channels) {
-    raws[i++]->set_raw_spectra(chan);
+    raws[i++]->move_raw_spectra(chan);
   }
 
   for (auto &raw : raws) {
-    raw->simple_stack_all();
+    raw->advanced_stack_all();
   }
 
   auto ampl_max_min = min_max_sa_spc(raws, channel_type);

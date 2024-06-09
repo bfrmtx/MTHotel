@@ -3,7 +3,7 @@
 #include <memory>
 using namespace std;
 
-#include "../../xml/tinyxmlwriter/tinyxmlwriter.h"
+#include "tinyxmlwriter.h"
 
 int main() {
   try {

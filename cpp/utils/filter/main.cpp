@@ -183,11 +183,13 @@ int main() {
       ++i;
     }
     try {
-      std::vector<std::jthread> threads;
+      auto pool = std::make_shared<BS::thread_pool>();
       std::cout << "starting: writer threads for " << fsamples.at(k) << "Hz" << std::endl;
       for (auto &chan : channels) {
-        threads.emplace_back(std::jthread(&channel::write_all_data, chan, std::ref(noise_data_sub)));
+        // pool->push_task(&channel::write_all_data, chan, std::ref(noise_data_sub));
+        pool->submit_task([&chan, &noise_data_sub]() { chan->write_all_data(noise_data_sub); });
       }
+      pool->wait();
     } catch (const std::string &error) {
       std::cerr << error << std::endl;
       return EXIT_FAILURE;

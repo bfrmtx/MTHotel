@@ -16,18 +16,17 @@ namespace fs = std::filesystem;
 
 #include "xml_from_ats.h"
 
-#include "../cal/read_cal/read_cal.h"
 #include "atsheader.h"
 #include "atsheader_def.h"
-#include "bthread.h"
 #include "cal_base.h"
+#include "read_cal.h"
 
 #include "adu06_fname.h"
 #include "chats.h"
 #include "pt_cat.h"
 #include "pt_tojson.h"
 
-#include "BS_thread_pool.h"
+// #include "BS_thread_pool.h"
 #include "whereami.h"
 
 // run tests
@@ -70,7 +69,7 @@ int main(int argc, char *argv[]) {
   bool tojson = false;          //!< convert to JSON and binary - the new format
   bool create_old_tree = false; //!< create an old 07/08 survey tree to enable conversion manually
   bool create_tree = false;     //!< create a survey empty tree
-  bool split_channels = false;  //!< split a a multichannel recoring into 5 channels
+  bool split_channels = false;  //!< split a a multichannel recording into 5 channels
   ChopperStatus chopper = ChopperStatus::off;
   bool change_chopper = true;
   size_t adu06_shift_samples_hf = 0;
@@ -370,7 +369,7 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
 
     try {
-      std::vector<std::jthread> threads;
+      auto pool = std::make_shared<BS::thread_pool>();
       std::mutex mtx_dir;
       std::mutex mtx_xml;
       std::mutex mtx_xml_files;
@@ -380,12 +379,15 @@ int main(int argc, char *argv[]) {
       std::cout << "start cat thread ";
       for (auto &ats : cat_ats) {
         std::cout << " " << i++;
-        threads.emplace_back(std::jthread(cat_ats_files, std::ref(ats), std::ref(outdir), std::ref(xmls_and_files), std::ref(xml_files), std::ref(mtx_dir),
-                                          std::ref(mtx_xml), std::ref(mtx_xml_files)));
         // cat_ats_files(ats, outdir, xmls_and_files, xml_files, mtx);
+        // pool->push_task(cat_ats_files, std::ref(ats), std::ref(outdir), std::ref(xmls_and_files), std::ref(xml_files), std::ref(mtx_dir), std::ref(mtx_xml), std::ref(mtx_xml_files));
+        pool->submit_task([&ats, &outdir, &xmls_and_files, &xml_files, &mtx_dir, &mtx_xml, &mtx_xml_files]() {
+          cat_ats_files(ats, outdir, xmls_and_files, xml_files, mtx_dir, mtx_xml, mtx_xml_files);
+        });
       }
       std::cout << std::endl
                 << "wait please ... " << std::endl;
+      pool->wait();
     } catch (const std::runtime_error &error) {
       std::cerr << error.what() << std::endl;
       std::cerr << "could not concat ats files" << std::endl;
@@ -621,17 +623,21 @@ int main(int argc, char *argv[]) {
     size_t thread_index = 0;
     for (const auto &ex : execs) {
       try {
-        std::vector<std::jthread> threads;
+        auto pool = std::make_shared<BS::thread_pool>();
+
         std::cout << "start chats thread " << std::endl;
         // size_t i = 0;
         for (size_t j = 0; j < ex; ++j) {
-
-          threads.emplace_back(std::jthread(chats_files, std::ref(atsheaders[thread_index]), std::ref(adu08s[thread_index]), std::ref(atsjs[thread_index]), std::ref(adu06_shift_samples_hf), std::ref(adu06_shift_samples_lf)));
-          // chats_files(atsh, adu08, atsj, std::ref(adu06_shift_samples_hf), std::ref(adu06_shift_samples_lf));
+          //  chats_files(atsh, adu08, atsj, std::ref(adu06_shift_samples_hf), std::ref(adu06_shift_samples_lf));
+          // pool->push_task(chats_files, std::ref(atsheaders[thread_index]), std::ref(adu08s[thread_index]), std::ref(atsjs[thread_index]), std::ref(adu06_shift_samples_hf), std::ref(adu06_shift_samples_lf));
+          pool->submit_task([&atsheaders, &adu08s, &atsjs, &adu06_shift_samples_hf, &adu06_shift_samples_lf, thread_index]() {
+            chats_files(atsheaders[thread_index], adu08s[thread_index], atsjs[thread_index], adu06_shift_samples_hf, adu06_shift_samples_lf);
+          });
           ++thread_index;
         }
         std::cout << std::endl
                   << "wait please ... " << std::endl;
+        pool->wait();
       } catch (const std::runtime_error &error) {
         std::cerr << error.what() << std::endl;
         std::cerr << "could not concat ats files" << std::endl;
@@ -698,13 +704,10 @@ int main(int argc, char *argv[]) {
         // pool->push_task(collect_atsheaders, std::ref(atsh), std::ref(survey), std::ref(shift_start_time));
         collect_atsheaders(atsh, survey, shift_start_time);
       }
-      // pool->wait_for_tasks();
+      // pool->wait();
 
     } catch (const std::runtime_error &error) {
       std::cerr << error.what() << std::endl;
-      return EXIT_FAILURE;
-    } catch (std::filesystem::filesystem_error &e) {
-      std::cerr << e.what() << std::endl;
       return EXIT_FAILURE;
     } catch (...) {
       std::cerr << "could not execute all threads" << std::endl;
@@ -732,9 +735,6 @@ int main(int argc, char *argv[]) {
     } catch (const std::runtime_error &error) {
       std::cerr << error.what() << std::endl;
       return EXIT_FAILURE;
-    } catch (std::filesystem::filesystem_error &e) {
-      std::cerr << e.what() << std::endl;
-      return EXIT_FAILURE;
     } catch (...) {
       std::cerr << "could not execute all threads" << std::endl;
       return EXIT_FAILURE;
@@ -745,14 +745,14 @@ int main(int argc, char *argv[]) {
     try {
       for (size_t i = 0; i < vch.size(); ++i) {
         // fill_survey_tree(survey, i);
-        pool->push_task(fill_survey_tree, std::ref(survey), i);
+        pool->submit_task([&survey, i]() {
+          fill_survey_tree(survey, i);
+        });
       }
-      pool->wait_for_tasks();
+      pool->wait();
     } catch (const std::runtime_error &error) {
       std::cerr << error.what() << std::endl;
       return EXIT_FAILURE;
-    } catch (std::filesystem::filesystem_error &e) {
-      std::cerr << e.what() << std::endl;
     } catch (...) {
       std::cerr << "could not execute all threads" << std::endl;
       return EXIT_FAILURE;

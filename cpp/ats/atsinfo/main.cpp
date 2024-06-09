@@ -1,4 +1,4 @@
-#include "../../include/atss.h"
+#include "atss.h"
 #include <iostream>
 #include <vector>
 

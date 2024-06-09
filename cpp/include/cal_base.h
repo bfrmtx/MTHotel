@@ -226,6 +226,28 @@ public:
     return f.size();
   }
 
+  void set_master_as_caldata() {
+    if (!this->f_master.size()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: f_master.size() is 0";
+      throw std::runtime_error(err_str.str());
+    }
+    this->f = this->f_master;
+    this->a = this->a_master;
+    this->p = this->p_master;
+  }
+
+  void set_theo_as_caldata() {
+    if (!this->f_theo.size()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: f_theo.size() is 0";
+      throw std::runtime_error(err_str.str());
+    }
+    this->f = this->f_theo;
+    this->a = this->a_theo;
+    this->p = this->p_theo;
+  }
+
   // find value range inside frequency range and cout to console
 
   void find_fRange_valueRange(const std::pair<double, double> &f_range, const std::pair<double, double> &v_range, bool use_phase = true) const {
@@ -306,6 +328,10 @@ public:
     return fname;
   }
 
+  /*!
+   * @brief copy constructor
+   * @param rhs the calibration object to copy from
+   */
   calibration(const std::shared_ptr<calibration> &rhs) {
     if (rhs != nullptr) {
       this->sensor = rhs->sensor;
@@ -320,6 +346,15 @@ public:
       this->a = rhs->a;
       this->p = rhs->p;
       this->ct = rhs->ct;
+      this->f_master = rhs->f_master;
+      this->a_master = rhs->a_master;
+      this->p_master = rhs->p_master;
+      this->f_theo = rhs->f_theo;
+      this->a_theo = rhs->a_theo;
+      this->p_theo = rhs->p_theo;
+      this->f_backup = rhs->f_backup;
+      this->a_backup = rhs->a_backup;
+      this->p_backup = rhs->p_backup;
     }
   }
 
@@ -445,6 +480,12 @@ public:
     if (this->chopper == ChopperStatus::on)
       return std::string("on");
     return std::string("off");
+  }
+
+  int get_int_chopper() const {
+    if (this->chopper == ChopperStatus::on)
+      return 1;
+    return 0;
   }
 
   std::string serial2string(const int digits = 4) const {

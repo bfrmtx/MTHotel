@@ -5,7 +5,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/out_of_tree_build.cmake)
 #top tree dir is CMAKE_SOURCE_DIR
-include_directories(${CMAKE_INSTALL_PREFIX}/include ../ac_spectra ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/math_vector)
+include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/math_vector)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/fft.cmake)
 

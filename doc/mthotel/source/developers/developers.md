@@ -35,6 +35,3 @@ The new ADU series will provide timeseries splitting (efficient for remote data 
 
 Do not leave questions open before pushing.
 
-# hello
-
-Hier etwas schreiben!

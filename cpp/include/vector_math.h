@@ -46,10 +46,31 @@ void ri2cplx(const std::vector<T> &real, const std::vector<T> &imag,
   }
 }
 
+template <class T>
+std::vector<std::complex<T>> multiply_conj(const std::vector<std::complex<T>> &a,
+                                           const std::vector<std::complex<T>> &b, bool zero_imag = false) {
+
+  if (a.size() != b.size())
+    return std::vector<std::complex<T>>();
+  if (!a.size())
+    return std::vector<std::complex<T>>();
+
+  std::vector<std::complex<T>> out(a.size());
+  for (size_t i = 0; i < a.size(); ++i) {
+    out[i] = a[i] * b[i];
+  }
+  if (zero_imag) {
+    for (size_t i = 0; i < out.size(); ++i) {
+      out[i] = std::complex<T>(real(out[i]), 0.0);
+    }
+  }
+  return out;
+}
+
 /*!
  * @brief
- * @param cplx vecotr of complex numbers
- * @param ampl amplitude vector retuned
+ * @param cplx vector of complex numbers
+ * @param ampl amplitude vector returned
  * @param phz phase vector returned
  * @param deg if true, phase is returned in degrees (not radians)
  */
@@ -182,6 +203,14 @@ T median(const std::vector<T> &v) {
   return med;
 }
 
+/*!
+ * @brief calculate the median of a vector and take only a fraction of the data for the mean calculation;
+ *        e.g. fraction_to_use = 0.5 means the median is calculated and the mean is calculated from the middle 50% of the data, so if you have 64 values, the mean is calculated from 16 to 48
+ * @tparam T
+ * @param v
+ * @param fraction_to_use
+ * @return
+ */
 template <typename T>
 T median_range_mean(const std::vector<T> &v, const double &fraction_to_use) {
 
@@ -191,8 +220,14 @@ T median_range_mean(const std::vector<T> &v, const double &fraction_to_use) {
   if (fraction_to_use < 0.01)
     return bvec::mean(v);
   std::vector<T> w(v);
-  std::sort(w.begin(), w.end());
-  size_t use = size_t(double(w.size()) * fraction_to_use) / 2;
+
+  // if T is complex, we use the absolute values, call a lambda function
+  if constexpr (std::is_same_v<T, std::complex<double>>) {
+    std::sort(w.begin(), w.end(), [](const auto &a, const auto &b) { return std::abs(a) < std::abs(b); });
+  } else {
+    std::sort(w.begin(), w.end());
+  }
+  size_t use = size_t(double(w.size()) * fraction_to_use) / 2; // up and down
   auto b = w.cbegin();
   auto e = w.cbegin();
   std::advance(b, w.size() / 2);
@@ -255,7 +290,7 @@ std::vector<std::vector<T>> swap_vec_vec(const std::vector<std::vector<T>> &in) 
   return out;
 }
 /*!
- * \brief get_fslice
+ * \brief get_fslice; get a slice of a vector of vectors so in case of 4 stacks and 6 frequencies, out size is 4,  you get the 4 values of the 1st, 2nd ... 6th frequency
  * \param in vector[stacks][f_index]
  * \param f_index
  * \return vector[f] of stack length
@@ -269,7 +304,57 @@ std::vector<T> get_fslice(const std::vector<std::vector<T>> &in, const size_t f_
   std::vector<T> out(in.size()); // stack length
   size_t i = 0;
   for (const auto &v : in) { // for all stacks
-    out[i++] = v[f_index];   // get the requested indes
+    out[i++] = v[f_index];   // get the requested indices
+  }
+  return out;
+}
+/*!
+ * @brief this is simply spoken an abs(vector) BUT we use abs (v * conj(v)) and sqrt it, to get the absolute value of a complex number
+   implemented for a vector of vectors
+ * @tparam T
+ * @param in
+ * @param in2
+ * @return
+ */
+template <typename T>
+std::vector<std::vector<double>> make_cross_sqrt_conj_abs(const std::vector<std::vector<T>> &in, const std::vector<std::vector<T>> &in2) {
+  std::vector<std::vector<double>> out;
+  if (!in.size())
+    return out;
+  if (in.size() != in2.size())
+    return out;
+  if (in.at(0).size() != in2.at(0).size())
+    return out;
+  // create out with the same dimensions as in
+  out.reserve(in.size());
+  for (size_t i = 0; i < in.size(); ++i) {
+    out.emplace_back(std::vector<double>(in.at(i).size()));
+  }
+  for (size_t i = 0; i < in.size(); ++i) {
+    for (size_t j = 0; j < in.at(i).size(); ++j) {
+      out[i][j] = std::sqrt(std::abs(in[i][j] * std::conj(in2[i][j])));
+    }
+  }
+  return out;
+}
+/*!
+ * @brief this is simply spoken an abs(vector) BUT we use abs (v * conj(v)) and sqrt it, to get the absolute value of a complex number
+    implemented for a vector
+ * @tparam T
+ * @param in
+ * @param in2
+ * @return
+ */
+template <typename T>
+std::vector<double> make_cross_sqrt_conj_abs(const std::vector<T> &in, const std::vector<T> &in2) {
+  std::vector<double> out;
+  if (!in.size())
+    return out;
+  if (in.size() != in2.size())
+    return out;
+  out.reserve(in.size());
+  for (size_t i = 0; i < in.size(); ++i) {
+    out.emplace_back(std::sqrt(std::abs(in[i] * std::conj(in2[i]))));
   }
   return out;
 }
@@ -358,6 +443,48 @@ inline double fold(const std::vector<double> &v, const std::vector<double> &w) {
     sum += v[i] * w[i];
   }
   return sum;
+}
+
+template <typename T, typename S>
+void merge_f_v_avg(const std::vector<T> &f_1, const std::vector<S> &v_1, const std::vector<T> &f_2, const std::vector<S> &v_2,
+                   std::vector<T> &f_out, std::vector<S> &v_out) {
+
+  f_out.clear();
+  v_out.clear();
+  f_out.reserve(f_1.size() + f_2.size());
+  v_out.reserve(v_1.size() + v_2.size());
+  // f_1 and f_2 are sorted
+  // f_1 and f_2 may contain the same frequencies
+  // f_out will contain the unique frequencies
+  // v_out will contain the average of the values of the same frequencies
+  size_t i = 0;
+  size_t j = 0;
+  while (i < f_1.size() && j < f_2.size()) {
+    if (f_1[i] < f_2[j]) {
+      f_out.emplace_back(f_1[i]);
+      v_out.emplace_back(v_1[i]);
+      ++i;
+    } else if (f_1[i] > f_2[j]) {
+      f_out.emplace_back(f_2[j]);
+      v_out.emplace_back(v_2[j]);
+      ++j;
+    } else {
+      f_out.emplace_back(f_1[i]);
+      v_out.emplace_back((v_1[i] + v_2[j]) / 2);
+      ++i;
+      ++j;
+    }
+  }
+  while (i < f_1.size()) {
+    f_out.emplace_back(f_1[i]);
+    v_out.emplace_back(v_1[i]);
+    ++i;
+  }
+  while (j < f_2.size()) {
+    f_out.emplace_back(f_2[j]);
+    v_out.emplace_back(v_2[j]);
+    ++j;
+  }
 }
 
 } // namespace bvec

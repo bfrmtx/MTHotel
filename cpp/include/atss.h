@@ -1,7 +1,14 @@
 #ifndef ATSS_H
 #define ATSS_H
 
+#include "atmm.h"
+#include "base_constants.h"
+#include "cal_base.h"
+#include "freqs.h"
+#include "json.h"
+#include "strings_etc.h"
 #include <bitset>
+#include <chrono>
 #include <complex>
 #include <cstddef>
 #include <cstdlib>
@@ -17,13 +24,6 @@
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include "atmm.h"
-#include "base_constants.h"
-#include "cal_base.h"
-#include "freqs.h"
-#include "json.h"
-#include "strings_etc.h"
 
 #include <fftw3.h>
 
@@ -328,7 +328,7 @@ public:
   }
 
   /*!
-   * \brief channel most common mimimum constructor
+   * \brief channel most common minimum constructor
    * \param channel_type like Ex, Ex, ... Hx ..
    * \param sample_rate in Hz always
    */
@@ -345,11 +345,15 @@ public:
     this->pt.fracs = fracs;
   }
 
+  /*!
+   * @brief copy constructor
+   * @param rhs
+   */
   channel(const std::shared_ptr<channel> &rhs) {
 
     if (rhs != nullptr) {
 
-      this->pt = rhs->pt;
+      this->pt = rhs->pt; // copy constructor, that is not a pointer here
       this->filepath_wo_ext = rhs->filepath_wo_ext;
 
       this->cal = std::make_shared<calibration>(rhs->cal);
@@ -412,11 +416,11 @@ public:
         this->filter = head["filter"];
       if (head.contains("source"))
         this->source = head["source"];
-
+      auto xx = std::filesystem::file_size(json_file);
+      this->pt.samples = xx / sizeof(double);
       if (this->cal != nullptr)
         this->cal.reset();
       this->cal = std::make_shared<calibration>();
-
       this->cal->parse_head(head, json_file);
     }
   }
@@ -431,6 +435,10 @@ public:
     this->pt.tt = tt;
     this->pt.fracs = fracs;
   }
+
+  uint64_t get_unix_timestamp() const {
+    return this->pt.tt;
+  } // seconds since 1970
 
   std::string get_datetime() const {
     return this->pt.start_datetime();
@@ -676,6 +684,7 @@ public:
   std::vector<std::complex<double>> spc_slice;        //!< data slice in spectral domain
   std::vector<double> ampl_slice;                     //!< single spectra amplitude slice, e.g. for plotting
   std::vector<double> ts_slice_inv;                   //!< data slice in time domain after ftt, calibration, inverse fft
+  std::vector<size_t> sample_vector;                  //!< sample vector for the x-axis
   std::queue<std::vector<std::complex<double>>> qspc; //!< spectra queue
   std::vector<std::vector<std::complex<double>>> spc; //!< spectra vector
   double bw = 0.0;                                    //!< bandwidth of FFT
@@ -687,12 +696,22 @@ public:
   bool is_remote = false;
   bool is_emap = false;
 
-  void init_fftw(std::shared_ptr<fftw_freqs> in_fft_freqs, const size_t &wl = 0, const size_t &rl = 0) {
+  std::pair<int64_t, int64_t> read_pos{0, 0}; //!< read position in the file
+
+  void init_fftw(std::shared_ptr<fftw_freqs> in_fft_freqs = nullptr, const size_t &wl = 0, const size_t &rl = 0) {
+    // in this case we have an fft created already - re use it
+    if ((in_fft_freqs == nullptr) && (this->fft_freqs != nullptr) && (wl == 0) && (rl == 0)) {
+      this->set_fftw_plan();
+      return;
+    }
+
     if (in_fft_freqs != nullptr)
       this->fft_freqs = in_fft_freqs;
     else {
       if ((wl == 0) || (rl == 0))
         throw std::runtime_error(std::string(__func__) + " :: you must provide a valid window length and a valid resolution length");
+      if (this->fft_freqs != nullptr)
+        this->fft_freqs.reset();
       this->fft_freqs = std::make_shared<fftw_freqs>(this->pt.sample_rate, wl, rl);
     }
     this->set_fftw_plan();
@@ -817,6 +836,35 @@ public:
     file.close();
 
     return true;
+  }
+
+  bool write_slice() const {
+    return this->write_all_data(this->ts_slice);
+  }
+
+  void to_ascii() {
+
+    this->ts_slice.clear();
+    this->ts_slice.resize(1024);
+    this->ts_chunk.clear(); // no overlapping
+
+    std::filesystem::path filepath = this->filepath_wo_ext;
+    filepath.replace_extension(".dat");
+    std::ofstream file_dat;
+    file_dat.open(filepath, std::ios::out | std::ios::trunc);
+
+    if (!file_dat.is_open()) {
+      file_dat.close();
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << "::file not open " << filepath;
+      throw std::runtime_error(err_str.str());
+    }
+    while (this->read_data(true) != -1) {
+      for (auto dat : this->ts_slice) {
+        file_dat << dat << std::endl;
+      }
+    }
+    file_dat.close();
   }
 
   // std::copy(ve.begin(), ve.end(), std::ostreambuf_iterator<char>(outfile));
@@ -948,7 +996,7 @@ public:
     return -1;
   }
 
-  std::vector<double> single_read(const size_t &read_samples, const size_t &skip_samples_read, const bool bdetrend) {
+  std::vector<double> read_single(const size_t &read_samples, const size_t &skip_samples_read, const bool bdetrend) {
     if (!read_samples) {
       throw std::runtime_error(std::string(__func__) + " :: read_samples is zero");
     }
@@ -970,6 +1018,43 @@ public:
     return this->ts_slice;
   }
 
+  std::pair<int64_t, int64_t> read_plotter(const size_t &read_samples, const size_t &skip_samples_read, const bool bdetrend) {
+    if (!read_samples) {
+      throw std::runtime_error(std::string(__func__) + " :: read_samples is zero");
+    }
+    if (this->samples() < (read_samples + skip_samples_read)) {
+      throw std::runtime_error(std::string(__func__) + " :: read_samples + skip_samples_read is larger than total samples");
+    }
+    if (skip_samples_read)
+      this->skip_samples(skip_samples_read);
+    this->ts_slice.resize(read_samples);
+    int64_t start_pos = this->infile.tellg();
+    int64_t control = 0;
+    control = this->read_bin(this->ts_slice, this->infile, false);
+    // this->infile.close();
+    if (control < 0) {
+      throw std::runtime_error(std::string(__func__) + " :: read error");
+    }
+    if (bdetrend)
+      detrend<double>(this->ts_slice.begin(), this->ts_slice.end());
+    for (size_t i = skip_samples_read; i < read_samples; ++i) {
+      this->sample_vector.push_back(i);
+    }
+    return this->read_pos;
+  }
+
+  std::vector<double> read_all_at_once() {
+    this->open_atss_read();
+    this->ts_slice.resize(this->samples());
+    int64_t control = 0;
+    control = this->read_bin(this->ts_slice, this->infile, false);
+    this->infile.close();
+    if (control < 0) {
+      throw std::runtime_error(std::string(__func__) + " :: read error");
+    }
+    return this->ts_slice;
+  }
+
   /*!
    * \brief read_all_fftw that includes the COMPLETE spectra inclusive DC part and Nyquist; executes this->plan and stores INSIDE channel
    * \param read_last_chunk false for MT processing - last chunk has != read length (fft) size
@@ -978,25 +1063,30 @@ public:
   void read_all_fftw(const bool read_last_chunk = false, const std::shared_ptr<atmm> &sel = nullptr) {
 
     int64_t reads = 0;
+    // clear the queue
+    while (!this->qspc.empty())
+      this->qspc.pop();
     do {
 
       reads = this->read_data(read_last_chunk, sel);
-      detrend_and_hanning<double>(this->ts_slice.begin(), this->ts_slice.end());
-      if (this->ts_slice_padded.size()) {
-        // this->ts_slice_padded.insert(this->ts_slice_padded.begin(), this->ts_slice.cbegin(), this->ts_slice.cend());
-        for (size_t i = 0; i < ts_slice.size(); ++i) {
-          this->ts_slice_padded[i] = ts_slice[i];
+      if (reads > 0) {
+        detrend_and_hanning<double>(this->ts_slice.begin(), this->ts_slice.end());
+        if (this->ts_slice_padded.size()) {
+          // this->ts_slice_padded.insert(this->ts_slice_padded.begin(), this->ts_slice.cbegin(), this->ts_slice.cend());
+          for (size_t i = 0; i < ts_slice.size(); ++i) {
+            this->ts_slice_padded[i] = ts_slice[i]; // copy first part; rest is zero
+          }
         }
+        fftw_execute(this->plan);
+        this->qspc.push(this->spc_slice);
       }
-      fftw_execute(this->plan);
-      this->qspc.push(this->spc_slice);
 
     } while (reads > 0);
     if (this->infile.is_open())
       this->infile.close();
   }
 
-  void read_all_fftw_gussian_noise(const std::vector<double> double_noise, const bool bdetrend_hanning = true) {
+  void read_all_fftw_gaussian_noise(const std::vector<double> double_noise, const bool bdetrend_hanning = true) {
 
     if (!this->ts_slice.size())
       return;
@@ -1012,7 +1102,6 @@ public:
       if (bdetrend_hanning)
         detrend_and_hanning<double>(this->ts_slice.begin(), this->ts_slice.end());
       if (this->ts_slice_padded.size()) {
-        // this->ts_slice_padded.insert(this->ts_slice_padded.begin(), this->ts_slice.cbegin(), this->ts_slice.cend());
         for (size_t i = 0; i < ts_slice.size(); ++i) {
           this->ts_slice_padded[i] = ts_slice[i];
         }
@@ -1052,8 +1141,8 @@ public:
   }
 
   /*!
-   * \brief prepare_to_raw_spc converts the local queue to a vector AND scales with the window wincal
-   * \param fft_freqs where the fft settings are stored;
+   * \brief prepare_to_raw_spc converts the local queue to a vector spc AND scales with the window wincal
+   * \param fft_freqs where the fft settings are stored; YOU MUST interpolate / extend the calibration to the same length as the FFT in ADVANCE
    * \param bcal
    */
   void prepare_raw_spc(const bool bcal = true, const bool bwincal = true) {
@@ -1062,13 +1151,26 @@ public:
     size_t j = 0;
     std::vector<std::complex<double>> caldata;
     std::vector<double> fcal;
-
+    bool bcaldata = bcal;
+    if (this->cal->f.size() == 0) {
+      bcaldata = false;
+      std::cerr << "prepare_raw_spc no calibration data available for " << this->cal->sensor << std::endl;
+    }
     while (!this->qspc.empty()) {
       this->spc.emplace_back(this->fft_freqs->trim_fftw_result(this->qspc.front()));
-      if (bcal && !j) {
+      // fetch interpolated calibration data first time
+      if (bcaldata && bcal && !j) {
+        if (this->cal == nullptr)
+          throw std::runtime_error(std::string(__func__) + " :: no calibration available");
+        if (this->cal->f.size() != this->spc.back().size()) {
+          std::ostringstream err_str(__func__, std::ios_base::ate);
+          err_str << " :: calibration size is smaller than FFT size " << this->cal->f.size() << " " << this->spc.back().size();
+          throw std::runtime_error(err_str.str());
+        }
         this->cal->get_cplx_cal(fcal, caldata);
       }
-      if (bcal) {
+
+      if (bcaldata) {
         // divide this->spc.back() by caldata
         std::transform(this->spc.back().begin(), this->spc.back().end(), caldata.begin(), this->spc.back().begin(), std::divides<std::complex<double>>());
       }
@@ -1159,6 +1261,7 @@ private:
       return -1;
     }
 
+    this->read_pos.first = file.tellg();
     size_t i = 0;
 
     if (!this->ts_chunk.size()) {
@@ -1206,11 +1309,17 @@ private:
         }
       }
     }
-
-    return file.tellg();
+    this->read_pos.second = file.tellg();
+    return this->read_pos.second;
   }
 
   void set_fftw_plan() {
+    if (this->fft_freqs == nullptr)
+      throw std::runtime_error(std::string(__func__) + " :: no fft frequencies available");
+    if (this->fft_freqs->get_rl() == 0)
+      throw std::runtime_error(std::string(__func__) + " :: no read length available");
+    if (this->fft_freqs->get_wl() == 0)
+      throw std::runtime_error(std::string(__func__) + " :: no window length available");
     this->ts_slice.resize(this->fft_freqs->get_rl());
     this->spc_slice.resize(this->fft_freqs->get_fl());
     if (this->fft_freqs->get_rl() == this->fft_freqs->get_wl()) {
@@ -1223,13 +1332,12 @@ private:
 
     this->bw = this->fft_freqs->get_bw();
   }
-
 }; // end channel class
 
 /*!
  * \brief operator == for std::shared_ptr<channel>
  */
-bool operator==(const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) {
+static bool operator==(const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) {
   if (lhs->latitude != rhs->latitude)
     return false;
   if (lhs->longitude != rhs->longitude)
@@ -1259,38 +1367,158 @@ bool operator==(const std::shared_ptr<channel> &lhs, const std::shared_ptr<chann
   return lhs->pt == rhs->pt;
 }
 
-auto compare_channel_name_lt = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+static auto compare_channel_name_lt = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   return lhs->filename() < rhs->filename();
 };
 
-auto compare_channel_start_lt = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+static auto compare_channel_start_lt = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   return lhs->pt < rhs->pt;
 };
 
-auto compare_channel_start_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+static auto compare_channel_start_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   // operator for pointer, * invoces the < operator wich is defined for a pointer rhs
   return lhs->pt == rhs->pt;
 };
 
-auto compare_channel_sampling_rate_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+static auto compare_channel_sampling_rate_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   return (lhs->get_sample_rate() == rhs->get_sample_rate());
 };
 
-auto compare_channel_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+static auto compare_channel_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   return (lhs->get_run_dir() == rhs->get_run_dir());
 };
 
-auto compare_channel_site_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+static auto compare_channel_site_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   return (lhs->get_site_dir() == rhs->get_site_dir());
 };
 
-auto compare_channel_site_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+static auto compare_channel_site_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   return ((lhs->get_site_dir() == rhs->get_site_dir()) && (lhs->get_run_dir() == rhs->get_run_dir()));
 };
 
-auto same_run = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+static auto same_run = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   return ((lhs->pt == rhs->pt) && (lhs->get_sample_rate() == rhs->get_sample_rate() && (lhs->get_channel_no() != rhs->get_channel_no())));
 };
+
+static std::string make_time_string_now() {
+  auto now = std::chrono::system_clock::now();
+  auto now_c = std::chrono::system_clock::to_time_t(now);
+  // Convert to tm struct for formatting
+  std::tm now_tm = *std::localtime(&now_c);
+  std::ostringstream oss;
+  oss << std::put_time(&now_tm, "%Y-%m-%dT%H:%M:%S");
+  return oss.str();
+}
+
+/*!
+ * @brief make default channel with EFP-6 and MFS-06e; the calibration data is still empty!
+ * @param chan an existing channel
+ * @param sample_rate
+ * @param channel_type Ex, Ey, Hx, Hy, Hz, T,
+ * @param system default is ADU-08e
+ */
+static void make_channel(std::shared_ptr<channel> &chan, const double &sample_rate, const std::string &channel_type, const std::string &system = "ADU-08e") {
+  if (chan == nullptr)
+    throw std::runtime_error(std::string(__func__) + " :: channel is nullptr");
+  // start with base values
+  auto dt_string = make_time_string_now();
+  chan->set_datetime(dt_string);
+  //
+  chan->set_sample_rate(sample_rate);
+  if (system.size())
+    chan->set_system(system);
+  else
+    chan->set_system("ADU-08e");
+  chan->set_serial(1);
+  chan->channel_type = channel_type;
+  // now we continue with defaults
+  // ... from famous Northern Mining Example
+  chan->latitude = 39.02;
+  chan->longitude = 29.124;
+  chan->elevation = 1088.31;
+  // create some channel data
+  if (chan->cal == nullptr)
+    chan->cal = std::make_shared<calibration>();
+  if (channel_type == "Ex") {
+    chan->angle = 0.0;
+    chan->dip = 0.0;
+    chan->units = "mV/km";
+    chan->set_channel_no(0);
+    chan->cal->sensor = "EFP-06";
+    chan->cal->serial = 1;
+    chan->cal->units_amplitude = "mV";
+    chan->cal->units_phase = "degrees";
+    chan->cal->units_frequency = "Hz";
+    chan->cal->datetime = dt_string;
+  } else if (channel_type == "Ey") {
+    chan->angle = 90.0;
+    chan->dip = 0.0;
+    chan->units = "mV/km";
+    chan->set_channel_no(1);
+    chan->cal->sensor = "EFP-06";
+    chan->cal->serial = 2;
+    chan->cal->units_amplitude = "mV";
+    chan->cal->units_phase = "degrees";
+    chan->cal->units_frequency = "Hz";
+    chan->cal->datetime = dt_string;
+  } else if (channel_type == "Hx") {
+    chan->angle = 0.0;
+    chan->dip = 0.0;
+    chan->units = "mV";
+    chan->set_channel_no(2);
+    chan->cal->sensor = "MFS-06e";
+    chan->cal->serial = 1;
+    if (chan->get_sample_rate() < 512.1)
+      chan->cal->chopper = ChopperStatus::on;
+    else
+      chan->cal->chopper = ChopperStatus::off;
+    chan->cal->units_amplitude = "mV/nT";
+    chan->cal->units_phase = "degrees";
+    chan->cal->units_frequency = "Hz";
+    chan->cal->datetime = dt_string;
+  } else if (channel_type == "Hy") {
+    chan->angle = 90.0;
+    chan->dip = 0.0;
+    chan->units = "mV";
+    chan->set_channel_no(3);
+    chan->cal->sensor = "MFS-06e";
+    chan->cal->serial = 1;
+    if (chan->get_sample_rate() < 512.1)
+      chan->cal->chopper = ChopperStatus::on;
+    else
+      chan->cal->chopper = ChopperStatus::off;
+    chan->cal->units_amplitude = "mV/nT";
+    chan->cal->units_phase = "degrees";
+    chan->cal->units_frequency = "Hz";
+    chan->cal->datetime = dt_string;
+  } else if (channel_type == "Hz") {
+    chan->angle = 0.0;
+    chan->dip = 90.0;
+    chan->units = "mV";
+    chan->set_channel_no(4);
+    chan->cal->sensor = "MFS-06e";
+    chan->cal->serial = 1;
+    if (chan->get_sample_rate() < 512.1)
+      chan->cal->chopper = ChopperStatus::on;
+    else
+      chan->cal->chopper = ChopperStatus::off;
+    chan->cal->units_amplitude = "mV/nT";
+    chan->cal->units_phase = "degrees";
+    chan->cal->units_frequency = "Hz";
+    chan->cal->datetime = dt_string;
+  } else if (channel_type == "T") {
+    chan->angle = 0.0;
+    chan->dip = 0.0;
+    chan->units = "°C";
+    chan->set_channel_no(20);
+  } else {
+    chan->angle = 0.0;
+    chan->dip = 0.0;
+    chan->units = "mV";
+    chan->set_channel_no(21);
+  }
+  chan->resistance = 1000;
+}
 
 #endif // ATSS_H
 

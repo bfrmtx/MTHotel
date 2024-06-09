@@ -237,6 +237,7 @@ std::unordered_map<std::string, int> ats_sys_family = {
     {"ADU-11e", 11},
     {"ADU-12e", 12}};
 
+//******************************************  A T S  H E A D E R  J S O N   ************************************
 /*!
  * \brief The ats_header_json struct for interacting with json; the class makes use of atsheader
  */
@@ -365,7 +366,7 @@ struct ats_header_json {
   }
 
   /*!
-   * \brief pos2length caculate diple length
+   * \brief pos2length calculate dipole length
    * \return
    */
   double pos2length() const {
@@ -505,6 +506,23 @@ struct ats_header_json {
       return 90.;
 
     return ang;
+  }
+
+  void dip2pos(const double &length, const double &angle_north_to_east) {
+
+    double tx = 0.5 * length * cos(angle_north_to_east * M_PI / 180.0); // North
+    double ty = 0.5 * length * sin(angle_north_to_east * M_PI / 180.0); // East
+
+    this->header["x1"] = -tx;
+    this->header["y1"] = -ty;
+    this->header["x2"] = tx;
+    this->header["y2"] = ty;
+  }
+
+  void dip2z(const double &length, const double &dip) {
+    double tz = length * sin(dip * M_PI / 180.0);
+    this->header["z1"] = 0.0;
+    this->header["z2"] = tz;
   }
 
   std::string measdir() const {

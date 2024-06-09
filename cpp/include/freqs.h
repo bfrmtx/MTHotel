@@ -116,13 +116,13 @@ void detrend_and_hanning(Iterator first, const Iterator last) {
   }
 }
 
-bool is_pow2(const size_t &wl) {
+static bool is_pow2(const size_t &wl) {
   if (!wl)
     return false;
   return ((wl & -wl) == wl);
 }
 
-size_t next_power_of_two(const size_t &n) {
+static size_t next_power_of_two(const size_t &n) {
   size_t target, m;
   if (n > (SIZE_MAX - 1) / 2)
     throw "next_power_of_two: vector too large";
@@ -141,7 +141,7 @@ size_t next_power_of_two(const size_t &n) {
  * \param steps_per_decade steps per decade (like 11 for MSF-06e or 7 for MFS-07e)
  * \return vector of frequencies (or null vector if failed)
  */
-std::vector<double> gen_equidistant_logvector(const double &start, const double &stop, const size_t &steps_per_decade) {
+static std::vector<double> gen_equidistant_logvector(const double &start, const double &stop, const size_t &steps_per_decade) {
 
   // dist would be log_stop - log_start
   // we calculate per decade
@@ -180,8 +180,7 @@ std::vector<double> gen_equidistant_logvector(const double &start, const double 
 class fftw_freqs {
 
 public:
-  fftw_freqs(const double &sample_rate, const size_t &wl, const size_t &rl) :
-      wl(wl), rl(rl), sample_rate(sample_rate) {
+  fftw_freqs(const double &sample_rate, const size_t &wl, const size_t &rl) : wl(wl), rl(rl), sample_rate(sample_rate) {
 
     if (rl > wl) {
       std::ostringstream err_str(__func__, std::ios_base::ate);
@@ -201,7 +200,7 @@ public:
   }
 
   /*!
-   * @brief get the bandwidth of the fft - that is half the sample rate; devide by rl to get the frequency resolution of fft
+   * @brief get the bandwidth of the fft - that is half the sample rate; divide by rl to get the frequency resolution of fft
    * @return
    */
   double get_bw() const {
@@ -617,7 +616,8 @@ public:
 
 private:
   size_t wl = 0; //!< window length of fft
-  size_t rl = 0; //!< read length of time series data; if same like wl: standard fft, if greater: zero padding
+  size_t rl = 0; //!< read length of time series data; if same like wl: standard fft, if smaller: zero padding
+  // example: wl = 1024, rl = 512; then we have a zero padded fft with 512 zeros at the end
   double sample_rate = 0.0;
 
   std::pair<size_t, size_t> idx_range{0, SIZE_MAX};
@@ -631,7 +631,7 @@ private:
  * \param fftws
  * \return 4 for number like 1024
  */
-size_t field_width(const std::vector<std::shared_ptr<fftw_freqs>> &fftws) {
+static size_t field_width(const std::vector<std::shared_ptr<fftw_freqs>> &fftws) {
 
   std::vector<double> maxf;
   // rl is always <= wl !
@@ -644,7 +644,7 @@ size_t field_width(const std::vector<std::shared_ptr<fftw_freqs>> &fftws) {
   return xw.str().size();
 }
 
-std::vector<std::stringstream> gnuplot_labels(const std::vector<std::shared_ptr<fftw_freqs>> &fftws, const std::shared_ptr<std::vector<double>> in_rmss = nullptr) {
+static std::vector<std::stringstream> gnuplot_labels(const std::vector<std::shared_ptr<fftw_freqs>> &fftws, const std::shared_ptr<std::vector<double>> in_rmss = nullptr) {
   std::vector<double> fss(fftws.size());
   std::vector<size_t> wls(fftws.size());
   std::vector<size_t> rls(fftws.size());
@@ -657,7 +657,7 @@ std::vector<std::stringstream> gnuplot_labels(const std::vector<std::shared_ptr<
   size_t i = 0;
   if (in_rmss != nullptr) {
     if (in_rmss->size() != fftws.size()) {
-      std::cerr << "gnuplot_labels-> sizes different " << fftws.size() << " " << in_rmss->size() << std::endl;
+      std::cerr << "gnuplot_labels-> sizes different fft:" << fftws.size() << " rms:" << in_rmss->size() << std::endl;
       return ssv;
     }
     rmss.resize(fftws.size());

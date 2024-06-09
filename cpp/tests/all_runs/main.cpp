@@ -124,7 +124,7 @@ int main() {
       // chan->read_all_fftw();
       pool->push_task(&channel::read_all_fftw, chan, false, nullptr);
     }
-    pool->wait_for_tasks();
+    pool->wait();
 
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
@@ -153,7 +153,7 @@ int main() {
       // we have a pointer and don't need std::ref
       pool->push_task(&channel::prepare_to_raw_spc, chan, fft_fres, false, false);
     }
-    pool->wait_for_tasks();
+    pool->wait();
 
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
@@ -171,17 +171,16 @@ int main() {
   i = 0;
   for (auto &chan : channels) {
     // swapping should be fast
-    raws[i++]->set_raw_spectra(chan);
+    raws[i++]->move_raw_spectra(chan);
   }
 
   // ******************************** stack all *******************************************************************************
 
   try {
-    std::vector<std::jthread> threads;
     for (auto &rw : raws) {
       rw->advanced_stack_all(0.7);
     }
-    pool->wait_for_tasks();
+    pool->wait();
 
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;

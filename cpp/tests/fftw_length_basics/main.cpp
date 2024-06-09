@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
     // **** here I do the FFT
     for (auto &chan : channels) {
       // const bool bdetrend_hanning = true
-      chan->read_all_fftw_gussian_noise(noise_data, true);
+      chan->read_all_fftw_gaussian_noise(noise_data, true);
       std::cout << chan->qspc.size() << " readings" << std::endl;
     }
 
@@ -186,11 +186,11 @@ int main(int argc, char *argv[]) {
 
     i = 0;
     for (auto &chan : channels) {
-      raws[i++]->set_raw_spectra(chan);
+      raws[i++]->move_raw_spectra(chan);
     }
 
     for (auto &raw : raws) {
-      raw->simple_stack_all();
+      raw->advanced_stack_all();
     }
 
     //

@@ -1,10 +1,6 @@
 #ifndef MARG_H
 #define MARG_H
 
-#include "BS_thread_pool.h"
-
-#include "../mt/raw_spectra/raw_spectra.h"
-
 #include "atss.h"
 #include "survey.h"
 #include <filesystem>
@@ -21,7 +17,6 @@ std::shared_ptr<station_d> station;
 std::vector<std::shared_ptr<run_d>> runs;
 std::vector<std::shared_ptr<channel>> channels;
 std::vector<std::string> channel_types;
-std::vector<std::string> available_types = {"Ex", "Ey", "Hx", "Hy", "Hz", "Ez", "Jx", "Jy", "Jz", "x", "y", "z", "T", "t"};
 
 static void get_args_single_survey(int argc, char *argv[]) {
   unsigned l = 1;

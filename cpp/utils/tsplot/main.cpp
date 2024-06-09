@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "../include/marg.h"
+#include "marg.h"
 
 #include "mini_math.h"
 namespace fs = std::filesystem;
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 
   for (auto &chan : channels) {
 
-    gplt->set_xy_lines(x, chan->single_read(use, start, bdetrend), chan->channel_type, 1);
+    gplt->set_xy_lines(x, chan->read_single(use, start, bdetrend), chan->channel_type, 1);
   }
 
   gplt->plot();

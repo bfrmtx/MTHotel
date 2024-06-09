@@ -201,11 +201,11 @@ int main(int argc, char *argv[]) {
       for (auto &chan : channels) {
         // const bool bdetrend_hanning = true
         if (pl == 0)
-          pool->push_task(&channel::read_all_fftw_gussian_noise, chan, noise_data[i++], false); // 0 rect window
+          pool->push_task(&channel::read_all_fftw_gaussian_noise, chan, noise_data[i++], false); // 0 rect window
         else
-          pool->push_task(&channel::read_all_fftw_gussian_noise, chan, noise_data[i++], true); // else hanning
+          pool->push_task(&channel::read_all_fftw_gaussian_noise, chan, noise_data[i++], true); // else hanning
       }
-      pool->wait_for_tasks();
+      pool->wait();
 
       for (auto &chan : channels) {
         std::cout << chan->qspc.size() << " readings" << std::endl;
@@ -225,14 +225,14 @@ int main(int argc, char *argv[]) {
         else
           chan->prepare_to_raw_spc(fft_fres, true, true); // make vector from queue, 2 wincal
 
-        raws[i++]->set_raw_spectra(chan); // swap!
+        raws[i++]->move_raw_spectra(chan); // swap!
       }
       std::sort(max_mins.begin(), max_mins.end()); // of x-axis frequencies
 
       for (auto &raw : raws) {
-        raw->simple_stack_all();
+        raw->advanced_stack_all();
       }
-      pool->wait_for_tasks();
+      pool->wait();
 
       auto ampl_min_max = min_max_sa_spc(raws, channel_type);
       std::cout << ampl_min_max.first << " " << ampl_min_max.second << std::endl;
@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
       pool->push_task(&gnuplotter<double, double>::plot, gplt);
     }
   }
-  pool->wait_for_tasks();
+  pool->wait();
 
   auto stop_time = std::chrono::high_resolution_clock::now();
 

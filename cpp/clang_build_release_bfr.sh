@@ -5,7 +5,7 @@ INTSTALLDIR='/usr/local/mthotel'
 # debug here
 SRC_DIR=$HOME'/devel/github_mthotel/MTHotel/cpp/'
 # build outside please!
-BUILD_DIR=$HOME'/build/'$PROJ'_cpp/build'
+BUILD_DIR=$HOME'/build/'$PROJ/'cpp/build'
 #
 # comment when final
 #INTSTALLDIR=$HOME'/build/'$PROJ'_cpp/install'

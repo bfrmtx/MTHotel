@@ -9,13 +9,13 @@
 #include <string>
 #include <vector>
 
-#include "../cal/read_cal/read_cal.h"
-#include "../xml/tinyxmlwriter/tinyxmlwriter.h"
 #include "about_system.h"
 #include "atsheader.h"
 #include "atsheader_def.h"
 #include "atsheader_xml.h"
 #include "cal_base.h"
+#include "read_cal.h"
+#include "tinyxmlwriter.h"
 
 // std::vector<std::shared_ptr<calibration>> calibs;       //!< all JSON style calibrations
 // std::multimap<std::string, fs::path> xmls_and_files;    //!< create a multimap which ats files belong to the same XML

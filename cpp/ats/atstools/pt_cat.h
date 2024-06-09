@@ -105,6 +105,7 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
           out->ats_write_ints_doubles(out->header.lsbval, ints);
           atm->add_unselected(ints.size());
           samples_read += ints.size();
+          std::cout << " adding " << ints.size() << " samples" << std::endl;
         }
         // std::cout << std::endl;
         if (j < ats.size() - 1) {
@@ -115,6 +116,7 @@ void cat_ats_files(const std::vector<std::shared_ptr<atsheader>> &ats, const std
             if (dt >= 0) {
               out->ats_zero_ints(dt);
               atm->add_selected(dt);
+              std::cout << "zeroing " << dt << " samples" << std::endl;
             }
           }
         }

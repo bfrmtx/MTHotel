@@ -158,3 +158,7 @@ then build the code
 
 Make your own build; the find_package is buggy;
 I have included /usr/local .... for self-made FFTW3
+
+# Video
+
+A small video is available on [YouTube](https://www.youtube.com/watch?v=3z3z3z3z3z3)

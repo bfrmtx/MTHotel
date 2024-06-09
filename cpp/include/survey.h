@@ -1,16 +1,22 @@
 #ifndef SURVEY_H
 #define SURVEY_H
 
-#include "../mt/raw_spectra/raw_spectra.h"
 #include "atss.h" // channels - n channels for ech run
 #include "files_dirs.h"
+#include "raw_spectra.h"
+
+/*!
+ * @file survey.h
+ * @brief survey class for the atss project; basically you operate on the file system and many return values are paths!
+ */
+
 // ************************************************************************  R U N *******************************************************************
 
 static const size_t prep_channels = 12; //!< assume an amount of channels per run
 
 /*!
  * \brief The run_d class - the main survey class should be in a try block and keep the locks
- * a run contains ONE ENTETY - so one sampling frequency at one start time ONE LOGGER
+ * a run contains ONE ENTITY - so one sampling frequency at one start time ONE LOGGER
  */
 class run_d {
 
@@ -39,7 +45,7 @@ public:
     this->run_dir = std::filesystem::canonical(rhs->run_dir);
     this->channels.reserve(prep_channels);
     for (const auto &chan : rhs->channels) {
-      this->channels.emplace_back(std::make_shared<channel>(chan));
+      this->channels.emplace_back(std::make_shared<channel>(chan)); // COPY constructor
     }
   }
 
@@ -69,6 +75,23 @@ public:
       }
     }
     return std::filesystem::path();
+  }
+  /*!
+   * \brief add_channel_set
+   * \param channel_types create a set of channels according to the vector channel_types
+   * \param sample_rate and sample rate
+   * \return run path
+   */
+  std::filesystem::path add_channel_set(std::vector<std::string> &channel_types, const double &sample_rate) {
+    this->clear(); // clear the channels, avoid mixed up runs
+    for (const auto &ch : channel_types) {
+      auto chan = std::make_shared<channel>(ch, sample_rate);
+      make_channel(chan, sample_rate, chan->get_channel_type());
+      chan->set_dir(this->run_dir);
+      this->channels.push_back(chan);
+      // this->channels.back()->set_dir(this->run_dir);
+    }
+    return this->run_dir;
   }
 
   size_t get_run_no() const {
@@ -223,22 +246,23 @@ public:
     }
     for (auto &ch : this->channels) {
       if (ch->spc.size())
-        this->raw_spc->set_raw_spectra(ch); // move the raw spectra from the channel to the raw_spectra
+        this->raw_spc->move_raw_spectra(ch); // move the raw spectra from the channel to the raw_spectra
+                                             // raw spectra also contains the channel pointer and therewith the channel name and FFT properties
     }
   }
 
-  std::vector<size_t> get_channel_with_spectra(bool parzen_spectra) const {
-    std::vector<size_t> channels_with_spectra;
-    for (size_t i = 0; i < this->channels.size(); ++i) {
-      std::string ch_type = this->channels.at(i)->get_channel_type();
-      if (parzen_spectra) {
-        if (raw_spc->get_abs_sa_prz_spectra(ch_type).size())
-          channels_with_spectra.push_back(i);
-      } else if (this->raw_spc->get_abs_sa_spectra(ch_type).size())
-        channels_with_spectra.push_back(i);
-    }
-    return channels_with_spectra;
-  }
+  // std::vector<size_t> get_channel_with_spectra(bool parzen_spectra) const {
+  //   std::vector<size_t> channels_with_spectra;
+  //   for (size_t i = 0; i < this->channels.size(); ++i) {
+  //     std::string ch_type = this->channels.at(i)->get_channel_type();
+  //     if (parzen_spectra) {
+  //       if (raw_spc->get_abs_sa_prz_spectra(ch_type).size())
+  //         channels_with_spectra.push_back(i);
+  //     } else if (this->raw_spc->get_abs_sa_spectra(ch_type).size())
+  //       channels_with_spectra.push_back(i);
+  //   }
+  //   return channels_with_spectra;
+  // }
 
   std::filesystem::path run_dir;
   std::vector<std::shared_ptr<channel>> channels;
@@ -264,7 +288,14 @@ bool operator==(const std::shared_ptr<run_d> &lhs, const std::shared_ptr<run_d> 
 }
 
 // ************************************************************************ S T A T I O N *******************************************************************
-
+//
+//
+//
+//
+//
+//
+//
+//
 /*!
  * \brief The station_d class
  */
@@ -273,7 +304,7 @@ public:
   /*!
    * \brief station_d
    * \param station_dir
-   * \param no_create if true, we perfom a site scan
+   * \param no_create if true, we perform a site scan
    */
   station_d(const std::filesystem::path &station_dir, const bool no_create = true) : station_dir(station_dir) {
 
@@ -335,6 +366,27 @@ public:
     return fdirs::scan_runs(this->station_dir);
   }
 
+  size_t scan_high_run_no() const {
+    return fdirs::scan_runs_high(this->station_dir);
+  }
+
+  std::filesystem::path add_channel_set(std::vector<std::string> &channel_types, const double &sample_rate) {
+    std::filesystem::path runpath;
+    auto irun = this->scan_high_run_no();
+    if (irun == SIZE_MAX)
+      return std::filesystem::path();
+    runpath = this->station_dir / mstr::run2string(irun);
+
+    runs.push_back(std::make_shared<run_d>(runpath, false));
+    runpath = runs.back()->add_channel_set(channel_types, sample_rate);
+
+    std::filesystem::path mrunpath = fdirs::meta_dir(this->station_dir) / mstr::run2string(irun);
+    if (!std::filesystem::exists(mrunpath))
+      std::filesystem::create_directory(mrunpath);
+
+    return runpath;
+  }
+
   std::filesystem::path add_create_run(std::shared_ptr<channel> &new_channel) {
 
     std::filesystem::path runpath;
@@ -377,15 +429,19 @@ public:
     }
     return nullptr;
   }
+  std::shared_ptr<run_d> get_run(const std::filesystem::path &run_path) const {
+    return this->get_run(mstr::string2run(run_path.filename().string()));
+  }
 
   // operator (size_t run_no, std::string channel_type)
   /*!
-   * \brief at
+   * \brief at size_t run_no, std::string channel_type
    * \param run_no
    * \param channel_type
    * \return
    */
-  std::shared_ptr<channel> at(const size_t &run_no, const std::string &channel_type) const {
+  std::shared_ptr<channel>
+  at(const size_t &run_no, const std::string &channel_type) const {
 
     auto tmp_run = this->get_run(run_no);
     if (tmp_run == nullptr) {
@@ -441,15 +497,22 @@ public:
 };
 
 // ************************************************************************ S U R V E Y *******************************************************************
-
+//
+//
+//
+//
+//
+//
+//
+//
 class survey_d {
 
 public:
   /*!
    * \brief survey_d, put in a try block and catch(catch (std::filesystem::filesystem_error& e) { e.what() } )
    * \param survey_dir
-   * \param no_create if true we perform a survey scan
-   * \param no_create == false we add tree_size files to the survey
+   * \param no_create if true we perform a survey scan and guarantee that we do not write to the filesystem
+   * \param no_create == false we add tree_size files to the survey only
    */
 
   survey_d(const std::filesystem::path &survey_dir, const bool no_create = true, size_t tree_size = 0) : survey_dir(survey_dir) {
@@ -461,11 +524,10 @@ public:
       this->survey_dir = std::filesystem::canonical(this->survey_dir);
       create_survey_dirs(this->survey_dir, survey_dirs());
       //}
-
-    } else {
-      this->survey_dir = std::filesystem::canonical(this->survey_dir);
-      this->scan();
     }
+
+    this->survey_dir = std::filesystem::canonical(this->survey_dir);
+    this->scan();
 
     if (tree_size)
       this->all_channels.reserve(tree_size);
@@ -488,7 +550,6 @@ public:
   }
 
   void collect(const std::shared_ptr<channel> &chan) {
-
     std::unique_lock lock(this->station_lock);
     this->all_channels.push_back(chan);
   }
@@ -542,6 +603,9 @@ public:
     this->clear();
   }
 
+  /*!
+   * \brief clear the stations vector; this is performed before a scan; scan is performed in the constructor and does NOT call a LOCK
+   */
   void clear() {
     for (auto &station : this->stations) {
       if (station != nullptr) {
@@ -550,9 +614,13 @@ public:
     }
     this->stations.clear();
   }
-
+  /*!
+   * \brief get_station, scans the file tree and returns a shared pointer to a station
+   * \param station_name
+   * \return a shared pointer to a station or throw an exception
+   */
   std::shared_ptr<station_d> get_station(const std::string &station_name) const {
-    std::shared_lock lock(this->station_lock);
+    std::shared_lock lock(this->station_lock); // can not add for example
     std::filesystem::path spath;
     spath = this->survey_dir / "stations" / station_name;
     // lamda
@@ -562,10 +630,38 @@ public:
       err_str << " Station " << station_name << " does not exists";
       throw std::runtime_error(err_str.str());
     }
-
     return *stat;
   }
 
+  /*!
+   * @brief get_station - get a station by path, see above
+   * @param station_path
+   * @return shared pointer to a station or nullptr
+   */
+  std::shared_ptr<station_d> get_station(const std::filesystem::path &station_path) const {
+    return this->get_station(station_path.filename().string());
+  }
+
+  /*!
+   * @brief get the run by station name and run number
+   * @param station_name
+   * @param run_no
+   * @return shared pointer to a run or nullptr
+   */
+  std::shared_ptr<run_d> get_run(const std::string &station_name, const size_t &run_no) const {
+    auto station = this->get_station(station_name);
+    return station->get_run(run_no);
+  }
+
+  /*!
+   * @brief get the run by station name and run number - overloaded for convenience
+   * @param station_name_run_no as pair
+   * @return shared pointer to a run or nullptr
+   */
+  std::shared_ptr<run_d> get_run(const std::pair<std::string, size_t> &station_name_run_no) const {
+    auto station = this->get_station(station_name_run_no.first);
+    return station->get_run(station_name_run_no.second);
+  }
   std::shared_ptr<channel> at(const std::string &station_name, const size_t &run_no, const std::string &channel_type) const {
     auto station = this->get_station(station_name);
     return station->at(run_no, channel_type);
@@ -580,7 +676,7 @@ public:
     return station_names;
   }
 
-  std::shared_ptr<channel> get_first_ch(const std::string &station_name, const size_t &run_no) const {
+  std::shared_ptr<channel> get_first_channel(const std::string &station_name, const size_t &run_no) const {
 
     auto station = this->get_station(station_name);
     // check nullptr ... ? use catch!
@@ -701,6 +797,16 @@ public:
     return std::make_pair(station_name, run_no);
   }
 
+  std::filesystem::path add_station_auto_num(const std::string &pattern = "s_") {
+    std::unique_lock lock(this->survey_lock);
+    size_t i = 1;
+    std::string station_name;
+    do {
+      station_name = pattern + std::to_string(i++);
+    } while (std::filesystem::exists(this->survey_dir / "stations" / station_name));
+    return this->create_station(station_name);
+  }
+
 private:
   size_t scan() {
     try {
@@ -713,9 +819,7 @@ private:
           this->stations.emplace_back(std::make_shared<station_d>(entry, true));
         }
       }
-    }
-
-    catch (std::filesystem::filesystem_error &e) {
+    } catch (std::filesystem::filesystem_error &e) {
       std::cerr << e.what() << std::endl;
     }
     return this->stations.size();
@@ -726,6 +830,22 @@ private:
 
   std::filesystem::path survey_dir;
   mutable std::shared_mutex station_lock;
+  mutable std::shared_mutex survey_lock;
 };
+
+void survey_tokens(const std::filesystem::path &filepath, std::string &survey_name, std::string &station_name, size_t &run_no) {
+
+  // split all by directory separator and get the last four tokens
+  std::vector<std::string> tokens;
+  auto survey_dir(filepath);
+  for (const auto &token : survey_dir) {
+    tokens.push_back(token.string());
+  }
+  survey_name = tokens.at(tokens.size() - 4);
+  station_name = tokens.at(tokens.size() - 2);
+  auto run_str = tokens.back();
+  // remove run_ at the beginning
+  run_no = std::stoul(run_str.substr(4));
+}
 
 #endif // SURVEY_H
