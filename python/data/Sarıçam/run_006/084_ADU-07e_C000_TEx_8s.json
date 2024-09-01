@@ -1,0 +1,25 @@
+{
+  "datetime": "2009-08-20T13:23:36",
+  "latitude": 39.026196666666664,
+  "longitude": 29.123953333333333,
+  "elevation": 1088.31,
+  "angle": 0.0,
+  "tilt": 0.0,
+  "resistance": 572.3670043945313,
+  "units": "mV/km",
+  "filter": "ADB-LF,LF-RF-4",
+  "source": "",
+  "sensor_calibration": {
+    "sensor": "EFP-06",
+    "serial": 0,
+    "chopper": 1,
+    "units_frequency": "Hz",
+    "units_amplitude": "mV",
+    "units_phase": "degrees",
+    "datetime": "1970-01-01T00:00:00",
+    "Operator": "",
+    "f": [],
+    "a": [],
+    "p": []
+  }
+}

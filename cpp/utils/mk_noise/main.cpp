@@ -61,6 +61,7 @@ int main() {
   double max_freq = 5.2428800E+05;
   double min_freq = 9.7656250E-04; // 1024s
   std::vector<double> fsamples;
+  std::vector<double> cal_frequencies;
 
   auto act_freq = max_freq;
   do {
@@ -110,8 +111,22 @@ int main() {
       atsjs.back()->create_default_header(channel_type);
       atsjs.back()->header["sample_rate"] = fsamples.at(k);
       atsjs.back()->header["start"] = tt;
+      if (fsamples.at(k) < 1024)
+        atsjs.back()->header["chopper"] = 1;
+      else
+        atsjs.back()->header["chopper"] = 0;
       channels.emplace_back(std::make_shared<channel>(channel_type, fsamples.at(k)));
     }
+
+    // generate calibration frequencies
+    cal_frequencies.clear();
+    double act_freq = fsamples.at(k);
+    for (i = 0; i < 16; ++i) {
+      cal_frequencies.push_back(act_freq);
+      act_freq /= 2.0;
+    }
+    // reverse the vector
+    std::reverse(cal_frequencies.begin(), cal_frequencies.end());
 
     i = 0;
     // create new type of channels with new type of calibration
@@ -122,23 +137,34 @@ int main() {
       chan->set_unix_timestamp(tt);
 
       if (chan->get_channel_type() == "Ex") {
-        chan->dip = 1000.0;
+
         chan->cal = std::make_shared<calibration>("EFP-06", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
       if (chan->get_channel_type() == "Ey") {
-        chan->dip = 1000.0;
         chan->angle = 90.0;
         chan->cal = std::make_shared<calibration>("EFP-06", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
       if (chan->get_channel_type() == "Hx") {
         chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, ChopperStatus::off, CalibrationType::mtx);
+        if (fsamples.at(k) < 1024)
+          chan->cal->set_chopper(ChopperStatus::on);
+        chan->cal->gen_cal_sensor(cal_frequencies);
+        chan->cal->set_theo_as_caldata();
       }
       if (chan->get_channel_type() == "Hy") {
         chan->angle = 90.0;
         chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, ChopperStatus::off, CalibrationType::mtx);
+        if (fsamples.at(k) < 1024)
+          chan->cal->set_chopper(ChopperStatus::on);
+        chan->cal->gen_cal_sensor(cal_frequencies);
+        chan->cal->set_theo_as_caldata();
       }
       if (chan->get_channel_type() == "Hz") {
         chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, ChopperStatus::off, CalibrationType::mtx);
+        if (fsamples.at(k) < 1024)
+          chan->cal->set_chopper(ChopperStatus::on);
+        chan->cal->gen_cal_sensor(cal_frequencies);
+        chan->cal->set_theo_as_caldata();
       }
 
       ++i;
@@ -194,7 +220,7 @@ int main() {
       std::cout << "starting: writer threads for " << fsamples.at(k) << "Hz" << std::endl;
       for (auto &chan : channels) {
         // pool->push_task(&channel::write_all_data, chan, std::ref(noise_data_sub));
-        pool->submit_task([&chan, &noise_data_sub]() { chan->write_all_data(noise_data_sub); });
+        pool->detach_task([&chan, &noise_data_sub]() { chan->write_all_data(noise_data_sub); });
       }
       pool->wait();
     } catch (const std::string &error) {

@@ -92,7 +92,7 @@ def create_atsheader():
         'y2': 0.0,
         'z2': 0.0,
         'dipole_length': 0.0,
-        'angle': 0.0,
+        'azimuth': 0.0,
         'rho_probe_ohm': 0.0,
         'DC_offset_voltage_mV': 0.0,
         'gain_stage1': 0.0,
@@ -181,7 +181,7 @@ def create_bin_atsheader():
     b_ats_header.add('float32', 'y2')
     b_ats_header.add('float32', 'z2')
     b_ats_header.add('float32', 'dipole_length')
-    b_ats_header.add('float32', 'angle')
+    b_ats_header.add('float32', 'azimuth')
     b_ats_header.add('float32', 'rho_probe_ohm')
     b_ats_header.add('float32', 'DC_offset_voltage_mV')
     b_ats_header.add('float32', 'gain_stage1')
@@ -426,15 +426,15 @@ def aduboard_from_sample_rate(sample_rate):
     return sname
 
 
-def dip_to_pos(length, angle, dip):
+def dip_to_pos(length, azimuth, tilt):
     pos = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    dp = dip
+    dp = tilt
     if math.abs(length) < 0.0001:
         return pos
-    if math.abs(dip) < 0.1:
+    if math.abs(tilt) < 0.1:
         dp = 0.0
-    x = length * math.cos(math.pi / 180. * angle) * math.cos(math.pi / 180. * dp)
-    y = length * math.sin(math.pi / 180. * angle) * math.cos(math.pi / 180. * dp)
+    x = length * math.cos(math.pi / 180. * azimuth) * math.cos(math.pi / 180. * dp)
+    y = length * math.sin(math.pi / 180. * azimuth) * math.cos(math.pi / 180. * dp)
     z = length * math.sin(math.pi / 180. * dp)
 
     pos[0] = -0.5 * x
@@ -526,10 +526,10 @@ def channel_form_oldheader(oldheader):
     chan['serial'] = oldheader['serial_number']
     chan['elevation'] = oldheader['iElev_cm'] / 100.
     # since 15 years we do use pos
-    p = pos_to_dip(oldheader['x1'], oldheader['x2'], oldheader['y1'], oldheader['y2'], oldheader['z1'], oldheader['z2'])
+    p = pos_to_tilt(oldheader['x1'], oldheader['x2'], oldheader['y1'], oldheader['y2'], oldheader['z1'], oldheader['z2'])
     chan['dipole_length'] = p[0]
-    chan['angle'] = p[1]
-    chan['dip'] = p[2]
+    chan['azimuth'] = p[1]
+    chan['tilt'] = p[2]
     chan['resistance'] = oldheader['rho_probe_ohm']
     # ADU uses mV without mentioning it
     chan['units'] = "mV"          # H, E -> change that if you scale E to mV/km

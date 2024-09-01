@@ -38,7 +38,7 @@ void collect_atsheaders(const std::shared_ptr<atsheader> &ats, std::unique_ptr<s
   chan->set_base_file(atsj->header["SystemType"], atsj->header["serial_number"], atsj->header["channel_number"]);
   chan->set_lat_lon_elev(atsj->get_lat(), atsj->get_lon(), atsj->get_elev());
   chan->angle = atsj->pos2angle();
-  chan->dip = atsj->pos2dip();
+  chan->tilt = atsj->pos2tilt();
   chan->resistance = atsj->header["rho_probe_ohm"]; // contact resistance
   chan->filter = atsj->get_filter("ADB-");
   auto rcal = std::make_shared<read_cal>();

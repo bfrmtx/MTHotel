@@ -1,7 +1,9 @@
 # atstools
 
+```{index} Software; atstools
+```
 
-Contains a set of tools for converting old ats format into atss format.
+Contains a set of tools for converting **old ats format into new atss** format.
 
 For changing data from ats or *procmt* [^myref] to the new atss format only two steps are needed.
 
@@ -18,7 +20,7 @@ creates a survey tree in /surveys named iron_mountain with stations L1_S3 and L2
 Copy your meas directories from the ADU into desired station, so that is looks like
 
 ```text
-/survey/iron_mountain/ts 
+/survey/old/iron_mountain/ts 
 L1_S3
 ├── meas_2009-08-20_13-22-00
 │   ├── 084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
@@ -38,9 +40,11 @@ L1_S3
 ... and so on
 
 ```
+Due to the (possible) complexity of conversion, a "single file" conversion is not yet supported. However, creating and copying 
+old data is a question of a minute.
 
 
-## tojson
+## tojson clone
 
 
 From an existing **procmt** directory structure a new [HDF5-Tree](../HDF5-Tree/HDF5-Tree.md#hdf5-tree) is created. <br>
@@ -52,14 +56,24 @@ A new MTH5 compatible tree with name *iron_mountain* will be created in /survey.
 
 The calibration is taken from the XML descriptor, converted into the new JSON format and stored inside the JSON descriptor.
 
-The remaining logs, as well as the XML itself are copied into /meta/site_name/run_nnn directory. A complete copy of 
-the binary atsheader appears a JSON file. they can be archived.
+The remaining logs, as well as the XML itself are copied into **/meta/site_name/run_nnn directory**. A complete copy of 
+the binary atsheader appears a JSON file. They can be archived. <br>
+The electric filed is scaled to **mV/km** but no rotated. 
 
 The philosophy is to store a *minimal information* beside the atss timeseries. <br>
 Before you push into MTH5 you verify the data - and off you go! <br>
 Hence: if you do not verify the data, a later generation is not in the position to use the data - even if they have the log files
 and detailed status information. 
 
+## extend_cal
+
+By default the coils are calibrated down to 0.1 Hz. They are trimmed that way that they meet the theoretical calibration.
+This is the case for frequencies below 512 Hz.
+For 512 Hz and lower the theoretical function meets perfectly.<br>
+For all those who can / will not calculate the lower end, they can use the extend option; here the calibration is extended
+down to 10E-5 Hz and saved in the corresponding json file.
+
+`atstools -tojson -extend_cal -clone -outdir /survey/  /survey/old/iron_mountain`
 
 
 ## cat

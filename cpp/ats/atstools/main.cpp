@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 
   auto exec_path = get_exec_dir();
 
-  std::cout << exec_path << std::endl;
+  // std::cout << exec_path << std::endl; // path to the executable
 
   bool cat = false;             //!< concatenate ats files, try read xml from atsheader & calibration from XML
   bool chats = false;           //!< convert ADU-06 files to ADU-08e files
@@ -70,6 +70,7 @@ int main(int argc, char *argv[]) {
   bool create_old_tree = false; //!< create an old 07/08 survey tree to enable conversion manually
   bool create_tree = false;     //!< create a survey empty tree
   bool split_channels = false;  //!< split a a multichannel recording into 5 channels
+  bool extend_cal = false;      //!< extend calibration to lower frequencies if possible
   ChopperStatus chopper = ChopperStatus::off;
   bool change_chopper = true;
   size_t adu06_shift_samples_hf = 0;
@@ -93,6 +94,13 @@ int main(int argc, char *argv[]) {
   std::multimap<std::string, fs::path> xmls_and_files; //!< create a multimap which ats files belong to the same XML
 
   unsigned l = 1;
+
+  // if argc == 1 then we have no arguments, append "-h" to show help
+  if (argc == 1) {
+    argv[argc] = (char *)"-h";
+    argc++;
+  }
+
   while (argc > 1 && (l < unsigned(argc)) && *argv[l] == '-') {
     std::string marg(argv[l]);
 
@@ -151,6 +159,10 @@ int main(int argc, char *argv[]) {
       clone = true;
     }
 
+    if (marg.compare("-extend_cal") == 0) {
+      extend_cal = true;
+    }
+
     if (marg.compare("-outdir") == 0) {
       outdir = std::string(argv[++l]);
       try {
@@ -190,11 +202,17 @@ int main(int argc, char *argv[]) {
       std::cout << "-shift_start_time -1 [3599, 3600, -3600, ...] " << std::endl;
       std::cout << "  changes the start time by -1 seconds; old ADU-06 data can be affected by untracked leap seconds, summer/winter time " << std::endl;
 
+      std::cout << "-no_ext_cal : DO NOT extend the calibration to lower frequencies;" << std::endl;
+      std::cout << "  some users do not want to care of the theoretical calibration (or can not implement)" << std::endl;
+
       std::cout << "-create_old_tree survey_dir [site_1 site_2, ...] like: iron_mountain L1_S3 L2_S24" << std::endl;
       std::cout << "  create an old 07/08 survey tree; you may need it for conversion" << std::endl;
 
       std::cout << "-create_tree survey_dir [station_1 station_2, ...]: like iron_mountain L1_S3 L2_S24" << std::endl;
       std::cout << "  create survey tree" << std::endl;
+
+      std::cout << "-extend_cal : extend calibration to lower frequencies if possible" << std::endl;
+      std::cout << "  some users do not want to care of the theoretical calibration (or can not implement)" << std::endl;
 
       std::cout << " " << std::endl;
       std::cout << " " << std::endl;
@@ -224,7 +242,14 @@ int main(int argc, char *argv[]) {
 
     if (create_old_tree) {
       // do not use a canonical path for recursive creation
-      create_survey_dirs(survey_dir, survey_dirs_old(), stations);
+      try {
+        create_survey_dirs(survey_dir, survey_dirs_old(), stations);
+      } catch (const std::runtime_error &error) {
+        std::cerr << error.what() << std::endl;
+      } catch (...) {
+        std::cerr << "could not execute create survey" << std::endl;
+        return EXIT_FAILURE;
+      }
 
     } else {
       try {
@@ -381,7 +406,7 @@ int main(int argc, char *argv[]) {
         std::cout << " " << i++;
         // cat_ats_files(ats, outdir, xmls_and_files, xml_files, mtx);
         // pool->push_task(cat_ats_files, std::ref(ats), std::ref(outdir), std::ref(xmls_and_files), std::ref(xml_files), std::ref(mtx_dir), std::ref(mtx_xml), std::ref(mtx_xml_files));
-        pool->submit_task([&ats, &outdir, &xmls_and_files, &xml_files, &mtx_dir, &mtx_xml, &mtx_xml_files]() {
+        pool->detach_task([&ats, &outdir, &xmls_and_files, &xml_files, &mtx_dir, &mtx_xml, &mtx_xml_files]() {
           cat_ats_files(ats, outdir, xmls_and_files, xml_files, mtx_dir, mtx_xml, mtx_xml_files);
         });
       }
@@ -630,7 +655,7 @@ int main(int argc, char *argv[]) {
         for (size_t j = 0; j < ex; ++j) {
           //  chats_files(atsh, adu08, atsj, std::ref(adu06_shift_samples_hf), std::ref(adu06_shift_samples_lf));
           // pool->push_task(chats_files, std::ref(atsheaders[thread_index]), std::ref(adu08s[thread_index]), std::ref(atsjs[thread_index]), std::ref(adu06_shift_samples_hf), std::ref(adu06_shift_samples_lf));
-          pool->submit_task([&atsheaders, &adu08s, &atsjs, &adu06_shift_samples_hf, &adu06_shift_samples_lf, thread_index]() {
+          pool->detach_task([&atsheaders, &adu08s, &atsjs, &adu06_shift_samples_hf, &adu06_shift_samples_lf, thread_index]() {
             chats_files(atsheaders[thread_index], adu08s[thread_index], atsjs[thread_index], adu06_shift_samples_hf, adu06_shift_samples_lf);
           });
           ++thread_index;
@@ -664,7 +689,7 @@ int main(int argc, char *argv[]) {
 
   // ************************************************************************ T O J S O N || C L O N E *******************************************************************
 
-  if (tojson || clone) {
+  if (tojson && clone) {
 
     std::unique_ptr<survey_d> survey;
 
@@ -745,7 +770,7 @@ int main(int argc, char *argv[]) {
     try {
       for (size_t i = 0; i < vch.size(); ++i) {
         // fill_survey_tree(survey, i);
-        pool->submit_task([&survey, i]() {
+        pool->detach_task([&survey, i]() {
           fill_survey_tree(survey, i);
         });
       }
@@ -772,6 +797,19 @@ int main(int argc, char *argv[]) {
       std::cout << ch->brief() << std::endl;
     }
     std::cout << "done" << std::endl;
+
+    std::cout << "test for extended calibration" << std::endl;
+    if (extend_cal) {
+      for (const auto &ch : vch) {
+        if (!ch->cal->is_empty() && extend_cal) {
+          std::cout << ch->cal->sensor << " " << ch->cal->f.at(0) << " " << ch->cal->f.size() << " -> ";
+          ch->cal->auto_extend_for_mth5();
+          std::cout << ch->cal->f.size() << std::endl;
+          // write the channel header again
+          ch->write_header();
+        }
+      }
+    }
 
     return EXIT_SUCCESS;
   }

@@ -16,7 +16,7 @@ Definitions
 
 ```{eval-rst}
 .. csv-table::
- :header: "time Domain", "symbol", "frequency domain", "symbol"
+ :header: "time Domain"; "symbol"; "frequency domain"; "symbol"
  :delim: ;
 
  sampling rate; f\ :sub:`s` = 1/Δt; (sampling) bandwidth; bw = f\ :sub:`s` /2
@@ -30,7 +30,7 @@ Almost everywhere the DC part (or N+1) is not included. <br>
 The **FFTW** returns the DC part as 1<sup>st</sup> element. <br>
 You need the DC part only for the *inverse* transform. <br>
 For MT and noise analysis you *detrend* the data (DC part is removed). And here only
-you have the symmetry of (for example) 1024 real input and 512 (511) complex output <br>
+you have the symmetry of (for example) 1024 real input and 512 (511 + real) complex output <br>
 The **FFTW** returns the Nyquist frequency (which is a real number) as last element. You
 can not use the Nyquist frequency in your analysis.
 ```

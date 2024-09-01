@@ -18,6 +18,7 @@
 // #define _USE_MATH_DEFINES // for C++ and MSVC
 //
 #include "cal_synthetic.h"
+#include "freqs.h"
 #include "json.h"
 #include "mt_base.h"
 #include "strings_etc.h"
@@ -42,7 +43,9 @@ public:
   std::vector<double> f;                      //!< The frequency values in Hz.
   std::vector<double> a;                      //!< The amplitude values in mV/nT.
   std::vector<double> p;                      //!< The phase values ind degrees
-  CalibrationType ct = CalibrationType::nn;   //!< The type of calibration.
+  // NOT part of the calibration data in JSON files
+  // in JSON ist must be ct = CalibrationType::mtx to allow MTH5
+  CalibrationType ct = CalibrationType::nn; //!< The type of calibration.
 
   /**
    * @brief Default constructor. Creates an empty calibration object.
@@ -488,6 +491,17 @@ public:
     return 0;
   }
 
+  void set_int_chopper(const int chopper) {
+    if (chopper == 1)
+      this->chopper = ChopperStatus::on;
+    else
+      this->chopper = ChopperStatus::off;
+  }
+
+  void set_chopper(const ChopperStatus chopper) {
+    this->chopper = chopper;
+  }
+
   std::string serial2string(const int digits = 4) const {
     return mstr::zero_fill_field(this->serial, 4);
     // return std::to_string(this->serial);
@@ -658,6 +672,8 @@ public:
       this->sensor = std::string(head["sensor_calibration"]["sensor"]);
     if (head["sensor_calibration"].contains("serial"))
       this->serial = uint64_t(head["sensor_calibration"]["serial"]);
+    else
+      this->serial = 0;
     if (head["sensor_calibration"].contains("chopper"))
       ch = int64_t(head["sensor_calibration"]["chopper"]);
     if (ch == 1)
@@ -705,6 +721,7 @@ public:
 
       this->ct = CalibrationType::mtx;
     }
+    this->backup();
 
     return this->f.size();
   }
@@ -992,8 +1009,6 @@ public:
     this->a = new_a;
     this->p = new_p;
 
-    this->backup();
-
     return this->f.size();
   }
 
@@ -1100,9 +1115,9 @@ public:
     } else if ((this->sensor == "SHFT-03e")) {
       auto trf = gen_trf_mfs07e(this->f_theo, this->chopper);
       bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
-      std::ostringstream err_str(__func__, std::ios_base::ate);
-      err_str << ":: SHFT-03e not implemented ->" << this->sensor;
-      throw std::runtime_error(err_str.str());
+      // std::ostringstream err_str(__func__, std::ios_base::ate);
+      // err_str << ":: SHFT-03e not implemented ->" << this->sensor;
+      // throw std::runtime_error(err_str.str());
     } else {
       std::ostringstream err_str(__func__, std::ios_base::ate);
       err_str << ":: unknown sensor ->" << this->sensor;
@@ -1243,6 +1258,27 @@ public:
     return this->f.size();
   }
 
+  void auto_extend_for_mth5() {
+    // by default we can extend to lower frequencies but not to higher frequencies
+    if (this->f.size() < min_cal_size)
+      return;
+    double lowest = 1.0 / 100000.0; //!< 100,000s for MFS coils chopper on
+    size_t steps_per_decade = 10;
+    if (this->sensor.substr(0, 3) == "FGS") {
+      lowest = 1.0 / 100000000.0; // 100,000,000s for FGS unlimited
+      steps_per_decade = 2;
+    } else if (this->sensor.substr(0, 4) == "SHFT") {
+      lowest = 1.0 / 100.0; // 100s for SHFT (which is already out of range)
+      steps_per_decade = 10;
+    }
+    double highest = this->f.at(2);
+    auto v = gen_equidistant_logvector_fixed(lowest, highest);
+    if (v.size() < min_cal_size)
+      return;
+    this->gen_cal_sensor(v);
+    this->join_lower_theo_and_measured_interpolated();
+  }
+
   size_t set_master_cal(const std::vector<double> &f, const std::vector<double> &a, const std::vector<double> &p) {
     if (!f.size()) {
       std::ostringstream err_str(__func__, std::ios_base::ate);
@@ -1283,6 +1319,12 @@ public:
     this->f_backup = this->f;
     this->a_backup = this->a;
     this->p_backup = this->p;
+  }
+
+  void restore() {
+    this->f = this->f_backup;
+    this->a = this->a_backup;
+    this->p = this->p_backup;
   }
 
   bool is_same_sensor(const std::shared_ptr<calibration> &rhs) const {

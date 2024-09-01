@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
   for (auto &run : runs) {
     auto channels = run->get_channels(); // get the channels of the run
     for (auto &chan : channels) {
-      chan->init_fftw(nullptr, wl, rl); // normal, zero padding, double read length and window length
+      chan->init_fftw(nullptr, false, wl, rl); // normal, zero padding, double read length and window length
     }
     if (i == 1)
       wl *= 2;
@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
     for (auto &chan : channels) {
       // make sure to supply all arguments!; this loop has big workload
       // pool->push_task(&channel::read_all_fftw, chan, false, nullptr); // normal, zero padding, double read length and window length, last chunk = false
-      pool->submit_task([&chan]() { chan->read_all_fftw(false, nullptr); });
+      pool->detach_task([&chan]() { chan->read_all_fftw(false, nullptr); });
     }
     ++i;
   }
@@ -225,7 +225,7 @@ int main(int argc, char *argv[]) {
       run->raw_spc->sa.add_spectra(chan->channel_type, chan->channel_type);     // add the spectra to the raw_spectra object
       run->raw_spc->sa_prz.add_spectra(chan->channel_type, chan->channel_type); // we may need the parzen spectra later; cost is low
       // pool->push_task(&channel::prepare_raw_spc, chan, true, true);             // make vector from queue, 0, 1 no wincal
-      pool->submit_task([&chan]() { chan->prepare_raw_spc(true, true); }); // make vector from queue, 0, 1 no wincal
+      pool->detach_task([&chan]() { chan->prepare_raw_spc(true, true); }); // make vector from queue, 0, 1 no wincal
     }
     std::cout << std::endl;
   }

@@ -24,11 +24,11 @@ void raw_spectra::advanced_stack_all(const double &fraction_to_use) {
       // this->pool->submit_task([this, ac, fraction_to_use]() {
       //   this->do_advanced_stack_auto(ac.first, fraction_to_use);
       // });
-      this->pool->submit_task([this, &ac, fraction_to_use]() {
+      this->pool->detach_task([this, &ac, fraction_to_use]() {
         this->do_advanced_stack_auto(ac.first, fraction_to_use);
       });
     } else {
-      this->pool->submit_task([this, &ac, fraction_to_use]() {
+      this->pool->detach_task([this, &ac, fraction_to_use]() {
         this->do_advanced_stack_cross(ac.first, fraction_to_use);
       });
     }

@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'MTHotel / MTH5'
-copyright = '2023, Bernhard Friedrichs'
+copyright = '2024, Bernhard Friedrichs'
 author = 'Bernhard Friedrichs'
 release = '1.2'
 

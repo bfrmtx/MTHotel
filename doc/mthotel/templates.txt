@@ -37,3 +37,7 @@ usage:
 #. you call ``git commit -m "message"`` to **finally** track and *version* **all** added / staged files 
 #. **unless** you did not call the command above you can *not rewind* you changes.
 
+
+add to index 
+```{index} Software; atstools
+```

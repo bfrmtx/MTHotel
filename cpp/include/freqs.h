@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include "freqs.h"
 #include "mt_base.h"
 #include "prz_vector.h"
 #include "strings_etc.h"
@@ -170,6 +171,49 @@ static std::vector<double> gen_equidistant_logvector(const double &start, const 
   if ((result.back() < stop) && result.size())
     result.push_back(stop);
 
+  return result;
+}
+/*!
+ * @brief generate a equally logarithmic spaced vector with fixed steps per decade and a fixed freqency list
+ */
+static std::vector<double> gen_equidistant_logvector_fixed(const double &start, const double &stop) {
+  // dist would be log_stop - log_start
+  // we calculate per decade
+  std::vector<double> result;
+  // this vector is divided by 10, 100 ... and so on - or multiplied by 10, 100 ... and so on
+  // std::vector<double> freqs = {1.0, 1.3, 1.67, 2.15, 2.78, 3.6, 4.64, 6.0, 7.74};
+  std::vector<double> freqs = {1.0, 1.2589, 1.5849, 1.9952, 2.5119, 3.1623, 3.981, 5.0118, 6.3095, 7.943};
+
+  if ((start <= 0) || (stop <= 0))
+    return result;
+  if (stop < start)
+    return result;
+
+  // get the exponent of the start
+  double lstart = log10(start);
+  double lstop = log10(stop);
+  int exp_start = int(lstart);
+  //  int exp_stop = int(lstop);
+
+  auto comp_vector = freqs;
+  for (auto &v : comp_vector)
+    v = pow(10.0, exp_start) * v;
+  // now we have a vector in the same decade range as start;
+  result.push_back(start);
+
+  do {
+    for (auto &v : comp_vector) {
+      if ((v > start) && (v < stop)) {
+        result.push_back(v);
+      }
+      if (v >= stop)
+        break;
+    }
+
+    for (auto &v : comp_vector)
+      v *= 10.0;
+  } while (comp_vector.front() < stop);
+  result.push_back(stop);
   return result;
 }
 
@@ -356,7 +400,7 @@ public:
   }
 
   /*!
-   * \brief auto_range
+   * \brief auto_range; always use; [0] is DC! HOWEVER: for inverse take all and don't use this function
    * \param rel_lower like 0.1
    * \param rel_upper like 0.5 (1.0 == all)
    * \return
@@ -381,6 +425,44 @@ public:
     this->idx_range.first = lower;
     this->idx_range.second = upper;
     return this->get_frange();
+  }
+  template <typename T>
+  std::vector<T> trim_rel(const double &rel_lower, const double &rel_upper, std::vector<T> &new_freqs, const std::vector<T> &fftresult) const {
+
+    std::vector<T> new_result;
+    bool error = false;
+    if (!this->is_valid()) {
+      error = true;
+    }
+    // fftresult must have same size my index range
+    if (fftresult.size() != (this->idx_range.second - this->idx_range.first)) {
+      error = true;
+    }
+    if (error) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: invalid fftresult size: " << fftresult.size() << " or invalid fftw_freqs";
+      throw std::runtime_error(err_str.str());
+    }
+
+    auto lower = size_t(rel_lower * double(this->wl / 2 + 1.));
+    auto upper = (this->wl / 2 + 1) - size_t((1.0 - rel_upper) * double(this->wl / 2 + 1.));
+
+    if (lower < 1)
+      lower = 1; // can't take DC
+    if (upper > this->wl / 2 + 1)
+      upper = this->wl / 2 + 1;
+
+    new_freqs.resize(upper - lower);
+    new_result.resize(upper - lower);
+    // create a vector with corresponding frequencies
+    double fwl = double(wl);
+    size_t j = 0, i = 0;
+    for (i = lower; i < upper; ++i) {
+      new_result[j] = fftresult[i];
+      new_freqs[j++] = (double(i) * (this->sample_rate / fwl));
+    }
+
+    return new_result;
   }
 
   std::pair<double, double> set_lower_upper_f(const double &lf, const double &hf, const bool include_upper_f) {

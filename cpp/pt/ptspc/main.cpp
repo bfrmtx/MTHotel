@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   std::cout << "*******************************************************************************" << std::endl
             << std::endl;
   std::cout << "reads data from a survey containing PT data" << std::endl;
-  std::cout << " -u /home/bfr/tmp/ptr  -c Hx Hy Hz -s pt_1 -r 1 2" << std::endl;
+  std::cout << " -u /home/bfr/tmp/ptr -highres -c Hx Hy Hz -s pt_1 -r 1 2" << std::endl;
   std::cout << " -ref Ey ... use Ey as reference channel for E/H" << std::endl;
   std::cout << std::endl
             << "*******************************************************************************" << std::endl
@@ -313,7 +313,7 @@ int main(int argc, char *argv[]) {
         // init a fftw for each run - all channels have the same sample rate
         // bandwidth 1 Hz ; during the first loop / irun fft_freqs are created, otherwise copied
         // if nullptr is given, the fft_freqs are created INSIDE the channel (best practice)
-        station->at(irun, schan)->init_fftw(nullptr, wl, wl);
+        station->at(irun, schan)->init_fftw(nullptr, false, wl, wl);
 
       } catch (const std::runtime_error &error) {
         std::cerr << error.what() << std::endl;
@@ -347,7 +347,7 @@ int main(int argc, char *argv[]) {
         std::cout << "push thread " << thread_index++ << std::endl;
         // the read_all_fftw pushes the fftw slices into a queue inside the channel object
         // pool->push_task(&channel::read_all_fftw, station->at(irun, schan), false, nullptr); // each channel is read in parallel
-        pool->submit_task([irun, schan, &station]() { station->at(irun, schan)->read_all_fftw(false, nullptr); });
+        pool->detach_task([irun, schan, &station]() { station->at(irun, schan)->read_all_fftw(false, nullptr); });
       }
 
       catch (const std::runtime_error &error) {
@@ -411,7 +411,7 @@ int main(int argc, char *argv[]) {
         // pool->push_task(&channel::prepare_raw_spc, chan, !no_cal_plot, true);
 
         // do not use &chan here, because the channel pointer is not valid in the lambda function while the main loop is calling the next channel!
-        pool->submit_task([chan, no_cal_plot]() { chan->prepare_raw_spc(!no_cal_plot, true); });
+        pool->detach_task([chan, no_cal_plot]() { chan->prepare_raw_spc(!no_cal_plot, true); });
         // after this we have the spc vector of vectors in the channel object
       }
 
@@ -686,7 +686,7 @@ int main(int argc, char *argv[]) {
         station->get_run(irun)->raw_spc->fft_freqs->set_target_freqs(target_freqs, 0.15);
         // fft_freq->set_target_freqs(target_freqs, 0.15);
         // pool->push_task(&fftw_freqs::create_parzen_vectors, station->get_run(irun)->raw_spc->fft_freqs);
-        pool->submit_task([irun, &station]() { station->get_run(irun)->raw_spc->fft_freqs->create_parzen_vectors(); });
+        pool->detach_task([irun, &station]() { station->get_run(irun)->raw_spc->fft_freqs->create_parzen_vectors(); });
         // }
       }
 

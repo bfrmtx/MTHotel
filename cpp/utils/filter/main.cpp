@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <chrono>
 #include <complex>
+#include <cstddef>
 #include <fftw3.h>
 #include <filesystem>
 #include <iostream>
@@ -118,22 +119,25 @@ int main() {
       chan->set_unix_timestamp(tt);
 
       if (chan->get_channel_type() == "Ex") {
-        chan->dip = 1000.0;
+        chan->tilt = 0.0;
         chan->cal = std::make_shared<calibration>("EFP-06", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
       if (chan->get_channel_type() == "Ey") {
-        chan->dip = 1000.0;
+        chan->tilt = 0.0;
         chan->angle = 90.0;
         chan->cal = std::make_shared<calibration>("EFP-06", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
       if (chan->get_channel_type() == "Hx") {
+        chan->tilt = 0.0;
         chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
       if (chan->get_channel_type() == "Hy") {
         chan->angle = 90.0;
+        chan->tilt = 0.0;
         chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
       if (chan->get_channel_type() == "Hz") {
+        chan->tilt = 90.0;
         chan->cal = std::make_shared<calibration>("MFS-06e", i + 1, ChopperStatus::off, CalibrationType::mtx);
       }
 
@@ -187,7 +191,7 @@ int main() {
       std::cout << "starting: writer threads for " << fsamples.at(k) << "Hz" << std::endl;
       for (auto &chan : channels) {
         // pool->push_task(&channel::write_all_data, chan, std::ref(noise_data_sub));
-        pool->submit_task([&chan, &noise_data_sub]() { chan->write_all_data(noise_data_sub); });
+        pool->detach_task([&chan, &noise_data_sub]() { chan->write_all_data(noise_data_sub); });
       }
       pool->wait();
     } catch (const std::string &error) {

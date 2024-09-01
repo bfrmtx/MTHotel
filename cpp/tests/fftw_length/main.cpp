@@ -186,7 +186,8 @@ int main(int argc, char *argv[]) {
 
     for (auto &chan : channels) {
       std::cout << "emplacing thread " << thread_index++ << std::endl;
-      pool->push_task(&channel::read_all_fftw, chan, false, nullptr);
+      // pool->push_task(&channel::read_all_fftw, chan, false, nullptr);
+      pool->detach_task([chan]() { chan->read_all_fftw(false, nullptr); });
     }
     pool->wait();
 
@@ -266,7 +267,7 @@ int main(int argc, char *argv[]) {
 
       mstr::sample_rate_to_str(channels.at(i)->get_sample_rate(), f_or_s, unit, true);
       label << "fs " << f_or_s << " " << unit << " wl: " << fft_freqs.at(i)->get_wl();
-      auto v = raws.at(i)->get_abs_sa_spectra(channel_type);
+      auto v = raws.at(i)->get_abs_sa_spectra(std::pair(channel_type, channel_type));
 
       if (fft_freqs.at(i)->get_wl() != fft_freqs.at(i)->get_rl()) {
         label << " rl:  " << fft_freqs.at(i)->get_rl();

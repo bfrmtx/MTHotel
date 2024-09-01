@@ -2,7 +2,7 @@
 
 ## ADU-08e
 
-### HF Board
+### HF Board 08e
 
 The theoretical transfer function for the HF-channel is given below:
 
@@ -27,7 +27,7 @@ if high-pass is switched off.
 
 (gains and input divider are calibrated into the LSB, you don't see them)
 
-### LF Board
+### LF Board 08e
 
 $F_{LF - Channel} = G_{1} \cdot G_{2} (\cdot G_{3})  \cdot F_{1} \cdot F_{2} \cdot F_{3} \cdot F_{4}$
 
@@ -71,7 +71,7 @@ if **RF-1 on & DIV-1 = on** ( electrodes **> 1500 Ohm** contact resistance, not 
 
 ## ADU-10e
 
-### LF Board
+### LF Board 10e
 
 $F_{LF - Channel} = G_{1}  \cdot F_{1}   \cdot F_{2}$
 
@@ -101,7 +101,7 @@ alt: $P_{2} = i \cdot 2 \pi f \cdot (R_{sensor} + 200) \cdot 6.8E^{-9}Hz $
 
 ## ADU-07e
 
-### HF Board
+### HF Board 07e
 
 The theoretical transfer function for the HF-channel is given below:
 
@@ -123,7 +123,7 @@ if high-pass is switched on.
 
 (gains and input divider are calibrated into the LSB, you don't see them)
 
-### LF Board
+### LF Board 07e
 
 $F_{LF - Channel} = G_{1} \cdot G_{2} \cdot F_{1} \cdot F_{2} \cdot F_{3}$
 
@@ -137,4 +137,36 @@ $F_{1} = \frac{1}{1 + P_{1}}$; $P_{1} = i \cdot \frac{f}{4 kHz}$ if $G_1 \ne 1$
 $F_{3} = \frac{1}{1 + 1.414 \cdot P_{3} + P_{3}^{2}}$; $P_{3} = i \cdot \frac{f}{4Hz}$
 if 4 Hz Low-pass is switched on
 
-### MF Board
+### MF Board 07e
+
+tbd.
+
+## MFS Coils
+
+<span style="color:red"><b>OLD Calibration Files are normalized by f!</b></span> <br> 
+e.g. the MFSXXX.txt files.<br><br>
+The JSON files are using mV (as the time series data) and are not normalized by f. <br>
+If you normalize the calibration you end up with a *constant* $\frac{200  mV}{nT \cdot Hz}$ and 90° 
+phase below 0.1 Hz for the MFS-06e and $\frac{20  mV}{nT \cdot Hz}$ and 90° fro the MFS-07e. <br>
+
+### MFS-06e
+$P_{1} = i \cdot \frac{1}{4 Hz}, \enspace P_{2} = i \cdot \frac{1}{8192 Hz} \enspace$
+$P_{3} = i \cdot \frac{1}{0.72 Hz},\enspace P_{4} = i \cdot \frac{1}{28300 Hz}$
+
+#### Chopper on
+$F_{on}(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4} $
+
+#### Chopper off
+$F_{off}(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3}  \cdot \frac{1}{1+P_4} $
+
+
+
+### MFS-07e
+$P_{1} = i \cdot \frac{1}{32 Hz}, \enspace P_{2} = i \cdot \frac{1}{40000 Hz} \enspace$
+$P_{3} = i \cdot \frac{1}{0.72 Hz},\enspace P_{4} = i \cdot \frac{1}{50000 Hz}$
+
+#### Chopper on
+$F_{on}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4} $
+
+#### Chopper off
+$F_{off}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3}  \cdot \frac{1}{1+P_4} $

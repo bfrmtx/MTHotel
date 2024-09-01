@@ -6,7 +6,8 @@
 
 The software will load data during *runtime* <br>
 When working in debug mode or without installing this data can not be found! |<br>
-Use <br> `export MTHotel_data=/home/bfr/devel/github_mthotel/MTHotel/cpp/data/` <br> in your `.zshrc` or `.bashrc`.
+Use <br> `export MTHotel_data=/home/bfr/devel/github_mthotel/MTHotel/cpp/data/` <br> in your `.zshrc` or `.bashrc`. <br>
+When you use make install after build it land in /usr/local/mthotel
 
 ## ats
 

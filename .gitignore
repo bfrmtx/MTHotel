@@ -22,6 +22,7 @@ Thumbs.db
 .owncloud*
 .nextcloud*
 .stfolder
+.jupyter
 *-swp
 build/
 CMakeLists.txt.user

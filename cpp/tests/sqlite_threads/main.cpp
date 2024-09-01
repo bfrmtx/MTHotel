@@ -65,8 +65,8 @@ int main() {
     status_senders["ch1"]->set_key_value("gain", 1.0);
     status_senders["ch0"]->set_key_value("angle", 0.0);
     status_senders["ch1"]->set_key_value("angle", 90.0);
-    status_senders["ch0"]->set_key_value("dip", 0.0);
-    status_senders["ch1"]->set_key_value("dip", 0.0);
+    status_senders["ch0"]->set_key_value("tilt", 0.0);
+    status_senders["ch1"]->set_key_value("tilt", 0.0);
     status_senders["ch0"]->set_key_value("sensor", "EFP-06");
     status_senders["ch1"]->set_key_value("sensor", "EFP-06");
     // status_senders["gps"]->set_key_value("tracked_sats", 4); force an error

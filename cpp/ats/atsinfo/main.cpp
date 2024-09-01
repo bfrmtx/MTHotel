@@ -62,7 +62,8 @@ int main(int argc, char *argv[]) {
   }
 
   for (const auto &chan : channels) {
-    std::cout << chan->get_run_dir() << " " << chan->filename() << " " << chan->start_datetime(1) << " " << chan->start_datetime(2) << " " << chan->stop_datetime(1) << " " << chan->stop_datetime(2) << std::endl;
+    std::cout << chan->get_run_dir() << " " << chan->filename() << " " << chan->start_datetime(1) << " " << chan->start_datetime(2) << " <--> " << chan->stop_datetime(1) << " " << chan->stop_datetime(2)
+              << "  " << chan->samples() << std::endl;
   }
   return 0;
 }

@@ -97,8 +97,8 @@ def atss_header():
         'latitude': 0.0,        # decimal degree such as 52.2443
         'longitude': 0.0,       # decimal degree such as 10.5594
         'elevation': 0.0,       # elevation in meter
-        'angle': 0.0,           # orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
-        'dip': 0.0,             # angle positive down - in case it had been measured
+        'azimuth': 0.0,           # orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
+        'tilt': 0.0,             # azimuth positive down - in case it had been measured
         'resistance': 0.0,      # resistance of the sensor in Ohm or contact resistance of electrode in Ohm
         'units': "mV",          # for ADUs it will be mV H or other -  or scaled E mV/km
         'filter': "",           # comma separated list of filters such as "ADB-LF,LF-RF-4" or "ADB-HF,HF-RF-1"
@@ -286,22 +286,22 @@ def cal_mfs07e(f, spc, chopper):
         trf = 640.0 * ((p1 / (1. + p1)) * (1. / (1. + p2)) * (p3 / (1. + p3)) * (1. / (1. + p4)))
         return (spc / trf)   # cal is in mV, data in mV
     
-def pos_to_dip(x1, x2, y1, y2, z1, z2):
+def pos_to_tilt(x1, x2, y1, y2, z1, z2):
     tx = x2 - x1
     ty = y2 - y1
     tz = z2 - z1
     length = 0.0
-    angle = 0.0
-    dip = 0.0
+    azimuth = 0.0
+    tilt = 0.0
     length = math.sqrt(tx * tx + ty * ty + tz * tz)
     if length < 0.001:
         length = 0.0
     else:
-        angle = 180. / math.pi * math.atan2(ty, tx)
-        dip = 180. / math.pi * (90 - math.acos(tz/length))
+        azimuth = 180. / math.pi * math.atan2(ty, tx)
+        tilt = 180. / math.pi * (90 - math.acos(tz/length))
 
-    dip = [length, angle, dip]
-    return dip
+    tilt = [length, azimuth, tilt]
+    return tilt
 
 
 

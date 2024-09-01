@@ -5,7 +5,7 @@ import sys
 # read two files from the command line
 filename = sys.argv[1]
 filename2 = sys.argv[2]
-# if a thrird argument is given
+# if a trird argument is given
 filename3 = sys.argv[3] if len(sys.argv) > 3 else None
 # these files are plain x y ascii files (no header, two columns)
 data = np.loadtxt(filename)

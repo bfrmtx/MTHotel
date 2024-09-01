@@ -134,7 +134,7 @@ static std::vector<std::string> survey_dirs() {
 static bool create_survey_dirs(const std::filesystem::path survey, const std::vector<std::string> sub_dirs, const std::vector<std::string> stations = {}) {
   if (!sub_dirs.size()) {
     std::ostringstream err_str(__func__, std::ios_base::ate);
-    err_str << ":: sub dirs provided! ->";
+    err_str << ":: no sub dirs (stations) provided! ->";
     throw std::runtime_error(err_str.str());
   }
   try {
@@ -161,7 +161,8 @@ static bool create_survey_dirs(const std::filesystem::path survey, const std::ve
     }
   } catch (...) {
     std::ostringstream err_str(__func__, std::ios_base::ate);
-    err_str << ":: error creating sub directories ->";
+    err_str << ":: error creating sub directories or main directory -> " << survey << std::endl;
+    err_str << "check path and permissions!";
     throw std::runtime_error(err_str.str());
   }
 

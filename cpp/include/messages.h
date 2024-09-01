@@ -260,8 +260,7 @@ private:
 
 class multiple_msg_to_sqlite {
 public:
-  multiple_msg_to_sqlite(const std::string &sender_name, const std::vector<std::string> &keys) :
-      sender_name(sender_name) {
+  multiple_msg_to_sqlite(const std::string &sender_name, const std::vector<std::string> &keys) : sender_name(sender_name) {
     int i = 1;
     std::string date, time;
     std::time_t timestamp = std::time(nullptr);
@@ -280,8 +279,7 @@ public:
    * @param sender_name like GPS, ch0 ... chX, ADU, ADC, Batt_1, Batt_2 and so on
    * @param json_file - same as we use in PHP on the webserver
    */
-  multiple_msg_to_sqlite(const std::string &sender_name, const std::filesystem::path &json_file) :
-      sender_name(sender_name) {
+  multiple_msg_to_sqlite(const std::string &sender_name, const std::filesystem::path &json_file) : sender_name(sender_name) {
     int i = 1;
     std::string date, time;
     std::time_t timestamp = std::time(nullptr);
@@ -460,6 +458,6 @@ std::vector<std::string> gps_keys = {
 
 // channel senders - example for my web test
 std::vector<std::string>
-    channel_keys = {"channel", "sensor", "chopper", "gain", "serial", "angle", "dip"};
+    channel_keys = {"channel", "sensor", "chopper", "gain", "serial", "angle", "tilt"};
 
 #endif // MESSAGES_H

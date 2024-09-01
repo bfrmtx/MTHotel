@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < vch.size(); ++i) {
       // fill_survey_tree(survey, i);
       // pool->push_task(fill_survey_tree, std::ref(survey), i);
-      pool->submit_task([&survey, i]() { fill_survey_tree(survey, i); });
+      pool->detach_task([&survey, i]() { fill_survey_tree(survey, i); });
     }
     pool->wait();
   } catch (const std::runtime_error &error) {

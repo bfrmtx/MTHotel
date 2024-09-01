@@ -32,6 +32,19 @@
  * @brief provides the atss format and the JSON description of the atss format and the timer class
  */
 
+// forward declaration of stats struct, needed in tsplotter
+struct stats {
+  size_t wl = 1024; //!< window length of FFT, in case of zero padding this is more than rl
+  size_t rl = 1024; //!< window length and range length
+  size_t max_samples = 0;
+  std::pair<int64_t, int64_t> read_pos{0, 0}; //!< read sample position in the file, start ... < end; shared between all channels
+  bool detrend = false;
+  bool is_locked = false;
+  bool show_spectra = false;
+  bool show_ts = true;
+  bool cal_on = false;
+};
+
 using jsn = nlohmann::ordered_json;
 
 /*!
@@ -362,7 +375,7 @@ public:
       this->longitude = rhs->longitude;
       this->elevation = rhs->elevation;
       this->angle = rhs->angle;
-      this->dip = rhs->dip;
+      this->tilt = rhs->tilt;
       this->resistance = rhs->resistance;
       this->units = rhs->units;
       this->filter = rhs->filter;
@@ -381,12 +394,21 @@ public:
   channel(const std::filesystem::path &in_json_file) {
 
     std::filesystem::path json_file(in_json_file);
+    std::filesystem::path atss_file(in_json_file);
     if (!json_file.has_extension())
       json_file.replace_extension(".json");
+    atss_file.replace_extension(".atss");
 
     // if extension is .atss, replace it with .json
     if (json_file.extension() == ".atss")
       json_file.replace_extension(".json");
+    // if no extension, add .json
+    if (!json_file.has_extension())
+      json_file.replace_extension(".json");
+    if (atss_file.extension() == ".json")
+      atss_file.replace_extension(".atss");
+    if (!atss_file.has_extension())
+      atss_file.replace_extension(".atss");
 
     if (this->parse_json_filename(json_file)) {
       std::ifstream file;
@@ -406,18 +428,25 @@ public:
       this->samples(this->filepath_wo_ext);
       if (head.contains("angle"))
         this->angle = head["angle"];
-      if (head.contains("dip"))
-        this->dip = head["dip"];
+      if (head.contains("tilt"))
+        this->tilt = head["tilt"];
       if (head.contains("resistance"))
-        this->dip = head["resistance"];
+        this->tilt = head["resistance"];
       if (head.contains("units"))
         this->units = head["units"];
       if (head.contains("filter"))
         this->filter = head["filter"];
       if (head.contains("source"))
         this->source = head["source"];
-      auto xx = std::filesystem::file_size(json_file);
-      this->pt.samples = xx / sizeof(double);
+      // check if the atss file exists
+      if (!std::filesystem::exists(atss_file)) {
+        std::cerr << "atss file does not exist " << atss_file << std::endl;
+        std::cerr << "samples will be set to 0" << std::endl;
+        this->pt.samples = 0;
+      } else {
+        auto xx = std::filesystem::file_size(atss_file);
+        this->pt.samples = xx / sizeof(double);
+      }
       if (this->cal != nullptr)
         this->cal.reset();
       this->cal = std::make_shared<calibration>();
@@ -648,16 +677,16 @@ public:
     return str;
   }
 
-  std::filesystem::path filepath_wo_ext;
-  p_timer pt;
-  std::shared_ptr<calibration> cal;
+  std::filesystem::path filepath_wo_ext; //!< path without extension ... aka remember me
+  p_timer pt;                            //!< that is the timer class with fractions of seconds
+  std::shared_ptr<calibration> cal;      //!< calibration class
 
   // JSON values + datetime from p_timer
   double latitude = 0.0;    //!< decimal degree such as 52.2443, ISO 6709, +/- 90
   double longitude = 0.0;   //!< decimal degree such as 10.5594, ISO 6709, +/- 180
   double elevation = 0.0;   //!< elevation in meter
   double angle = 0.0;       //!< orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
-  double dip = 0.0;         //!< angle positive down 90 = down, 0 = horizontal - in case it had been measured
+  double tilt = 0.0;        //!< angle positive down 90 = down, 0 = horizontal - in case it had been measured
   double resistance = 0.0;  //!< e.g. contact resistance of the electrodes
   std::string filter;       //!< comma separated string; system board name and filter like ADB-LF_LF-RF-1_LF-LP-4Hz which is the LF board with Radio Filter 1 and 4Hz low pass switched on
   std::string units = "mV"; //!< for ADUs it will be mV H or whatever or scaled E mV/km
@@ -678,30 +707,32 @@ public:
   double tmp_lsb = 1.0;
   std::filesystem::path tmp_orgin;
 
-  std::vector<double> ts_slice;                       //!< data slice in time domain
-  std::vector<double> ts_slice_padded;                //!< data slice in time domain with zero padding
+  std::vector<double> ts_slice;                       //!< data slice in time domain, that is read length; mostly the same a window length, except for zero padding
+  std::vector<double> ts_slice_padded;                //!< data slice in time domain with zero padding, data from ts_slice WILL BE COPIED HERE
   std::vector<double> ts_chunk;                       //!< if wl = 1024 and overlapping is 50%, ts_chunk is 512; when filter 32x wl = 471 and ts_chunk = 32
   std::vector<std::complex<double>> spc_slice;        //!< data slice in spectral domain
   std::vector<double> ampl_slice;                     //!< single spectra amplitude slice, e.g. for plotting
-  std::vector<double> ts_slice_inv;                   //!< data slice in time domain after ftt, calibration, inverse fft
+  std::vector<double> ts_slice_inv;                   //!< data slice in time domain after ftt, calibration, inverse fft; always rl size, respectively wl ts_slice.
   std::vector<size_t> sample_vector;                  //!< sample vector for the x-axis
+  size_t read_count = 0;                              //!< read count; increment this when you read a slice; reset to zero when you read a new file or change FFT
   std::queue<std::vector<std::complex<double>>> qspc; //!< spectra queue
   std::vector<std::vector<std::complex<double>>> spc; //!< spectra vector
+  std::vector<std::complex<double>> caldata;          //!< calibration data complex for performing the calibration
+  std::vector<double> caldata_f;                      //!< calibration data in frequency domain, tied with the calibration data; not used e.g.
   double bw = 0.0;                                    //!< bandwidth of FFT
+  std::ifstream infile;                               //!< read binary data
+  std::ofstream outfile;                              //!< write binary data
+  fftw_plan plan;                                     //!< forward fftw plan (default)
+  fftw_plan plan_inv;                                 //!< inverse fftw plan
+  std::shared_ptr<fftw_freqs> fft_freqs;              //!< frequencies for FFT SHARE this pointer with other channels from the SAME RUN!
+  bool is_remote = false;                             //!< set this to true if the data is remote or you want this data to be treated as remote
+  bool is_emap = false;                               //!< set this to true if the data is from an EAMP station
+  std::pair<int64_t, int64_t> read_pos{0, 0};         //!< sample position in the file, so 0 and 1024 for rl = 1024
 
-  std::ifstream infile;  //!< read binary data
-  std::ofstream outfile; //!< write binary data
-  fftw_plan plan;
-  std::shared_ptr<fftw_freqs> fft_freqs; //!< frequencies for FFT SHARE this pointer with other channels from the SAME RUN!
-  bool is_remote = false;
-  bool is_emap = false;
-
-  std::pair<int64_t, int64_t> read_pos{0, 0}; //!< read position in the file
-
-  void init_fftw(std::shared_ptr<fftw_freqs> in_fft_freqs = nullptr, const size_t &wl = 0, const size_t &rl = 0) {
+  void init_fftw(std::shared_ptr<fftw_freqs> in_fft_freqs = nullptr, bool force_padded = false, const size_t &wl = 0, const size_t &rl = 0) {
     // in this case we have an fft created already - re use it
     if ((in_fft_freqs == nullptr) && (this->fft_freqs != nullptr) && (wl == 0) && (rl == 0)) {
-      this->set_fftw_plan();
+      this->set_fftw_plan(force_padded);
       return;
     }
 
@@ -714,7 +745,13 @@ public:
         this->fft_freqs.reset();
       this->fft_freqs = std::make_shared<fftw_freqs>(this->pt.sample_rate, wl, rl);
     }
-    this->set_fftw_plan();
+    this->set_fftw_plan(force_padded);
+  }
+
+  void init_inv_fftw() {
+    if (this->fft_freqs == nullptr)
+      throw std::runtime_error(std::string(__func__) + " :: you must provide a valid fftw_freqs inside the class object");
+    this->set_inv_fftw_plan();
   }
 
   /*!
@@ -736,8 +773,7 @@ public:
 
   /*!
    * \brief write_header
-   * \param directory_path_only full path including the measdir
-   * \param jsn_cal the calibration part
+   * \param jsn_cal the calibration part, in case you have a calibration object from outside
    */
   std::filesystem::path write_header(const std::shared_ptr<calibration> &jsn_cal = nullptr) {
     jsn head;
@@ -746,7 +782,7 @@ public:
     head["longitude"] = this->longitude;
     head["elevation"] = this->elevation;
     head["angle"] = this->angle;
-    head["dip"] = this->dip;
+    head["tilt"] = this->tilt;
     head["resistance"] = this->resistance;
     head["units"] = this->units;
     head["filter"] = this->filter;
@@ -810,6 +846,10 @@ public:
   bool outfile_is_good() const {
     return this->outfile.good();
   }
+
+  /*!
+   * @brief close_outfile (will be called by destructor)
+   */
   void close_outfile() {
     if (this->outfile.is_open())
       this->outfile.close();
@@ -842,14 +882,15 @@ public:
     return this->write_all_data(this->ts_slice);
   }
 
-  void to_ascii() {
-
+  void to_ascii(const std::filesystem::path &outdir = "") {
     this->ts_slice.clear();
     this->ts_slice.resize(1024);
     this->ts_chunk.clear(); // no overlapping
 
     std::filesystem::path filepath = this->filepath_wo_ext;
     filepath.replace_extension(".dat");
+    if (outdir != std::filesystem::path())
+      filepath = outdir / filepath.filename();
     std::ofstream file_dat;
     file_dat.open(filepath, std::ios::out | std::ios::trunc);
 
@@ -866,38 +907,6 @@ public:
     }
     file_dat.close();
   }
-
-  // std::copy(ve.begin(), ve.end(), std::ostreambuf_iterator<char>(outfile));
-
-  //   vector<bool> out_ve((std::istreambuf_iterator<char>(infile)),
-  // std::istreambuf_iterator<char>());
-  // while( !infile.eof() )
-  // out_ve.push_back(infile.get());
-  //    bool write_selection(const std::vector<bool>, std::ofstream &file) {
-  //        if (file.is_open()) {
-  //            for (auto dat : data) {
-  //                file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
-  //            }
-  //            return true;
-  //        }
-  //        else {
-  //            std::filesystem::path filepath = this->filepath_wo_ext;
-  //            filepath.replace_extension(".atmm");
-  //            file.open (filepath, std::ios::out | std::ios::trunc | std::ios::binary);
-
-  //            if (!file.is_open()) {
-  //                file.close();
-  //                std::ostringstream err_str(__func__, std::ios_base::ate);
-  //                err_str << "::file not open " << filepath;
-  //                throw err_str;
-  //            }
-  //            for (auto dat : data) {
-  //                file.write(static_cast<char *>(static_cast<void *>(&dat)), 8);
-  //            }
-  //        }
-
-  //        return true;
-  //    }
 
   /*!
    * \brief open_atss_read
@@ -927,11 +936,20 @@ public:
     return true;
   }
 
+  /*!
+   * @brief close_atss_read (will be called by destructor)
+   */
   void close_atss_read() {
     if (this->infile.is_open())
       this->infile.close();
+    this->read_count = 0;
   }
 
+  /*!
+   * @brief skip_samples move the file pointer sizeof(double) * samples (positive or negative); file must be open
+   * @param samples
+   * @return
+   */
   int64_t skip_samples(const int64_t &samples) {
     if (!samples)
       return this->infile.tellg();
@@ -980,7 +998,6 @@ public:
    */
 
   int64_t read_data(const bool read_last_chunk = false, const std::shared_ptr<atmm> &sel = nullptr) {
-
     if (this->infile.is_open()) {
       return this->read_bin(this->ts_slice, this->infile, read_last_chunk);
     }
@@ -1018,29 +1035,96 @@ public:
     return this->ts_slice;
   }
 
-  std::pair<int64_t, int64_t> read_plotter(const size_t &read_samples, const size_t &skip_samples_read, const bool bdetrend) {
-    if (!read_samples) {
+  std::pair<int64_t, int64_t> read_plotter(const std::shared_ptr<stats> &status, const size_t &skip_samples_read) {
+    if (!status->rl) {
       throw std::runtime_error(std::string(__func__) + " :: read_samples is zero");
     }
-    if (this->samples() < (read_samples + skip_samples_read)) {
-      throw std::runtime_error(std::string(__func__) + " :: read_samples + skip_samples_read is larger than total samples");
+    if (this->samples() < (status->rl + skip_samples_read)) {
+      std::string samples = std::to_string(this->samples());
+      throw std::runtime_error(std::string(__func__) + " :: read_samples + skip_samples_read is larger than total samples: " + samples);
     }
     if (skip_samples_read)
       this->skip_samples(skip_samples_read);
-    this->ts_slice.resize(read_samples);
-    int64_t start_pos = this->infile.tellg();
+    this->ts_slice.resize(status->rl);
     int64_t control = 0;
     control = this->read_bin(this->ts_slice, this->infile, false);
     // this->infile.close();
     if (control < 0) {
       throw std::runtime_error(std::string(__func__) + " :: read error");
     }
-    if (bdetrend)
+    this->plotter_fft_and_inverse(status); // do this before detrend
+    if (status->detrend)
       detrend<double>(this->ts_slice.begin(), this->ts_slice.end());
-    for (size_t i = skip_samples_read; i < read_samples; ++i) {
-      this->sample_vector.push_back(i);
+    for (size_t i = skip_samples_read; i < this->ts_slice.size(); ++i) {
+      this->sample_vector.push_back(i); // default x-axis with sample nos
     }
-    return this->read_pos;
+    return this->read_pos; // first and second sample are updated by read_bin
+  }
+
+  void plotter_fft_and_inverse(const std::shared_ptr<stats> &status) {
+    if (read_count == 1) {
+      this->ampl_slice.resize(this->spc_slice.size()); // always needed; FFTW result is always in spc_slice whether padded or not
+      if (this->cal == nullptr) {                      // do we have a calibration?
+        // throw error runtime
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << "::calibration nullptr; normally this should not happen, f can be empty,but not nullptr";
+        throw std::runtime_error(err_str.str());
+      }
+
+      if (!this->cal->is_empty()) { // we have a calibration with data
+        if (this->cal->f.size() == this->fft_freqs->index_range().second) {
+          this->cal->get_cplx_cal(this->caldata_f, this->caldata);
+        } else { // we have but it does not fit; should be same size at this point
+          // throw error runtime
+          std::ostringstream err_str(__func__, std::ios_base::ate);
+          err_str << "::calibration data size does not fit the fft size";
+          throw std::runtime_error(err_str.str());
+        }
+      }
+    }
+
+    // copy the ts_slice; we need to keep the original for the inverse fft
+    // copy the ts_slice to ts_slice_padded; padded is initialized in set_fftw_plan with forced_padded
+    std::copy(this->ts_slice.begin(), this->ts_slice.end(), this->ts_slice_padded.begin());
+    detrend<double>(this->ts_slice_padded.begin(), this->ts_slice_padded.begin() + this->ts_slice.size());
+    // fill the rest with zeros
+    // std::fill(this->ts_slice_padded.begin() + this->ts_slice.size(), this->ts_slice_padded.end(), 0.0);
+    // this->ts_slice_inv.resize(this->ts_slice_padded.size()); // inverse fft, make sure that it fits
+    fftw_execute(this->plan);
+
+    // raw spectra
+    if (!status->cal_on) {
+      for (size_t i = 0; i < this->spc_slice.size(); ++i) {
+        this->ampl_slice[i] = std::abs(this->spc_slice[i]);
+      }
+      return;
+    }
+    if (this->cal->is_empty())
+      return;
+
+    // skip the DC part; almost all calibration may have 0 for DC
+    // and detrended data may not have a DC part as well
+    for (size_t i = 1, j = 0; i < this->spc_slice.size(); ++i, ++j) {
+      this->spc_slice[i] /= this->caldata[i];
+    }
+    for (size_t i = 0; i < this->spc_slice.size(); ++i) {
+      this->ampl_slice[i] = std::abs(this->spc_slice[i]);
+    }
+
+    fftw_execute(this->plan_inv);
+    for (auto &val : this->ts_slice_inv) {
+      val /= status->wl;
+      if (fabs(val) < 1E-12)
+        val = 0.0;
+    }
+  }
+
+  int64_t goto_sample_pos(const int64_t &sample_pos) {
+    if (this->infile.is_open()) {
+      this->infile.seekg(sample_pos * sizeof(double), this->infile.beg);
+      return this->infile.tellg();
+    } else
+      return -1;
   }
 
   std::vector<double> read_all_at_once() {
@@ -1061,7 +1145,6 @@ public:
    * \param sel atmm selection vector 0 = not excluded, 1 excluded from reading / processing
    */
   void read_all_fftw(const bool read_last_chunk = false, const std::shared_ptr<atmm> &sel = nullptr) {
-
     int64_t reads = 0;
     // clear the queue
     while (!this->qspc.empty())
@@ -1087,7 +1170,6 @@ public:
   }
 
   void read_all_fftw_gaussian_noise(const std::vector<double> double_noise, const bool bdetrend_hanning = true) {
-
     if (!this->ts_slice.size())
       return;
     if (double_noise.size() < this->ts_slice.size())
@@ -1146,11 +1228,8 @@ public:
    * \param bcal
    */
   void prepare_raw_spc(const bool bcal = true, const bool bwincal = true) {
-
     this->spc.reserve(this->qspc.size());
     size_t j = 0;
-    std::vector<std::complex<double>> caldata;
-    std::vector<double> fcal;
     bool bcaldata = bcal;
     if (this->cal->f.size() == 0) {
       bcaldata = false;
@@ -1167,12 +1246,12 @@ public:
           err_str << " :: calibration size is smaller than FFT size " << this->cal->f.size() << " " << this->spc.back().size();
           throw std::runtime_error(err_str.str());
         }
-        this->cal->get_cplx_cal(fcal, caldata);
+        this->cal->get_cplx_cal(this->caldata_f, this->caldata);
       }
 
       if (bcaldata) {
         // divide this->spc.back() by caldata
-        std::transform(this->spc.back().begin(), this->spc.back().end(), caldata.begin(), this->spc.back().begin(), std::divides<std::complex<double>>());
+        std::transform(this->spc.back().begin(), this->spc.back().end(), this->caldata.begin(), this->spc.back().begin(), std::divides<std::complex<double>>());
       }
       if (bwincal)
         this->fft_freqs->scale(this->spc.back());
@@ -1185,7 +1264,6 @@ public:
     return;
   }
   void prepare_to_raw_spc(const std::shared_ptr<fftw_freqs> &in_fft_freqs, const bool bcal = true, const bool bwincal = true) {
-
     this->spc.reserve(this->qspc.size());
     size_t j = 0;
     while (!this->qspc.empty()) {
@@ -1208,7 +1286,6 @@ public:
   }
 
   size_t samples(const std::filesystem::path &filepath_wo_ext = "") {
-
     if (this->filepath_wo_ext.empty() && filepath_wo_ext.empty()) {
       std::ostringstream err_str(__func__, std::ios_base::ate);
       err_str << "::empty class file AND no argument given ";
@@ -1250,10 +1327,9 @@ private:
    * \param data data slice to read
    * \param file ifstream
    * \param read_last_chunk - false in case of fft, true incase you want to read all and the last data vector is smaller than the previous ones
-   * \return -1 in case of failure
+   * \return -1 in case of failure, else the sample position
    */
   int64_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
-
     // too much checking ?
     if (file.peek() == EOF) {
       data.resize(0);
@@ -1261,7 +1337,7 @@ private:
       return -1;
     }
 
-    this->read_pos.first = file.tellg();
+    this->read_pos.first = file.tellg() / sizeof(double);
     size_t i = 0;
 
     if (!this->ts_chunk.size()) {
@@ -1269,6 +1345,7 @@ private:
       while (!file.eof() && i < data.size()) {
         file.read(static_cast<char *>(static_cast<void *>(&data[i++])), 8);
       }
+      this->read_count++;
 
       // read last chunk in case
       if ((file.eof()) && read_last_chunk && (i > 1)) {
@@ -1285,6 +1362,7 @@ private:
       while (!file.eof() && i < this->ts_chunk.size()) {
         file.read(static_cast<char *>(static_cast<void *>(&this->ts_chunk[i++])), 8);
       }
+      this->read_count++;
 
       // read last chunk in case
       if ((file.eof()) && read_last_chunk && (i > 1)) {
@@ -1309,28 +1387,44 @@ private:
         }
       }
     }
-    this->read_pos.second = file.tellg();
+    this->read_pos.second = file.tellg() / sizeof(double);
     return this->read_pos.second;
   }
 
-  void set_fftw_plan() {
+  /*!
+   * @brief set_fftw_plan
+   * @param force_padded - this is for tsplotter, in order to have an independent copy of the ts_slice
+   */
+  void set_fftw_plan(bool force_padded = false) {
     if (this->fft_freqs == nullptr)
       throw std::runtime_error(std::string(__func__) + " :: no fft frequencies available");
     if (this->fft_freqs->get_rl() == 0)
       throw std::runtime_error(std::string(__func__) + " :: no read length available");
     if (this->fft_freqs->get_wl() == 0)
       throw std::runtime_error(std::string(__func__) + " :: no window length available");
-    this->ts_slice.resize(this->fft_freqs->get_rl());
-    this->spc_slice.resize(this->fft_freqs->get_fl());
-    if (this->fft_freqs->get_rl() == this->fft_freqs->get_wl()) {
+    this->ts_slice.resize(this->fft_freqs->get_rl());  // need this always for reading rl of data
+    this->spc_slice.resize(this->fft_freqs->get_fl()); //!< get frequency lines, e.g. wl/2 +1 : rl 1024 -> 513
+    if ((this->fft_freqs->get_rl() == this->fft_freqs->get_wl() && !force_padded)) {
       this->plan = fftw_plan_dft_r2c_1d(this->fft_freqs->get_wl(), &this->ts_slice[0], reinterpret_cast<fftw_complex *>(&this->spc_slice[0]), FFTW_ESTIMATE);
     }
-    if (this->fft_freqs->get_wl() > this->fft_freqs->get_rl()) {
-      this->ts_slice_padded.resize(this->fft_freqs->get_wl(), 0.0);
+    if ((this->fft_freqs->get_wl() > this->fft_freqs->get_rl() || force_padded)) {
+      this->ts_slice_padded.resize(this->fft_freqs->get_wl(), 0.0); // wl is always equal or larger than rl
+      // after reading rl, the slice will be filled up to wl with zeros
       this->plan = fftw_plan_dft_r2c_1d(this->fft_freqs->get_wl(), &this->ts_slice_padded[0], reinterpret_cast<fftw_complex *>(&this->spc_slice[0]), FFTW_ESTIMATE);
     }
 
     this->bw = this->fft_freqs->get_bw();
+  }
+
+  void set_inv_fftw_plan() {
+    if (this->fft_freqs == nullptr)
+      throw std::runtime_error(std::string(__func__) + " :: no fft frequencies available");
+    if (this->fft_freqs->get_rl() == 0)
+      throw std::runtime_error(std::string(__func__) + " :: no read length available");
+    if (this->fft_freqs->get_wl() == 0)
+      throw std::runtime_error(std::string(__func__) + " :: no window length available");
+    this->ts_slice_inv.resize(this->fft_freqs->get_wl(), 0.0);
+    this->plan_inv = fftw_plan_dft_c2r_1d(this->fft_freqs->get_wl(), reinterpret_cast<fftw_complex *>(&this->spc_slice[0]), &this->ts_slice_inv[0], FFTW_ESTIMATE);
   }
 }; // end channel class
 
@@ -1346,7 +1440,7 @@ static bool operator==(const std::shared_ptr<channel> &lhs, const std::shared_pt
     return false;
   if (lhs->angle != rhs->angle)
     return false;
-  if (lhs->dip != rhs->dip)
+  if (lhs->tilt != rhs->tilt)
     return false;
   if (lhs->resistance != rhs->resistance)
     return false;
@@ -1441,7 +1535,7 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal = std::make_shared<calibration>();
   if (channel_type == "Ex") {
     chan->angle = 0.0;
-    chan->dip = 0.0;
+    chan->tilt = 0.0;
     chan->units = "mV/km";
     chan->set_channel_no(0);
     chan->cal->sensor = "EFP-06";
@@ -1452,7 +1546,7 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal->datetime = dt_string;
   } else if (channel_type == "Ey") {
     chan->angle = 90.0;
-    chan->dip = 0.0;
+    chan->tilt = 0.0;
     chan->units = "mV/km";
     chan->set_channel_no(1);
     chan->cal->sensor = "EFP-06";
@@ -1463,7 +1557,7 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal->datetime = dt_string;
   } else if (channel_type == "Hx") {
     chan->angle = 0.0;
-    chan->dip = 0.0;
+    chan->tilt = 0.0;
     chan->units = "mV";
     chan->set_channel_no(2);
     chan->cal->sensor = "MFS-06e";
@@ -1478,7 +1572,7 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal->datetime = dt_string;
   } else if (channel_type == "Hy") {
     chan->angle = 90.0;
-    chan->dip = 0.0;
+    chan->tilt = 0.0;
     chan->units = "mV";
     chan->set_channel_no(3);
     chan->cal->sensor = "MFS-06e";
@@ -1493,7 +1587,7 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal->datetime = dt_string;
   } else if (channel_type == "Hz") {
     chan->angle = 0.0;
-    chan->dip = 90.0;
+    chan->tilt = 90.0;
     chan->units = "mV";
     chan->set_channel_no(4);
     chan->cal->sensor = "MFS-06e";
@@ -1508,12 +1602,12 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal->datetime = dt_string;
   } else if (channel_type == "T") {
     chan->angle = 0.0;
-    chan->dip = 0.0;
+    chan->tilt = 0.0;
     chan->units = "°C";
     chan->set_channel_no(20);
   } else {
     chan->angle = 0.0;
-    chan->dip = 0.0;
+    chan->tilt = 0.0;
     chan->units = "mV";
     chan->set_channel_no(21);
   }

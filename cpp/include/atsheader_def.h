@@ -480,15 +480,15 @@ struct ats_header_json {
   }
 
   /*!
-   * \brief pos2dip
-   * \return dip angle; 90 = positive downwards, 0 = horizontal
+   * \brief pos2tilt
+   * \return tilt angle; 90 = positive downwards, 0 = horizontal
    */
-  double pos2dip() const {
+  double pos2tilt() const {
 
     double tz = double(this->atsh.z2 - this->atsh.z1);
 
     double diplength = this->pos2length();
-    // no coordiantes given for Hz
+    // no coordinates given for Hz
     if ((diplength == 0) && (this->header["channel_type"].get<std::string>() == "Hz")) {
       return 90.0;
     }
@@ -519,8 +519,8 @@ struct ats_header_json {
     this->header["y2"] = ty;
   }
 
-  void dip2z(const double &length, const double &dip) {
-    double tz = length * sin(dip * M_PI / 180.0);
+  void dip2z(const double &length, const double &tilt) {
+    double tz = length * sin(tilt * M_PI / 180.0);
     this->header["z1"] = 0.0;
     this->header["z2"] = tz;
   }

@@ -1,6 +1,8 @@
 # chcal
+```{index} Software; chcal
+```
 
-chcal reads different calibration formats and converts them into others.
+chcal (change calibration) reads different calibration formats and converts them into others.
 
 The most common usage is
 
