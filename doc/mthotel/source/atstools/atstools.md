@@ -10,7 +10,7 @@ For changing data from ats or *procmt* [^myref] to the new atss format only two 
 ## create old survey
 
 Skip this step if you already have *procmt* data. <br>
-atstools possibly makes use of  all information inside the *procmt* survey directory.
+atstools possibly makes use of all information inside the *procmt* survey directory.
 
 If you haven't use *procmt* you create a survey tree and put your timeseries folder from the ADU system inside the ts/site folder 
 
@@ -75,6 +75,11 @@ down to 10E-5 Hz and saved in the corresponding json file.
 
 `atstools -tojson -extend_cal -clone -outdir /survey/  /survey/old/iron_mountain`
 
+## chats
+
+chats is a switch to convert the old **ADU06** ats data into **XML & ats** in ADU-07e/08e format. <br>
+Refer also to [chcal](../chcal/chcal.md#chcal) for the calibration files. The (possible) input of 
+calibration files will be JSON only; this avoids conflicts with older mtx calibration files.
 
 ## cat
 

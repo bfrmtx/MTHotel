@@ -64,6 +64,13 @@ additional there may appear [atmm](#atmm)  mask files:
 - filter: text string, e.g. like ADB-LF,LF-RF-4 -> filter used during recording
 - source: text string, e.g. empty or CSAMT
 
+*The default values for MT are[^rot_rec]:*
+* x = North, angle = 0°, tilt = 0° (horizontal)
+* y = East, angle = 90°, tilt = 0° (horizontal)
+* z = Down, angle = 0°[^no_rot] , tilt 90° (vertical, positive down)
+
+
+
 in the sensor_calibration section:
 
 - sensor: name of sensor like EFP-06, MFS-06e and so on
@@ -190,6 +197,13 @@ The indices are 0-based and the stop index is exclusive (0, 1024 means the first
 
 You use .atmm files for excluding data from processing; this is the case when a cable was chopped.
 You also can use it to mask spikes.
+
+[^no_rot]: for the z component the N-E rotation is *meaningless*;
+
+[^rot_rec]: when archiving the data you shall rotate the data to the North-East system.<br>
+Even though all programmers claim that they respect the rotation, they do may do not. Your are 
+**always** on the safe side when you rotate the data to the North-East system a.s.a.p.<br>
+Additionally: when using time series viewers (not specialized for MT), you may not see what you expect.
 
 [^catref]: For remote observatory networks you may stream hourly segments. 
 On the receiving server you concatenate the hourly segments using the ">" or ">>" operator. <br>

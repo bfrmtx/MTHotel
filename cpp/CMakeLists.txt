@@ -1,27 +1,32 @@
 #
+# other sub ordinate CMakeLists must not contain
+# repeated settings from here 
+#
 # # don't forget in QtCreator to set CMAKE_INSTALL_PREFIX in the GUI under build
+# cmake standard
 cmake_minimum_required(VERSION 3.20)
 project(MTHotel LANGUAGES CXX)
-
+#
+# CXX standard; that may be repeated as -std=c++20
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-
-### Require out-of-source builds
+#
+#
+############# Require out-of-source builds
+# on synced drives you do NOT want to sync the build! only the source
 file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
 if(EXISTS "${LOC_PATH}")
-    message(FATAL_ERROR "You cannot build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
+    message(FATAL_ERROR "You can not build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
 endif()
+#############
 
 message("compiler used / detected " ${CMAKE_CXX_COMPILER_ID})
-
-
 #
 # set CMAKE_BUILD_TYPE RELEASE for CLANG
 IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT WIN32)
 # using regular Clang or AppleClang
     message ("UNIX LINUX Apple Clang build")
-    # on Linux and MacOS we can build shared libs for all not explicitly marked as STATIC
+    # on Linux and MacOS we can build shared libs - for all not explicitly marked as STATIC
     option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
     IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
         message ("debug build ---------------------")
@@ -30,18 +35,20 @@ IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT WIN32)
     ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
     IF(CMAKE_BUILD_TYPE MATCHES RELEASE)
         message ("release build ---------------------")
+        # no sign compare is for Qt, containers are not strictly C++ compliant
         add_compile_options(-std=c++20 -march=native -pthread -O3 -Wno-unused-parameter -Wno-sign-compare)
     ENDIF(CMAKE_BUILD_TYPE MATCHES RELEASE)
     IF(APPLE)
         message ("MacOS build adding sqlite from homebrew")
+        ########## SQLITE and others may need extra instructions; Linux does not have this problems ######
         include_directories(/opt/homebrew/opt/sqlite/include)
         include_directories(/usr/local/include)
         link_directories(/usr/local/lib)
         add_definitions(-DSQLite3_INCLUDE_DIRS=/opt/homebrew/opt/sqlite/include)
         add_definitions(-DSQLite3_LIBRARIES=/opt/homebrew/opt/sqlite/lib/libsqlite3.dylib)
         # Add your MacOS specific commands here
+        # refer also to the FFTW cmake file!
     ENDIF(APPLE)
-
 ENDIF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT WIN32)
 #
 #
@@ -66,6 +73,7 @@ ENDIF(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND NOT WIN32)
 #
 
 # set CMAKE_BUILD_TYPE RELEASE for g++ on mingw WINDOWS
+# I use the mingw delivered together with Qt, that works great
 IF(WIN32)
     message ( "WINDOWS build" )
     # on WINDOWS it is easier to make STATIC libs BUT it does not work with templates
@@ -91,13 +99,7 @@ ELSE()
 # set(QCUSTOMPLOT_USE_OPENGL TRUE)
     message ("starting UNIX LINUX Apple Clang / GCC build")
 ENDIF()
-
 message ( "adding subdirs" )
-# the info.sql3 and others will be copied to your build dir - the software will look for SQLite databases
-# DEFINES += PMTSQLPATH=\"\\\"$${PJH}/$${OSDIR}$${CPLDIR}\\\"\"
-# add_definitions(-DPMTSQLPATH="${CMAKE_INSTALL_PREFIX}")
-# add_definitions(-DPMTSQLPATH_UNIX="${CMAKE_INSTALL_PREFIX}/bin")
-#
 ## templates FIRST
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/math_vector)

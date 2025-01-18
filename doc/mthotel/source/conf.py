@@ -46,7 +46,7 @@ html_additional_pages = {
 }
 
 # do not scan the SQLITE dir and auto created md files
-exclude_patterns = ['_build', 'build', 'Thumbs.db', '.DS_Store', 'sqltables', 'vscode']
+exclude_patterns = ['_build', 'build', 'Thumbs.db', '.DS_Store', 'sqltables', 'vscode', 'python_graphs']
 
 
 # -- Options for HTML output -------------------------------------------------

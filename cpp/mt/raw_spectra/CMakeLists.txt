@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 3.20)
+
 project(raw_spectra VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/out_of_tree_build.cmake)
-#top tree dir is CMAKE_SOURCE_DIR
-include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/math_vector)
+include_directories(${CMAKE_SOURCE_DIR}/math_vector)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/fft.cmake)
 

@@ -21,9 +21,15 @@ $$
 
 
 
+Footnote
 
+like[^myref] no space behind word
 
+and at the end
 
+[^myref]: it is not like this
+
+in text you can [^myref] multiple times to refer to the same Footnote
 
 usage:
 ---------
