@@ -3,7 +3,7 @@
 The MT hotel contains a a collection of scripts and codes for processing MT data.
 All code is license free - you can do what you want.
 
-*Hope to find some guests...*
+*Re-Written in August 2025...*
 
 More details shall follow here: https://mth5.geo-metronix.de/
 
@@ -49,7 +49,7 @@ Some fluxgates (FGS-03e and FGS-04e support temperature reading) log the the tem
 
 ## Compile
 
-The cpp section require **C++ 20** (std::filesystem and jthreads); Cmake 3.20 and above. Both, clang and gcc shall work: clang is on Linux/MacOS, gcc on Windows / MinGW.
+The cpp section require **C++ 23** (std::filesystem and jthreads); Cmake 3.20 and above. Both, clang and gcc shall work: clang is on Linux/MacOS, gcc on Windows / MinGW.
 
 Presently (2022) the C++ 20 standard is new - at the end of the project it will be standard. Especially the jthreads (auto joined threads are of interest).
 
