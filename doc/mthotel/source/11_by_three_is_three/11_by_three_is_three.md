@@ -1,0 +1,78 @@
+# 11 by 3 is 3
+
+Quick thoughts on data structures.
+
+## Human vs. Machine
+
+Using C/C++ and integer division, the result is three. <br>
+In financial applications, such as your tax declaration, the result is four. <br>
+
+As instrument engineer, you write kernel drivers and use indices starting at zero. <br>
+You query your ADC from 0 to N-1, because that is a C or assembler code. <br>
+
+Giant companies with hundreds of developers for your code may add all convenience functions you can think of. <br>
+We can't. We have to keep it simple, or [KISS (keep it simple, stupid)](https://en.wikipedia.org/wiki/KISS_principle). <br>
+
+From my experience, even in 100 years, the average user takes a text editor and applies changes to the data.
+Even though you supplied a fail safe function to do this with the archive format. <br>
+
+There are two consequences: <br>
+1. The metadata is simple such as JSON. <br>
+2. The data is simple such as a simple *IEEE 754* double number stream. <br>
+
+Small data, such as calibration data, can be JSON; they are likely to be edited by hand. <br>
+
+
+## All in, one out
+
+Since we can not write all convince functions, a good idea is to have a dump format maintained by the archive format programmers, where the
+user can manipulate (or destroy) the data. <br>
+In case he is doing right, he can push the data back into a newly created archive. <br>
+
+
+<div align="center">
+
+```mermaid
+flowchart LR
+  subgraph Input
+    direction TB
+    A[Format 1]
+    B[Format 2] 
+    C[Format 3]
+  end
+  M[(MTH5)]
+  A --> M
+  B --> M
+  C --> M
+  D[DUMP]
+  M <--> D
+  D --> E
+  D --> F
+  D --> G
+  subgraph Output
+    direction TB
+    E[IEEE 754]
+    F[JSON] 
+    G[other]
+  end
+```
+
+</div>
+
+## Sub-Formats
+
+As an example [GeoJSON](https://geojson.org/) was mentioned. <br>
+The question is: when it is needed? <br>
+For [DESMEX, ger](https://www.uni-muenster.de/DESMEX/startseite.html) , [DESMEX BGR, eng](https://www.bgr.bund.de/EN/Themen/GG_Geophysik/Aerogeophysik/Projekte/abgeschlossen/DESMEX/DESMEX_en.html) style controlled source measurements, we need detailed information about TX lines. <br>
+Do we need this at the RX site? ... 98% of the users will be exhausted when reading or creating data in this format. <br>
+A "**metadata**" tag could help to keep the data simple. So simply spoken: jump to that URL and use your database, [QGIS](https://qgis.org/), ArcGIS or Oasis montaj <br> 
+As long as the user has proprietary information, he can still share the data with the community. <br>
+Or the URL points *inside the MTH5* file. <br>
+**My Experience**: Most of my students have low programming skills; a steep learning curve is not acceptable, they simply ask for "ASCII conversion" ... I am really, really tired of this. <br>
+
+## Dictionary
+
+Maybe we dump the manufacturer's data into a JSON style storage area into MTH5. <br>
+What does "GSPstat", "LSB", "InputDivOn" mean? <br>
+Sample rate, sampling rate, sample frequency? <br>
+So creating a dictionary (we can have more than one) is a good idea. An example of an embedded sqlite table is [here](../fft/fft.md#fft--dft). <br>

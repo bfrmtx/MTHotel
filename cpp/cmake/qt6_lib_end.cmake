@@ -1,0 +1,31 @@
+
+# Ensure .lib file is generated for DLL on Windows
+# @todo: This is not needed anymore with CMake 3.13 and above
+# See https://cmake.org/cmake/help/latest/prop_tgt/WINDOWS_EXPORT_ALL_SYMBOLS.html
+# Global data symbols must be explicitly marked with __declspec(dllimport) in order to link to data in the .dll
+if(WIN32)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+endif()
+
+# could be set if libraries from earlier projects are needed
+target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_INSTALL_PREFIX}/lib )
+
+if(TARGET Qt6::PrintSupport)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::PrintSupport)
+endif()
+
+#include(GNUInstallDirs)
+install(TARGETS ${PROJECT_NAME}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}  # Library files (*.so)
+    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}  # Runtime binaries
+)
+
+
+IF(NOT HEADERS_INSTALL )
+message ("no headers to install")
+ELSE()
+install(FILES ${HEADERS_INSTALL} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+ENDIF()
+

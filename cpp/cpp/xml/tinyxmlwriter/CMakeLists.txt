@@ -1,0 +1,10 @@
+
+
+project(tinyxmlwriter VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+
+set(HEADERS_INSTALL tinyxmlwriter.h)
+
+install(FILES ${HEADERS_INSTALL} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/xml)

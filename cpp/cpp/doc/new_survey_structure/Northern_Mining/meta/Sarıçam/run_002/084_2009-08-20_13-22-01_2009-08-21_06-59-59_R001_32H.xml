@@ -1,0 +1,2706 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<measurement>
+  <recording>
+    <start_time>13:22:01</start_time>
+    <stop_time>06:59:59</stop_time>
+    <start_date>2009-08-20</start_date>
+    <stop_date>2009-08-21</stop_date>
+    <target_directory>/mtdata/data</target_directory>
+    <input>
+      <ADU07Hardware>
+        <global_config>
+          <meas_channels>5</meas_channels>
+          <sample_freq>3.20000000E+01</sample_freq>
+          <buffer>512</buffer>
+          <start_stop_mode>0</start_stop_mode>
+          <calon>0</calon>
+          <atton>0</atton>
+          <calref>0</calref>
+          <calint>0</calint>
+          <calfreq>16384.0</calfreq>
+          <short_circuit>0</short_circuit>
+          <decimation>0</decimation>
+          <flush_fill>64</flush_fill>
+          <ovl_fill>1024</ovl_fill>
+          <start_stop_fill>512</start_stop_fill>
+        </global_config>
+        <channel_config>
+          <channel id="0">
+            <gain_stage1>8</gain_stage1>
+            <gain_stage2>1</gain_stage2>
+            <filter_type>ADU07_LF_RF_4</filter_type>
+            <hchopper>1</hchopper>
+            <echopper>0</echopper>
+            <dac_val>0</dac_val>
+            <dac_on>0</dac_on>
+            <input>0</input>
+            <input_divider>0</input_divider>
+          </channel>
+          <channel id="1">
+            <gain_stage1>8</gain_stage1>
+            <gain_stage2>1</gain_stage2>
+            <filter_type>ADU07_LF_RF_4</filter_type>
+            <hchopper>1</hchopper>
+            <echopper>0</echopper>
+            <dac_val>0</dac_val>
+            <dac_on>0</dac_on>
+            <input>0</input>
+            <input_divider>0</input_divider>
+          </channel>
+          <channel id="2">
+            <gain_stage1>1</gain_stage1>
+            <gain_stage2>1</gain_stage2>
+            <filter_type>ADU07_LF_RF_4</filter_type>
+            <hchopper>1</hchopper>
+            <echopper>0</echopper>
+            <dac_val>0</dac_val>
+            <dac_on>0</dac_on>
+            <input>0</input>
+            <input_divider>1</input_divider>
+          </channel>
+          <channel id="3">
+            <gain_stage1>1</gain_stage1>
+            <gain_stage2>1</gain_stage2>
+            <filter_type>ADU07_LF_RF_4</filter_type>
+            <hchopper>1</hchopper>
+            <echopper>0</echopper>
+            <dac_val>0</dac_val>
+            <dac_on>0</dac_on>
+            <input>0</input>
+            <input_divider>1</input_divider>
+          </channel>
+          <channel id="4">
+            <gain_stage1>1</gain_stage1>
+            <gain_stage2>1</gain_stage2>
+            <filter_type>ADU07_LF_RF_4</filter_type>
+            <hchopper>1</hchopper>
+            <echopper>0</echopper>
+            <dac_val>0</dac_val>
+            <dac_on>0</dac_on>
+            <input>0</input>
+            <input_divider>1</input_divider>
+          </channel>
+        </channel_config>
+      </ADU07Hardware>
+    </input>
+    <output>
+      <ProcessingTree id="0">
+        <configuration>
+          <processings>mt_auto</processings>
+        </configuration>
+        <output>
+          <ATSWriter>
+            <configuration>
+              <!-- x1,y1 = north, east are positive count, x2, y2 south, west are negative count like in UTM-->
+              <information>
+                <ADUSerials>three digits</ADUSerials>
+                <ChannelLetters>A, B, C, D, E, F,</ChannelLetters>
+                <ChannelTypes>A = Ex, B = Ey, X = Hx, Y = Hy, Z = Hz</ChannelTypes>
+                <Runs>two digits</Runs>
+                <Bands>HF, LF1, LF2, LF3, LF4, LF5, FreeFreq</Bands>
+                <BandIndices>A, B, C, D, E, G, F</BandIndices>
+                <FileNames>nnn_ADU c_Channel rr_Run t_Channel_Type b_BandIndex .ats</FileNames>
+              </information>
+              <channel id="0">
+                <start_time>13:22:01</start_time>
+                <start_date>2009-08-20</start_date>
+                <sample_freq>3.20000000E+01</sample_freq>
+                <num_samples>2031320</num_samples>
+                <ats_data_file>084_V01_C00_R001_TEx_BL_32H.ats</ats_data_file>
+                <ts_lsb>5.62320000E-05</ts_lsb>
+                <channel_type>Ex</channel_type>
+                <sensor_sernum>0</sensor_sernum>
+                <sensor_type>EFP06</sensor_type>
+                <sensor_cal_file>SENSOR.CAL</sensor_cal_file>
+                <pos_x1>-3.00000000E+01</pos_x1>
+                <pos_y1>0.00000000E+00</pos_y1>
+                <pos_z1>0.00000000E+00</pos_z1>
+                <pos_x2>3.00000000E+01</pos_x2>
+                <pos_y2>0.00000000E+00</pos_y2>
+                <pos_z2>0.00000000E+00</pos_z2>
+              </channel>
+              <channel id="1">
+                <start_time>13:22:01</start_time>
+                <start_date>2009-08-20</start_date>
+                <sample_freq>3.20000000E+01</sample_freq>
+                <num_samples>2031320</num_samples>
+                <ats_data_file>084_V01_C01_R001_TEy_BL_32H.ats</ats_data_file>
+                <ts_lsb>5.62797500E-05</ts_lsb>
+                <channel_type>Ey</channel_type>
+                <sensor_sernum>0</sensor_sernum>
+                <sensor_type>EFP06</sensor_type>
+                <sensor_cal_file>SENSOR.CAL</sensor_cal_file>
+                <pos_x1>0.00000000E+00</pos_x1>
+                <pos_y1>-3.00000000E+01</pos_y1>
+                <pos_z1>0.00000000E+00</pos_z1>
+                <pos_x2>0.00000000E+00</pos_x2>
+                <pos_y2>3.00000000E+01</pos_y2>
+                <pos_z2>0.00000000E+00</pos_z2>
+              </channel>
+              <channel id="2">
+                <start_time>13:22:01</start_time>
+                <start_date>2009-08-20</start_date>
+                <sample_freq>3.20000000E+01</sample_freq>
+                <num_samples>2031320</num_samples>
+                <ats_data_file>084_V01_C02_R001_THx_BL_32H.ats</ats_data_file>
+                <ts_lsb>3.60025600E-03</ts_lsb>
+                <channel_type>Hx</channel_type>
+                <sensor_sernum>26</sensor_sernum>
+                <sensor_type>MFS06</sensor_type>
+                <sensor_cal_file>SENSOR.CAL</sensor_cal_file>
+                <pos_x1>0.00000000E+00</pos_x1>
+                <pos_y1>0.00000000E+00</pos_y1>
+                <pos_z1>0.00000000E+00</pos_z1>
+                <pos_x2>0.00000000E+00</pos_x2>
+                <pos_y2>0.00000000E+00</pos_y2>
+                <pos_z2>0.00000000E+00</pos_z2>
+              </channel>
+              <channel id="3">
+                <start_time>13:22:01</start_time>
+                <start_date>2009-08-20</start_date>
+                <sample_freq>3.20000000E+01</sample_freq>
+                <num_samples>2031320</num_samples>
+                <ats_data_file>084_V01_C03_R001_THy_BL_32H.ats</ats_data_file>
+                <ts_lsb>3.59936800E-03</ts_lsb>
+                <channel_type>Hy</channel_type>
+                <sensor_sernum>32</sensor_sernum>
+                <sensor_type>MFS06</sensor_type>
+                <sensor_cal_file>SENSOR.CAL</sensor_cal_file>
+                <pos_x1>0.00000000E+00</pos_x1>
+                <pos_y1>0.00000000E+00</pos_y1>
+                <pos_z1>0.00000000E+00</pos_z1>
+                <pos_x2>0.00000000E+00</pos_x2>
+                <pos_y2>0.00000000E+00</pos_y2>
+                <pos_z2>0.00000000E+00</pos_z2>
+              </channel>
+              <channel id="4">
+                <start_time>13:22:01</start_time>
+                <start_date>2009-08-20</start_date>
+                <sample_freq>3.20000000E+01</sample_freq>
+                <num_samples>2031320</num_samples>
+                <ats_data_file>084_V01_C04_R001_THz_BL_32H.ats</ats_data_file>
+                <ts_lsb>3.59909600E-03</ts_lsb>
+                <channel_type>Hz</channel_type>
+                <sensor_sernum>24</sensor_sernum>
+                <sensor_type>MFS06</sensor_type>
+                <sensor_cal_file>SENSOR.CAL</sensor_cal_file>
+                <pos_x1>0.00000000E+00</pos_x1>
+                <pos_y1>0.00000000E+00</pos_y1>
+                <pos_z1>0.00000000E+00</pos_z1>
+                <pos_x2>0.00000000E+00</pos_x2>
+                <pos_y2>0.00000000E+00</pos_y2>
+                <pos_z2>0.00000000E+00</pos_z2>
+              </channel>
+              <survey_header_name>Reference site</survey_header_name>
+              <meas_type>MT</meas_type>
+              <powerline_freq1>0</powerline_freq1>
+              <powerline_freq2>0</powerline_freq2>
+            </configuration>
+            <comments>
+              <site_name>Rhoden</site_name>
+              <client>Geological Survey of Germany</client>
+              <contractor>metronix</contractor>
+              <area>LX South</area>
+              <survey_id>LXmtxGGS</survey_id>
+              <operator>CK</operator>
+              <weather/>
+              <general_comments/>
+            </comments>
+            <!-- ats file name for each channel needed-->
+            <!-- delta_start needed for start time correction auch wenn mal unsere Uhr falsch gegangen ist..-->
+            <!-- delta_stop for systems where GPS sync is made a second time - like for submarine systems-->
+            <output_file>
+              <line_num/>
+              <site_num>00000</site_num>
+              <run_num>1</run_num>
+              <adu_ser_num>1</adu_ser_num>
+              <band>LF1</band>
+            </output_file>
+          </ATSWriter>
+        </output>
+      </ProcessingTree>
+    </output>
+  </recording>
+  <calibration_channels>
+    <channel id="0">
+      <calibration>
+        <calibrated_item>
+          <ci>ADU07_LF_RF_4</ci>
+          <RevMain>1</RevMain>
+          <RevSub>0</RevSub>
+        </calibrated_item>
+      </calibration>
+      <calibration>
+        <calibrated_item>
+          <ci>ADU-07-LF</ci>
+          <RevMain>1</RevMain>
+          <RevSub>0</RevSub>
+        </calibrated_item>
+      </calibration>
+      <calibration/>
+    </channel>
+    <channel id="1">
+      <calibration>
+        <calibrated_item>
+          <ci>ADU07_LF_RF_4</ci>
+          <RevMain>1</RevMain>
+          <RevSub>0</RevSub>
+        </calibrated_item>
+      </calibration>
+      <calibration>
+        <calibrated_item>
+          <ci>ADU-07-LF</ci>
+          <RevMain>1</RevMain>
+          <RevSub>0</RevSub>
+        </calibrated_item>
+      </calibration>
+      <calibration/>
+    </channel>
+    <channel id="2">
+      <calibration>
+        <calibrated_item>
+          <ci>ADU07_LF_RF_4</ci>
+          <RevMain>1</RevMain>
+          <RevSub>0</RevSub>
+        </calibrated_item>
+      </calibration>
+      <calibration>
+        <calibrated_item>
+          <ci>ADU-07-LF</ci>
+          <RevMain>1</RevMain>
+          <RevSub>0</RevSub>
+        </calibrated_item>
+      </calibration>
+      <calibration/>
+    </channel>
+    <channel id="3">
+      <calibration>
+        <calibrated_item>
+          <ci>ADU07_LF_RF_4</ci>
+          <RevMain>1</RevMain>
+          <RevSub>0</RevSub>
+        </calibrated_item>
+      </calibration>
+      <calibration>
+        <calibrated_item>
+          <ci>ADU-07-LF</ci>
+          <RevMain>1</RevMain>
+          <RevSub>0</RevSub>
+        </calibrated_item>
+      </calibration>
+      <calibration/>
+    </channel>
+    <channel id="4">
+      <calibration>
+        <calibrated_item>
+          <ci>ADU07_LF_RF_4</ci>
+          <RevMain>1</RevMain>
+          <RevSub>0</RevSub>
+        </calibrated_item>
+      </calibration>
+      <calibration>
+        <calibrated_item>
+          <ci>ADU-07-LF</ci>
+          <RevMain>1</RevMain>
+          <RevSub>0</RevSub>
+        </calibrated_item>
+      </calibration>
+      <calibration/>
+    </channel>
+  </calibration_channels>
+  <!-- here we put the XML calibration format of Metronix-->
+  <calibration_sensors>
+    <channel id="0">
+      <calibration>
+        <calibrated_item>
+          <ci>EFP06</ci>
+          <comment>cal file taken from cal_default table</comment>
+        </calibrated_item>
+      </calibration>
+      <calibration/>
+    </channel>
+    <channel id="1">
+      <calibration>
+        <calibrated_item>
+          <ci>EFP06</ci>
+          <comment>cal file taken from cal_default table</comment>
+        </calibrated_item>
+      </calibration>
+      <calibration/>
+    </channel>
+    <channel id="2">
+      <calibration>
+        <cal_version>1.0</cal_version>
+        <creator>lib calibration</creator>
+        <user>metronix</user>
+        <calibrated_item>
+          <ci identifier="coil">MFS-06</ci>
+          <ci_serial_number>26</ci_serial_number>
+          <ci_revision/>
+          <ci_date>2006-12-01</ci_date>
+          <ci_time>11:23:02</ci_time>
+          <ci_calibration_valid_until/>
+          <ci_next_calibration/>
+          <ci_tag/>
+          <ci_owner/>
+          <ci_owners_address/>
+          <ci_manufacturer>metronix</ci_manufacturer>
+          <ci_manufacturers_address>Kocher Str. 3, 38120 Braunschweig, Germany</ci_manufacturers_address>
+        </calibrated_item>
+        <calibration_equipment>
+          <ce/>
+          <ce_serial_number/>
+          <ce_revision/>
+          <ce_date/>
+          <ce_time/>
+          <ce_calibration_valid_until/>
+          <ce_next_calibration/>
+          <ce_tag/>
+          <ce_operator/>
+          <ce_location>Magnetsrode</ce_location>
+          <ce_contact_address>Kocher Str. 3, 38120 Braunschweig, Germany</ce_contact_address>
+          <ce_comments/>
+        </calibration_equipment>
+        <calibration_protocol>
+          <mtx>
+            <mtx_serial_numer_engraved/>
+            <mtx_preamplifier_serialnumber/>
+            <mtx_ch1_div_ch2_at_1000gain_0dot025_hz/>
+            <mtx_phase_deg_at_1000gain_0dot025_hz/>
+            <mtx_ch1_div_ch2_at_1000gain_0dot025_hz_calibrated/>
+            <mtx_phase_deg_at_1000gain_0dot025_hz_calibrated/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_1000/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_100/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_10/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_1/>
+            <gain_factor_preamplifier/>
+            <actual_sensitivity_ch2_by_ch1/>
+            <actual_sensitivity_theta/>
+            <calibrated_sensitivity_ch2_by_ch1/>
+            <calibrated_sensitivity_theta/>
+            <calibrated_cal_path_ch2_by_ch1/>
+            <calibrated_cal_path_theta/>
+            <calibrated_chopper_on/>
+            <calibrated_chopper_off/>
+            <calibrated_chopper_ukn/>
+          </mtx>
+        </calibration_protocol>
+        <!--
+        deg is degrees from 0-360 
+        -->
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e-01</c1>
+          <c2 unit="V/(nT*Hz)">2.002700e-01</c2>
+          <c3 unit="deg">8.856600e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.999400e-01</c2>
+          <c3 unit="deg">8.818700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e-01</c1>
+          <c2 unit="V/(nT*Hz)">2.003400e-01</c2>
+          <c3 unit="deg">8.771100e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995300e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.999600e-01</c2>
+          <c3 unit="deg">8.717700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e-01</c1>
+          <c2 unit="V/(nT*Hz)">2.000100e-01</c2>
+          <c3 unit="deg">8.645900e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.995600e-01</c2>
+          <c3 unit="deg">8.548700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981100e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.987400e-01</c2>
+          <c3 unit="deg">8.444700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011900e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.988900e-01</c2>
+          <c3 unit="deg">8.299200e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.979900e-01</c2>
+          <c3 unit="deg">8.123300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.962500e-01</c2>
+          <c3 unit="deg">7.905500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.937900e-01</c2>
+          <c3 unit="deg">7.634500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.917400e-01</c2>
+          <c3 unit="deg">7.295400e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.877200e-01</c2>
+          <c3 unit="deg">6.903000e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.804500e-01</c2>
+          <c3 unit="deg">6.420100e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.709400e-01</c2>
+          <c3 unit="deg">5.869000e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.590100e-01</c2>
+          <c3 unit="deg">5.257100e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.444400e-01</c2>
+          <c3 unit="deg">4.621200e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.268600e-01</c2>
+          <c3 unit="deg">3.939900e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.091800e-01</c2>
+          <c3 unit="deg">3.307400e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+00</c1>
+          <c2 unit="V/(nT*Hz)">9.244000e-02</c2>
+          <c3 unit="deg">2.756700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+01</c1>
+          <c2 unit="V/(nT*Hz)">7.663600e-02</c2>
+          <c3 unit="deg">2.250700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+01</c1>
+          <c2 unit="V/(nT*Hz)">6.241800e-02</c2>
+          <c3 unit="deg">1.819800e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+01</c1>
+          <c2 unit="V/(nT*Hz)">5.055000e-02</c2>
+          <c3 unit="deg">1.452900e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+01</c1>
+          <c2 unit="V/(nT*Hz)">4.061500e-02</c2>
+          <c3 unit="deg">1.163500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+01</c1>
+          <c2 unit="V/(nT*Hz)">3.252300e-02</c2>
+          <c3 unit="deg">9.050700e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.599600e-02</c2>
+          <c3 unit="deg">7.133000e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.074600e-02</c2>
+          <c3 unit="deg">5.502600e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.537800e-02</c2>
+          <c3 unit="deg">3.691700e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.309200e-02</c2>
+          <c3 unit="deg">3.248600e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.042200e-02</c2>
+          <c3 unit="deg">2.285600e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+02</c1>
+          <c2 unit="V/(nT*Hz)">8.259500e-03</c2>
+          <c3 unit="deg">1.390300e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+02</c1>
+          <c2 unit="V/(nT*Hz)">6.577400e-03</c2>
+          <c3 unit="deg">8.116000e-01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+02</c1>
+          <c2 unit="V/(nT*Hz)">5.238000e-03</c2>
+          <c3 unit="deg">2.119700e-01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+02</c1>
+          <c2 unit="V/(nT*Hz)">4.154300e-03</c2>
+          <c3 unit="deg">-5.109000e-01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511800e+02</c1>
+          <c2 unit="V/(nT*Hz)">3.300600e-03</c2>
+          <c3 unit="deg">-1.217000e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.614500e-03</c2>
+          <c3 unit="deg">-2.340200e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.066700e-03</c2>
+          <c3 unit="deg">-2.862400e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.641400e-03</c2>
+          <c3 unit="deg">-3.709700e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309400e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.302600e-03</c2>
+          <c3 unit="deg">-4.811800e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.032400e-03</c2>
+          <c3 unit="deg">-6.163500e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+03</c1>
+          <c2 unit="V/(nT*Hz)">8.182000e-04</c2>
+          <c3 unit="deg">-7.812700e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+03</c1>
+          <c2 unit="V/(nT*Hz)">6.477700e-04</c2>
+          <c3 unit="deg">-9.804400e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+03</c1>
+          <c2 unit="V/(nT*Hz)">5.134800e-04</c2>
+          <c3 unit="deg">-1.207500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+03</c1>
+          <c2 unit="V/(nT*Hz)">4.213300e-04</c2>
+          <c3 unit="deg">-1.480700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511800e+03</c1>
+          <c2 unit="V/(nT*Hz)">3.123800e-04</c2>
+          <c3 unit="deg">-2.351900e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+03</c1>
+          <c2 unit="V/(nT*Hz)">2.369000e-04</c2>
+          <c3 unit="deg">-2.761000e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.754500e-04</c2>
+          <c3 unit="deg">-3.411800e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011700e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.190300e-04</c2>
+          <c3 unit="deg">-4.032100e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309400e+03</c1>
+          <c2 unit="V/(nT*Hz)">8.378000e-05</c2>
+          <c3 unit="deg">-3.626700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+03</c1>
+          <c2 unit="V/(nT*Hz)">6.948400e-05</c2>
+          <c3 unit="deg">-4.099900e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">9.999500e+03</c1>
+          <c2 unit="V/(nT*Hz)">5.171200e-05</c2>
+          <c3 unit="deg">-5.101700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+04</c1>
+          <c2 unit="V/(nT*Hz)">5.170700e-05</c2>
+          <c3 unit="deg">-5.101900e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.815400e-01</c2>
+          <c3 unit="deg">1.170300e+02</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.957600e-01</c2>
+          <c3 unit="deg">1.063200e+02</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+00</c1>
+          <c2 unit="V/(nT*Hz)">2.031700e-01</c2>
+          <c3 unit="deg">9.511400e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995300e+00</c1>
+          <c2 unit="V/(nT*Hz)">2.026800e-01</c2>
+          <c3 unit="deg">8.371600e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.947100e-01</c2>
+          <c3 unit="deg">7.245700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.801500e-01</c2>
+          <c3 unit="deg">6.169600e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981100e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.609400e-01</c2>
+          <c3 unit="deg">5.178400e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.386400e-01</c2>
+          <c3 unit="deg">4.254500e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.168900e-01</c2>
+          <c3 unit="deg">3.485100e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+00</c1>
+          <c2 unit="V/(nT*Hz)">9.689900e-02</c2>
+          <c3 unit="deg">2.820600e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+01</c1>
+          <c2 unit="V/(nT*Hz)">7.897000e-02</c2>
+          <c3 unit="deg">2.260700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+01</c1>
+          <c2 unit="V/(nT*Hz)">6.377300e-02</c2>
+          <c3 unit="deg">1.827700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+01</c1>
+          <c2 unit="V/(nT*Hz)">5.125100e-02</c2>
+          <c3 unit="deg">1.439400e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+01</c1>
+          <c2 unit="V/(nT*Hz)">4.108100e-02</c2>
+          <c3 unit="deg">1.140200e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+01</c1>
+          <c2 unit="V/(nT*Hz)">3.271700e-02</c2>
+          <c3 unit="deg">9.049700e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.616000e-02</c2>
+          <c3 unit="deg">7.003900e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.075700e-02</c2>
+          <c3 unit="deg">5.574500e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.652500e-02</c2>
+          <c3 unit="deg">4.042500e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.311900e-02</c2>
+          <c3 unit="deg">3.162000e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.043200e-02</c2>
+          <c3 unit="deg">2.225400e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+02</c1>
+          <c2 unit="V/(nT*Hz)">8.260700e-03</c2>
+          <c3 unit="deg">1.384300e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+02</c1>
+          <c2 unit="V/(nT*Hz)">6.584300e-03</c2>
+          <c3 unit="deg">8.010100e-01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+02</c1>
+          <c2 unit="V/(nT*Hz)">5.220000e-03</c2>
+          <c3 unit="deg">5.663600e-02</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+02</c1>
+          <c2 unit="V/(nT*Hz)">4.159100e-03</c2>
+          <c3 unit="deg">-5.502600e-01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+02</c1>
+          <c2 unit="V/(nT*Hz)">3.309800e-03</c2>
+          <c3 unit="deg">-1.306000e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.617200e-03</c2>
+          <c3 unit="deg">-2.347200e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.068600e-03</c2>
+          <c3 unit="deg">-2.860000e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.643300e-03</c2>
+          <c3 unit="deg">-3.700700e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.304200e-03</c2>
+          <c3 unit="deg">-4.806500e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.034000e-03</c2>
+          <c3 unit="deg">-6.149300e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+03</c1>
+          <c2 unit="V/(nT*Hz)">8.196100e-04</c2>
+          <c3 unit="deg">-7.811900e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+03</c1>
+          <c2 unit="V/(nT*Hz)">6.488300e-04</c2>
+          <c3 unit="deg">-9.819100e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+03</c1>
+          <c2 unit="V/(nT*Hz)">5.140800e-04</c2>
+          <c3 unit="deg">-1.213800e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+03</c1>
+          <c2 unit="V/(nT*Hz)">4.214600e-04</c2>
+          <c3 unit="deg">-1.480200e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511800e+03</c1>
+          <c2 unit="V/(nT*Hz)">3.129400e-04</c2>
+          <c3 unit="deg">-2.350800e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+03</c1>
+          <c2 unit="V/(nT*Hz)">2.373300e-04</c2>
+          <c3 unit="deg">-2.767600e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.757000e-04</c2>
+          <c3 unit="deg">-3.429100e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.189900e-04</c2>
+          <c3 unit="deg">-4.055700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309400e+03</c1>
+          <c2 unit="V/(nT*Hz)">8.357500e-05</c2>
+          <c3 unit="deg">-3.640400e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+03</c1>
+          <c2 unit="V/(nT*Hz)">6.933600e-05</c2>
+          <c3 unit="deg">-4.110700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+04</c1>
+          <c2 unit="V/(nT*Hz)">5.160000e-05</c2>
+          <c3 unit="deg">-5.111300e+01</c3>
+        </caldata>
+      </calibration>
+    </channel>
+    <channel id="3">
+      <calibration>
+        <cal_version>1.0</cal_version>
+        <creator>lib calibration</creator>
+        <user>metronix</user>
+        <calibrated_item>
+          <ci identifier="coil">MFS-06</ci>
+          <ci_serial_number>32</ci_serial_number>
+          <ci_revision/>
+          <ci_date>2006-12-01</ci_date>
+          <ci_time>13:04:36</ci_time>
+          <ci_calibration_valid_until/>
+          <ci_next_calibration/>
+          <ci_tag/>
+          <ci_owner/>
+          <ci_owners_address/>
+          <ci_manufacturer>metronix</ci_manufacturer>
+          <ci_manufacturers_address>Kocher Str. 3, 38120 Braunschweig, Germany</ci_manufacturers_address>
+        </calibrated_item>
+        <calibration_equipment>
+          <ce/>
+          <ce_serial_number/>
+          <ce_revision/>
+          <ce_date/>
+          <ce_time/>
+          <ce_calibration_valid_until/>
+          <ce_next_calibration/>
+          <ce_tag/>
+          <ce_operator/>
+          <ce_location>Magnetsrode</ce_location>
+          <ce_contact_address>Kocher Str. 3, 38120 Braunschweig, Germany</ce_contact_address>
+          <ce_comments/>
+        </calibration_equipment>
+        <calibration_protocol>
+          <mtx>
+            <mtx_serial_numer_engraved/>
+            <mtx_preamplifier_serialnumber/>
+            <mtx_ch1_div_ch2_at_1000gain_0dot025_hz/>
+            <mtx_phase_deg_at_1000gain_0dot025_hz/>
+            <mtx_ch1_div_ch2_at_1000gain_0dot025_hz_calibrated/>
+            <mtx_phase_deg_at_1000gain_0dot025_hz_calibrated/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_1000/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_100/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_10/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_1/>
+            <gain_factor_preamplifier/>
+            <actual_sensitivity_ch2_by_ch1/>
+            <actual_sensitivity_theta/>
+            <calibrated_sensitivity_ch2_by_ch1/>
+            <calibrated_sensitivity_theta/>
+            <calibrated_cal_path_ch2_by_ch1/>
+            <calibrated_cal_path_theta/>
+            <calibrated_chopper_on/>
+            <calibrated_chopper_off/>
+            <calibrated_chopper_ukn/>
+          </mtx>
+        </calibration_protocol>
+        <!--
+        deg is degrees from 0-360 
+        -->
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.997400e-01</c2>
+          <c3 unit="deg">8.854300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.998800e-01</c2>
+          <c3 unit="deg">8.818400e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.995500e-01</c2>
+          <c3 unit="deg">8.772900e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995300e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.998200e-01</c2>
+          <c3 unit="deg">8.713000e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.994800e-01</c2>
+          <c3 unit="deg">8.642600e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.993500e-01</c2>
+          <c3 unit="deg">8.552500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981100e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.989000e-01</c2>
+          <c3 unit="deg">8.438600e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011900e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.982200e-01</c2>
+          <c3 unit="deg">8.295600e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.974800e-01</c2>
+          <c3 unit="deg">8.120300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.961000e-01</c2>
+          <c3 unit="deg">7.899300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.943600e-01</c2>
+          <c3 unit="deg">7.630000e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.909900e-01</c2>
+          <c3 unit="deg">7.294200e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.871100e-01</c2>
+          <c3 unit="deg">6.896700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.797500e-01</c2>
+          <c3 unit="deg">6.398700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.706300e-01</c2>
+          <c3 unit="deg">5.863400e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.582800e-01</c2>
+          <c3 unit="deg">5.250900e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.430200e-01</c2>
+          <c3 unit="deg">4.584400e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.261600e-01</c2>
+          <c3 unit="deg">3.901200e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.086300e-01</c2>
+          <c3 unit="deg">3.261900e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+00</c1>
+          <c2 unit="V/(nT*Hz)">9.191100e-02</c2>
+          <c3 unit="deg">2.727600e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+01</c1>
+          <c2 unit="V/(nT*Hz)">7.624500e-02</c2>
+          <c3 unit="deg">2.231500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+01</c1>
+          <c2 unit="V/(nT*Hz)">6.208700e-02</c2>
+          <c3 unit="deg">1.813100e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+01</c1>
+          <c2 unit="V/(nT*Hz)">5.028600e-02</c2>
+          <c3 unit="deg">1.445600e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+01</c1>
+          <c2 unit="V/(nT*Hz)">4.044600e-02</c2>
+          <c3 unit="deg">1.151900e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+01</c1>
+          <c2 unit="V/(nT*Hz)">3.236200e-02</c2>
+          <c3 unit="deg">9.174600e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.585200e-02</c2>
+          <c3 unit="deg">7.226700e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.062100e-02</c2>
+          <c3 unit="deg">5.566200e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.635300e-02</c2>
+          <c3 unit="deg">4.556200e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.302800e-02</c2>
+          <c3 unit="deg">3.201300e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.034800e-02</c2>
+          <c3 unit="deg">2.343600e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+02</c1>
+          <c2 unit="V/(nT*Hz)">8.237800e-03</c2>
+          <c3 unit="deg">1.714000e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+02</c1>
+          <c2 unit="V/(nT*Hz)">6.538300e-03</c2>
+          <c3 unit="deg">7.897600e-01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+02</c1>
+          <c2 unit="V/(nT*Hz)">5.212600e-03</c2>
+          <c3 unit="deg">1.600200e-01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+02</c1>
+          <c2 unit="V/(nT*Hz)">4.127600e-03</c2>
+          <c3 unit="deg">-4.661600e-01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511800e+02</c1>
+          <c2 unit="V/(nT*Hz)">3.284700e-03</c2>
+          <c3 unit="deg">-1.238400e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.597800e-03</c2>
+          <c3 unit="deg">-2.297500e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.053400e-03</c2>
+          <c3 unit="deg">-2.822600e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.631000e-03</c2>
+          <c3 unit="deg">-3.661900e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309400e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.294700e-03</c2>
+          <c3 unit="deg">-4.756900e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.026600e-03</c2>
+          <c3 unit="deg">-6.080400e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+03</c1>
+          <c2 unit="V/(nT*Hz)">8.135600e-04</c2>
+          <c3 unit="deg">-7.759000e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+03</c1>
+          <c2 unit="V/(nT*Hz)">6.438200e-04</c2>
+          <c3 unit="deg">-9.806700e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+03</c1>
+          <c2 unit="V/(nT*Hz)">5.092300e-04</c2>
+          <c3 unit="deg">-1.230000e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+03</c1>
+          <c2 unit="V/(nT*Hz)">4.096500e-04</c2>
+          <c3 unit="deg">-1.635500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511800e+03</c1>
+          <c2 unit="V/(nT*Hz)">3.092600e-04</c2>
+          <c3 unit="deg">-2.091700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+03</c1>
+          <c2 unit="V/(nT*Hz)">2.371000e-04</c2>
+          <c3 unit="deg">-2.608300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.744100e-04</c2>
+          <c3 unit="deg">-3.301600e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011700e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.153000e-04</c2>
+          <c3 unit="deg">-3.653100e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309400e+03</c1>
+          <c2 unit="V/(nT*Hz)">9.133400e-05</c2>
+          <c3 unit="deg">-3.338700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+03</c1>
+          <c2 unit="V/(nT*Hz)">7.259000e-05</c2>
+          <c3 unit="deg">-4.150300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">9.999500e+03</c1>
+          <c2 unit="V/(nT*Hz)">5.285700e-05</c2>
+          <c3 unit="deg">-5.113300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+04</c1>
+          <c2 unit="V/(nT*Hz)">5.285800e-05</c2>
+          <c3 unit="deg">-5.113300e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.831200e-01</c2>
+          <c3 unit="deg">1.147300e+02</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.969200e-01</c2>
+          <c3 unit="deg">1.044400e+02</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+00</c1>
+          <c2 unit="V/(nT*Hz)">2.038400e-01</c2>
+          <c3 unit="deg">9.372100e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995300e+00</c1>
+          <c2 unit="V/(nT*Hz)">2.019400e-01</c2>
+          <c3 unit="deg">8.245000e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.939300e-01</c2>
+          <c3 unit="deg">7.152100e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.783500e-01</c2>
+          <c3 unit="deg">6.091200e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981100e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.586500e-01</c2>
+          <c3 unit="deg">5.099700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.374800e-01</c2>
+          <c3 unit="deg">4.239500e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.159400e-01</c2>
+          <c3 unit="deg">3.470500e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+00</c1>
+          <c2 unit="V/(nT*Hz)">9.600800e-02</c2>
+          <c3 unit="deg">2.784200e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+01</c1>
+          <c2 unit="V/(nT*Hz)">7.834200e-02</c2>
+          <c3 unit="deg">2.238900e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+01</c1>
+          <c2 unit="V/(nT*Hz)">6.345800e-02</c2>
+          <c3 unit="deg">1.816200e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+01</c1>
+          <c2 unit="V/(nT*Hz)">5.093100e-02</c2>
+          <c3 unit="deg">1.428300e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+01</c1>
+          <c2 unit="V/(nT*Hz)">4.078800e-02</c2>
+          <c3 unit="deg">1.139600e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+01</c1>
+          <c2 unit="V/(nT*Hz)">3.255700e-02</c2>
+          <c3 unit="deg">8.920900e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.590900e-02</c2>
+          <c3 unit="deg">6.992900e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.065200e-02</c2>
+          <c3 unit="deg">5.528600e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.641900e-02</c2>
+          <c3 unit="deg">4.016100e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.304100e-02</c2>
+          <c3 unit="deg">3.125700e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.037200e-02</c2>
+          <c3 unit="deg">2.216100e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+02</c1>
+          <c2 unit="V/(nT*Hz)">8.240900e-03</c2>
+          <c3 unit="deg">1.685000e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+02</c1>
+          <c2 unit="V/(nT*Hz)">6.547800e-03</c2>
+          <c3 unit="deg">8.055900e-01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+02</c1>
+          <c2 unit="V/(nT*Hz)">5.195100e-03</c2>
+          <c3 unit="deg">2.990400e-01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+02</c1>
+          <c2 unit="V/(nT*Hz)">4.131700e-03</c2>
+          <c3 unit="deg">-4.920400e-01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+02</c1>
+          <c2 unit="V/(nT*Hz)">3.287100e-03</c2>
+          <c3 unit="deg">-1.256100e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.601000e-03</c2>
+          <c3 unit="deg">-2.298700e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.056000e-03</c2>
+          <c3 unit="deg">-2.839000e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.632900e-03</c2>
+          <c3 unit="deg">-3.679100e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.295800e-03</c2>
+          <c3 unit="deg">-4.778700e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.027600e-03</c2>
+          <c3 unit="deg">-6.140900e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+03</c1>
+          <c2 unit="V/(nT*Hz)">8.141600e-04</c2>
+          <c3 unit="deg">-7.813800e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+03</c1>
+          <c2 unit="V/(nT*Hz)">6.444300e-04</c2>
+          <c3 unit="deg">-9.852800e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+03</c1>
+          <c2 unit="V/(nT*Hz)">5.095500e-04</c2>
+          <c3 unit="deg">-1.236700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+03</c1>
+          <c2 unit="V/(nT*Hz)">4.088400e-04</c2>
+          <c3 unit="deg">-1.628400e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511800e+03</c1>
+          <c2 unit="V/(nT*Hz)">3.097000e-04</c2>
+          <c3 unit="deg">-2.090700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+03</c1>
+          <c2 unit="V/(nT*Hz)">2.374700e-04</c2>
+          <c3 unit="deg">-2.613600e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.745700e-04</c2>
+          <c3 unit="deg">-3.314300e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.151500e-04</c2>
+          <c3 unit="deg">-3.667200e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309400e+03</c1>
+          <c2 unit="V/(nT*Hz)">9.120300e-05</c2>
+          <c3 unit="deg">-3.341700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+03</c1>
+          <c2 unit="V/(nT*Hz)">7.254900e-05</c2>
+          <c3 unit="deg">-4.151200e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+04</c1>
+          <c2 unit="V/(nT*Hz)">5.282100e-05</c2>
+          <c3 unit="deg">-5.116900e+01</c3>
+        </caldata>
+      </calibration>
+    </channel>
+    <channel id="4">
+      <calibration>
+        <cal_version>1.0</cal_version>
+        <creator>lib calibration</creator>
+        <user>metronix</user>
+        <calibrated_item>
+          <ci identifier="coil">MFS-06</ci>
+          <ci_serial_number>24</ci_serial_number>
+          <ci_revision/>
+          <ci_date>2006-12-01</ci_date>
+          <ci_time>13:36:43</ci_time>
+          <ci_calibration_valid_until/>
+          <ci_next_calibration/>
+          <ci_tag/>
+          <ci_owner/>
+          <ci_owners_address/>
+          <ci_manufacturer>metronix</ci_manufacturer>
+          <ci_manufacturers_address>Kocher Str. 3, 38120 Braunschweig, Germany</ci_manufacturers_address>
+        </calibrated_item>
+        <calibration_equipment>
+          <ce/>
+          <ce_serial_number/>
+          <ce_revision/>
+          <ce_date/>
+          <ce_time/>
+          <ce_calibration_valid_until/>
+          <ce_next_calibration/>
+          <ce_tag/>
+          <ce_operator/>
+          <ce_location>Magnetsrode</ce_location>
+          <ce_contact_address>Kocher Str. 3, 38120 Braunschweig, Germany</ce_contact_address>
+          <ce_comments/>
+        </calibration_equipment>
+        <calibration_protocol>
+          <mtx>
+            <mtx_serial_numer_engraved/>
+            <mtx_preamplifier_serialnumber/>
+            <mtx_ch1_div_ch2_at_1000gain_0dot025_hz/>
+            <mtx_phase_deg_at_1000gain_0dot025_hz/>
+            <mtx_ch1_div_ch2_at_1000gain_0dot025_hz_calibrated/>
+            <mtx_phase_deg_at_1000gain_0dot025_hz_calibrated/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_1000/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_100/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_10/>
+            <rec_freq_resp_at_0dot_0025_to_100_hz_at_gain_1/>
+            <gain_factor_preamplifier/>
+            <actual_sensitivity_ch2_by_ch1/>
+            <actual_sensitivity_theta/>
+            <calibrated_sensitivity_ch2_by_ch1/>
+            <calibrated_sensitivity_theta/>
+            <calibrated_cal_path_ch2_by_ch1/>
+            <calibrated_cal_path_theta/>
+            <calibrated_chopper_on/>
+            <calibrated_chopper_off/>
+            <calibrated_chopper_ukn/>
+          </mtx>
+        </calibration_protocol>
+        <!--
+        deg is degrees from 0-360 
+        -->
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e-01</c1>
+          <c2 unit="V/(nT*Hz)">2.000300e-01</c2>
+          <c3 unit="deg">8.856300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.996900e-01</c2>
+          <c3 unit="deg">8.819700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e-01</c1>
+          <c2 unit="V/(nT*Hz)">2.003300e-01</c2>
+          <c3 unit="deg">8.774700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995300e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.999100e-01</c2>
+          <c3 unit="deg">8.716300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.997100e-01</c2>
+          <c3 unit="deg">8.643400e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.992900e-01</c2>
+          <c3 unit="deg">8.552800e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981100e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.990300e-01</c2>
+          <c3 unit="deg">8.440200e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011900e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.983600e-01</c2>
+          <c3 unit="deg">8.296400e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.972500e-01</c2>
+          <c3 unit="deg">8.121700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e-01</c1>
+          <c2 unit="V/(nT*Hz)">1.962000e-01</c2>
+          <c3 unit="deg">7.898900e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.942400e-01</c2>
+          <c3 unit="deg">7.632500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.910100e-01</c2>
+          <c3 unit="deg">7.288600e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.867500e-01</c2>
+          <c3 unit="deg">6.888700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.797200e-01</c2>
+          <c3 unit="deg">6.405300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.702900e-01</c2>
+          <c3 unit="deg">5.847600e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.583400e-01</c2>
+          <c3 unit="deg">5.239700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.440300e-01</c2>
+          <c3 unit="deg">4.612500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.269300e-01</c2>
+          <c3 unit="deg">3.946200e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.093300e-01</c2>
+          <c3 unit="deg">3.320800e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+00</c1>
+          <c2 unit="V/(nT*Hz)">9.207700e-02</c2>
+          <c3 unit="deg">2.762800e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+01</c1>
+          <c2 unit="V/(nT*Hz)">7.593000e-02</c2>
+          <c3 unit="deg">2.226500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+01</c1>
+          <c2 unit="V/(nT*Hz)">6.198400e-02</c2>
+          <c3 unit="deg">1.805200e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+01</c1>
+          <c2 unit="V/(nT*Hz)">5.028600e-02</c2>
+          <c3 unit="deg">1.457500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+01</c1>
+          <c2 unit="V/(nT*Hz)">4.032500e-02</c2>
+          <c3 unit="deg">1.145000e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+01</c1>
+          <c2 unit="V/(nT*Hz)">3.224200e-02</c2>
+          <c3 unit="deg">9.148600e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.580400e-02</c2>
+          <c3 unit="deg">7.120800e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.056300e-02</c2>
+          <c3 unit="deg">5.552400e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.629400e-02</c2>
+          <c3 unit="deg">3.943400e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.297700e-02</c2>
+          <c3 unit="deg">3.108600e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.032000e-02</c2>
+          <c3 unit="deg">2.243800e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+02</c1>
+          <c2 unit="V/(nT*Hz)">8.203400e-03</c2>
+          <c3 unit="deg">1.453800e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+02</c1>
+          <c2 unit="V/(nT*Hz)">6.519000e-03</c2>
+          <c3 unit="deg">7.592800e-01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+02</c1>
+          <c2 unit="V/(nT*Hz)">5.166400e-03</c2>
+          <c3 unit="deg">1.673200e-01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+02</c1>
+          <c2 unit="V/(nT*Hz)">4.114400e-03</c2>
+          <c3 unit="deg">-6.258400e-01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511800e+02</c1>
+          <c2 unit="V/(nT*Hz)">3.271400e-03</c2>
+          <c3 unit="deg">-1.429500e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.590800e-03</c2>
+          <c3 unit="deg">-2.539900e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.048200e-03</c2>
+          <c3 unit="deg">-3.152500e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.626700e-03</c2>
+          <c3 unit="deg">-4.082700e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309400e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.290500e-03</c2>
+          <c3 unit="deg">-5.285400e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.022600e-03</c2>
+          <c3 unit="deg">-6.803300e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+03</c1>
+          <c2 unit="V/(nT*Hz)">8.104300e-04</c2>
+          <c3 unit="deg">-8.638900e+00</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+03</c1>
+          <c2 unit="V/(nT*Hz)">6.405100e-04</c2>
+          <c3 unit="deg">-1.098200e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+03</c1>
+          <c2 unit="V/(nT*Hz)">5.050800e-04</c2>
+          <c3 unit="deg">-1.393100e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+03</c1>
+          <c2 unit="V/(nT*Hz)">3.947500e-04</c2>
+          <c3 unit="deg">-1.779500e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511800e+03</c1>
+          <c2 unit="V/(nT*Hz)">3.069200e-04</c2>
+          <c3 unit="deg">-2.128000e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+03</c1>
+          <c2 unit="V/(nT*Hz)">2.381400e-04</c2>
+          <c3 unit="deg">-2.745100e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.780800e-04</c2>
+          <c3 unit="deg">-3.503300e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011700e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.234300e-04</c2>
+          <c3 unit="deg">-4.352800e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309400e+03</c1>
+          <c2 unit="V/(nT*Hz)">7.996700e-05</c2>
+          <c3 unit="deg">-4.372700e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+03</c1>
+          <c2 unit="V/(nT*Hz)">6.394200e-05</c2>
+          <c3 unit="deg">-4.434400e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">9.999500e+03</c1>
+          <c2 unit="V/(nT*Hz)">4.845400e-05</c2>
+          <c3 unit="deg">-5.360400e+01</c3>
+        </caldata>
+        <caldata chopper="on" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+04</c1>
+          <c2 unit="V/(nT*Hz)">4.845700e-05</c2>
+          <c3 unit="deg">-5.360700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.831400e-01</c2>
+          <c3 unit="deg">1.150600e+02</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.956800e-01</c2>
+          <c3 unit="deg">1.042500e+02</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+00</c1>
+          <c2 unit="V/(nT*Hz)">2.015400e-01</c2>
+          <c3 unit="deg">9.307700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995300e+00</c1>
+          <c2 unit="V/(nT*Hz)">2.003600e-01</c2>
+          <c3 unit="deg">8.238600e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.920300e-01</c2>
+          <c3 unit="deg">7.155200e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.771000e-01</c2>
+          <c3 unit="deg">6.103000e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981100e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.578200e-01</c2>
+          <c3 unit="deg">5.123800e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011900e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.373100e-01</c2>
+          <c3 unit="deg">4.254200e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+00</c1>
+          <c2 unit="V/(nT*Hz)">1.157500e-01</c2>
+          <c3 unit="deg">3.473200e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+00</c1>
+          <c2 unit="V/(nT*Hz)">9.539600e-02</c2>
+          <c3 unit="deg">2.795300e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+01</c1>
+          <c2 unit="V/(nT*Hz)">7.813600e-02</c2>
+          <c3 unit="deg">2.257700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+01</c1>
+          <c2 unit="V/(nT*Hz)">6.320200e-02</c2>
+          <c3 unit="deg">1.815000e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+01</c1>
+          <c2 unit="V/(nT*Hz)">5.080000e-02</c2>
+          <c3 unit="deg">1.450900e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+01</c1>
+          <c2 unit="V/(nT*Hz)">4.061400e-02</c2>
+          <c3 unit="deg">1.135900e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+01</c1>
+          <c2 unit="V/(nT*Hz)">3.246900e-02</c2>
+          <c3 unit="deg">9.066400e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162300e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.581000e-02</c2>
+          <c3 unit="deg">6.997400e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+01</c1>
+          <c2 unit="V/(nT*Hz)">2.052200e-02</c2>
+          <c3 unit="deg">5.476900e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.644200e-02</c2>
+          <c3 unit="deg">4.173200e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.299900e-02</c2>
+          <c3 unit="deg">3.013000e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+01</c1>
+          <c2 unit="V/(nT*Hz)">1.034300e-02</c2>
+          <c3 unit="deg">2.130800e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+02</c1>
+          <c2 unit="V/(nT*Hz)">8.210100e-03</c2>
+          <c3 unit="deg">1.402900e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+02</c1>
+          <c2 unit="V/(nT*Hz)">6.519800e-03</c2>
+          <c3 unit="deg">6.867200e-01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+02</c1>
+          <c2 unit="V/(nT*Hz)">5.177700e-03</c2>
+          <c3 unit="deg">-1.593900e-01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+02</c1>
+          <c2 unit="V/(nT*Hz)">4.121700e-03</c2>
+          <c3 unit="deg">-7.037300e-01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511900e+02</c1>
+          <c2 unit="V/(nT*Hz)">3.277000e-03</c2>
+          <c3 unit="deg">-1.379900e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.592400e-03</c2>
+          <c3 unit="deg">-2.541500e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+02</c1>
+          <c2 unit="V/(nT*Hz)">2.050400e-03</c2>
+          <c3 unit="deg">-3.148100e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.627600e-03</c2>
+          <c3 unit="deg">-4.069500e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309500e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.292600e-03</c2>
+          <c3 unit="deg">-5.281500e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+02</c1>
+          <c2 unit="V/(nT*Hz)">1.025100e-03</c2>
+          <c3 unit="deg">-6.752900e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+03</c1>
+          <c2 unit="V/(nT*Hz)">8.117400e-04</c2>
+          <c3 unit="deg">-8.652500e+00</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.258900e+03</c1>
+          <c2 unit="V/(nT*Hz)">6.420200e-04</c2>
+          <c3 unit="deg">-1.099300e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.584900e+03</c1>
+          <c2 unit="V/(nT*Hz)">5.055700e-04</c2>
+          <c3 unit="deg">-1.398500e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.995200e+03</c1>
+          <c2 unit="V/(nT*Hz)">3.952000e-04</c2>
+          <c3 unit="deg">-1.781800e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">2.511800e+03</c1>
+          <c2 unit="V/(nT*Hz)">3.067400e-04</c2>
+          <c3 unit="deg">-2.115400e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.162200e+03</c1>
+          <c2 unit="V/(nT*Hz)">2.386400e-04</c2>
+          <c3 unit="deg">-2.741700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">3.981000e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.785600e-04</c2>
+          <c3 unit="deg">-3.507500e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">5.011800e+03</c1>
+          <c2 unit="V/(nT*Hz)">1.237500e-04</c2>
+          <c3 unit="deg">-4.366700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">6.309400e+03</c1>
+          <c2 unit="V/(nT*Hz)">7.998700e-05</c2>
+          <c3 unit="deg">-4.393700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">7.943000e+03</c1>
+          <c2 unit="V/(nT*Hz)">6.390900e-05</c2>
+          <c3 unit="deg">-4.445700e+01</c3>
+        </caldata>
+        <caldata chopper="off" gain_3="0" gain_2="0" gain_1="0" impedance="(0,0)">
+          <c0 unit="V">0.000000e+00</c0>
+          <c1 unit="Hz">1.000000e+04</c1>
+          <c2 unit="V/(nT*Hz)">4.842300e-05</c2>
+          <c3 unit="deg">-5.372400e+01</c3>
+        </caldata>
+      </calibration>
+    </channel>
+  </calibration_sensors>
+  <coordinates_external>
+    <Latitude/>
+    <Longitude/>
+    <Elevation/>
+    <Ellipsoid>WGS84</Ellipsoid>
+    <UTM_Northing/>
+    <UTM_Easting/>
+    <UTM_Zone_Number/>
+    <UTM_Letter_Designator/>
+    <UTM_Reference_Meridian/>
+    <GK_Hochwert/>
+    <GK_Rechtswert/>
+    <GK_Reference_Median/>
+    <!-- is -41.1 meters for Rehberg-Loccum for example-->
+    <GPS_Elevation_Correction/>
+    <Inclination/>
+    <Declination/>
+    <Map/>
+  </coordinates_external>
+  <ADU07HwConfig>
+    <CpuInfo>
+      processor	: 0
+      vendor_id	: AuthenticAMD
+      cpu family	: 5
+      model		: 10
+      model name	: Geode(TM) Integrated Processor by AMD PCS
+      stepping	: 2
+      cpu MHz		: 498.021
+      cache size	: 128 KB
+      fdiv_bug	: no
+      hlt_bu...
+    </CpuInfo>
+    <MemInfo>
+      MemTotal:         231208 kB
+      MemFree:          176248 kB
+      Buffers:            2036 kB
+      Cached:            33748 kB
+      SwapCached:            0 kB
+      Active:            21732 kB
+      Inactive:          28084 ...
+    </MemInfo>
+    <Version>1.0</Version>
+    <AdbBoards>
+      <channel id="0">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>836820058</Serial>
+        <Type>10</Type>
+      </channel>
+      <channel id="1">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>907820096</Serial>
+        <Type>10</Type>
+      </channel>
+      <channel id="2">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>907820071</Serial>
+        <Type>10</Type>
+      </channel>
+      <channel id="3">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>907820091</Serial>
+        <Type>10</Type>
+      </channel>
+      <channel id="4">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>907820067</Serial>
+        <Type>10</Type>
+      </channel>
+      <channel id="5">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>851820013</Serial>
+        <Type>11</Type>
+      </channel>
+      <channel id="6">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>851820003</Serial>
+        <Type>11</Type>
+      </channel>
+      <channel id="7">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>851820006</Serial>
+        <Type>11</Type>
+      </channel>
+      <channel id="8">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>833820095</Serial>
+        <Type>11</Type>
+      </channel>
+      <channel id="9">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>851820014</Serial>
+        <Type>11</Type>
+      </channel>
+    </AdbBoards>
+    <Board id="1">
+      <GMS>7</GMS>
+      <RevMain>1</RevMain>
+      <RevSub>1</RevSub>
+      <Serial>835820020</Serial>
+      <Type>1</Type>
+    </Board>
+    <Board id="102">
+      <GMS>0</GMS>
+      <RevMain>1</RevMain>
+      <RevSub>0</RevSub>
+      <Serial>0</Serial>
+      <Type>102</Type>
+    </Board>
+    <Board id="2">
+      <GMS>7</GMS>
+      <RevMain>1</RevMain>
+      <RevSub>0</RevSub>
+      <Serial>836820098</Serial>
+      <Type>2</Type>
+    </Board>
+    <Board id="4">
+      <GMS>7</GMS>
+      <RevMain>1</RevMain>
+      <RevSub>0</RevSub>
+      <Serial>849820202</Serial>
+      <Type>4</Type>
+    </Board>
+    <Board id="5">
+      <GMS>7</GMS>
+      <RevMain>2</RevMain>
+      <RevSub>0</RevSub>
+      <Serial>920820010</Serial>
+      <Type>5</Type>
+    </Board>
+    <Board id="6">
+      <GMS>7</GMS>
+      <RevMain>1</RevMain>
+      <RevSub>0</RevSub>
+      <Serial>849820184</Serial>
+      <Type>6</Type>
+    </Board>
+    <Device>
+      <GMS>7</GMS>
+      <RevMain>1</RevMain>
+      <RevSub>1</RevSub>
+      <Serial>84</Serial>
+      <Type>0</Type>
+    </Device>
+    <Sensors>
+      <channel id="0">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>0</Serial>
+        <Type>203</Type>
+      </channel>
+      <channel id="1">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>0</Serial>
+        <Type>203</Type>
+      </channel>
+      <channel id="2">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>26</Serial>
+        <Type>200</Type>
+      </channel>
+      <channel id="3">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>32</Serial>
+        <Type>200</Type>
+      </channel>
+      <channel id="4">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>24</Serial>
+        <Type>200</Type>
+      </channel>
+      <channel id="5">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>0</Serial>
+        <Type>203</Type>
+      </channel>
+      <channel id="6">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>0</Serial>
+        <Type>203</Type>
+      </channel>
+      <channel id="7">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>0</Serial>
+        <Type>203</Type>
+      </channel>
+      <channel id="8">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>0</Serial>
+        <Type>203</Type>
+      </channel>
+      <channel id="9">
+        <GMS>7</GMS>
+        <RevMain>1</RevMain>
+        <RevSub>0</RevSub>
+        <Serial>0</Serial>
+        <Type>203</Type>
+      </channel>
+    </Sensors>
+    <Software>
+      <FpgaVersion>2.12 - (28.5.2009)</FpgaVersion>
+      <McpVersion>2.1.0.1.365</McpVersion>
+      <MicroVersion>2.1.0.1.145</MicroVersion>
+      <UsbVersion>2.1.0.1.105</UsbVersion>
+    </Software>
+  </ADU07HwConfig>
+  <ADU07HwStatus>
+    <Version>1.0</Version>
+    <GPS>
+      <Date>2009-08-20</Date>
+      <Height>108831</Height>
+      <Latitude>140494308</Latitude>
+      <Longitude>104846232</Longitude>
+      <NumSats>10</NumSats>
+      <SyncState>3</SyncState>
+      <Time>13:21:33</Time>
+    </GPS>
+    <Recording>
+      <FlushActive>0</FlushActive>
+      <NumMeasActive>0</NumMeasActive>
+      <SDRAMActFill>0</SDRAMActFill>
+      <SDRAMFlushFill>128</SDRAMFlushFill>
+      <SDRAMMaxFill>33554431</SDRAMMaxFill>
+      <SDRAMOvlFill>33554231</SDRAMOvlFill>
+      <SDRAMStartStopFill>30277431</SDRAMStartStopFill>
+    </Recording>
+    <System>
+      <BattState>2</BattState>
+      <BiosDate>2009-08-20</BiosDate>
+      <BiosTime>13:21:36</BiosTime>
+      <CurrBatt1>158</CurrBatt1>
+      <CurrBatt2>3</CurrBatt2>
+      <DiskFreeSpace>3001580</DiskFreeSpace>
+      <DiskSize>3304768</DiskSize>
+      <Temperature>65</Temperature>
+      <Voltage>121</Voltage>
+    </System>
+  </ADU07HwStatus>
+  <ADU07Selftest>
+    <Version>1.0</Version>
+    <AdbBoards>
+      <channel id="0">
+        <AdbError>0</AdbError>
+        <Atten_HF_HP_1Hz>0</Atten_HF_HP_1Hz>
+        <Atten_LF_LP_4Hz>0.696234</Atten_LF_LP_4Hz>
+        <DCOffset>0.0042336</DCOffset>
+        <ExtDCOffsetComp>0.991417</ExtDCOffsetComp>
+        <ExtOffsetComp>0.991417</ExtOffsetComp>
+        <GainAmpl>1</GainAmpl>
+        <GainCorr>1.00649</GainCorr>
+        <GainTest_1_1>24.7628</GainTest_1_1>
+        <GainTest_1_64>1581.98</GainTest_1_64>
+        <GainTest_64_1>0</GainTest_64_1>
+        <GainTest_8_8>1583.51</GainTest_8_8>
+        <HF_LSB>0.0006</HF_LSB>
+        <IntOffsetCorr_1_HF>0</IntOffsetCorr_1_HF>
+        <IntOffsetCorr_1_LF>216318</IntOffsetCorr_1_LF>
+        <IntOffsetCorr_2_HF>0</IntOffsetCorr_2_HF>
+        <IntOffsetCorr_2_LF>-39</IntOffsetCorr_2_LF>
+        <LF_LSB>0.000449856</LF_LSB>
+        <MaxAmplitude>0.000146203</MaxAmplitude>
+        <Resistivity>572.367</Resistivity>
+      </channel>
+      <channel id="1">
+        <AdbError>0</AdbError>
+        <Atten_HF_HP_1Hz>0</Atten_HF_HP_1Hz>
+        <Atten_LF_LP_4Hz>0.713093</Atten_LF_LP_4Hz>
+        <DCOffset>0.000314717</DCOffset>
+        <ExtDCOffsetComp>0.993046</ExtDCOffsetComp>
+        <ExtOffsetComp>0.993046</ExtOffsetComp>
+        <GainAmpl>1</GainAmpl>
+        <GainCorr>1.00778</GainCorr>
+        <GainTest_1_1>24.7564</GainTest_1_1>
+        <GainTest_1_64>1581.75</GainTest_1_64>
+        <GainTest_64_1>0</GainTest_64_1>
+        <GainTest_8_8>1582.83</GainTest_8_8>
+        <HF_LSB>0.0006</HF_LSB>
+        <IntOffsetCorr_1_HF>0</IntOffsetCorr_1_HF>
+        <IntOffsetCorr_1_LF>215414</IntOffsetCorr_1_LF>
+        <IntOffsetCorr_2_HF>0</IntOffsetCorr_2_HF>
+        <IntOffsetCorr_2_LF>-35</IntOffsetCorr_2_LF>
+        <LF_LSB>0.000450238</LF_LSB>
+        <MaxAmplitude>0.000126067</MaxAmplitude>
+        <Resistivity>339.117</Resistivity>
+      </channel>
+      <channel id="2">
+        <AdbError>0</AdbError>
+        <Atten_HF_HP_1Hz>0</Atten_HF_HP_1Hz>
+        <Atten_LF_LP_4Hz>0.722482</Atten_LF_LP_4Hz>
+        <DCOffset>-0.00127449</DCOffset>
+        <ExtDCOffsetComp>0.992272</ExtDCOffsetComp>
+        <ExtOffsetComp>0.992272</ExtOffsetComp>
+        <GainAmpl>1</GainAmpl>
+        <GainCorr>1.00621</GainCorr>
+        <GainTest_1_1>24.7513</GainTest_1_1>
+        <GainTest_1_64>1582.63</GainTest_1_64>
+        <GainTest_64_1>0</GainTest_64_1>
+        <GainTest_8_8>1583.4</GainTest_8_8>
+        <HF_LSB>0.0006</HF_LSB>
+        <IntOffsetCorr_1_HF>0</IntOffsetCorr_1_HF>
+        <IntOffsetCorr_1_LF>217216</IntOffsetCorr_1_LF>
+        <IntOffsetCorr_2_HF>0</IntOffsetCorr_2_HF>
+        <IntOffsetCorr_2_LF>-39</IntOffsetCorr_2_LF>
+        <LF_LSB>0.000450032</LF_LSB>
+        <MaxAmplitude>0.00014311</MaxAmplitude>
+        <Resistivity>684052</Resistivity>
+      </channel>
+      <channel id="3">
+        <AdbError>0</AdbError>
+        <Atten_HF_HP_1Hz>0</Atten_HF_HP_1Hz>
+        <Atten_LF_LP_4Hz>0.707719</Atten_LF_LP_4Hz>
+        <DCOffset>-0.00114865</DCOffset>
+        <ExtDCOffsetComp>0.990458</ExtDCOffsetComp>
+        <ExtOffsetComp>0.990458</ExtOffsetComp>
+        <GainAmpl>1</GainAmpl>
+        <GainCorr>1.00539</GainCorr>
+        <GainTest_1_1>24.7515</GainTest_1_1>
+        <GainTest_1_64>1581.96</GainTest_1_64>
+        <GainTest_64_1>0</GainTest_64_1>
+        <GainTest_8_8>1583.25</GainTest_8_8>
+        <HF_LSB>0.0006</HF_LSB>
+        <IntOffsetCorr_1_HF>0</IntOffsetCorr_1_HF>
+        <IntOffsetCorr_1_LF>216686</IntOffsetCorr_1_LF>
+        <IntOffsetCorr_2_HF>0</IntOffsetCorr_2_HF>
+        <IntOffsetCorr_2_LF>-33</IntOffsetCorr_2_LF>
+        <LF_LSB>0.000449921</LF_LSB>
+        <MaxAmplitude>0.000137676</MaxAmplitude>
+        <Resistivity>677087</Resistivity>
+      </channel>
+      <channel id="4">
+        <AdbError>0</AdbError>
+        <Atten_HF_HP_1Hz>0</Atten_HF_HP_1Hz>
+        <Atten_LF_LP_4Hz>0.723183</Atten_LF_LP_4Hz>
+        <DCOffset>-0.00112202</DCOffset>
+        <ExtDCOffsetComp>0.990616</ExtDCOffsetComp>
+        <ExtOffsetComp>0.990616</ExtOffsetComp>
+        <GainAmpl>1</GainAmpl>
+        <GainCorr>1.0049</GainCorr>
+        <GainTest_1_1>24.7528</GainTest_1_1>
+        <GainTest_1_64>1580.93</GainTest_1_64>
+        <GainTest_64_1>0</GainTest_64_1>
+        <GainTest_8_8>1582.79</GainTest_8_8>
+        <HF_LSB>0.0006</HF_LSB>
+        <IntOffsetCorr_1_HF>0</IntOffsetCorr_1_HF>
+        <IntOffsetCorr_1_LF>216607</IntOffsetCorr_1_LF>
+        <IntOffsetCorr_2_HF>0</IntOffsetCorr_2_HF>
+        <IntOffsetCorr_2_LF>-31</IntOffsetCorr_2_LF>
+        <LF_LSB>0.000449887</LF_LSB>
+        <MaxAmplitude>0.000137215</MaxAmplitude>
+        <Resistivity>650778</Resistivity>
+      </channel>
+      <channel id="5">
+        <AdbError>0</AdbError>
+        <Atten_HF_HP_1Hz>0.693802</Atten_HF_HP_1Hz>
+        <Atten_LF_LP_4Hz>0</Atten_LF_LP_4Hz>
+        <DCOffset>0.00482951</DCOffset>
+        <ExtDCOffsetComp>0</ExtDCOffsetComp>
+        <ExtOffsetComp>0</ExtOffsetComp>
+        <GainAmpl>1</GainAmpl>
+        <GainCorr>1.00084</GainCorr>
+        <GainTest_1_1>24.3413</GainTest_1_1>
+        <GainTest_1_64>1497.75</GainTest_1_64>
+        <GainTest_64_1>0</GainTest_64_1>
+        <GainTest_8_8>1538.78</GainTest_8_8>
+        <HF_LSB>0.000601658</HF_LSB>
+        <IntOffsetCorr_1_HF>-3791</IntOffsetCorr_1_HF>
+        <IntOffsetCorr_1_LF>0</IntOffsetCorr_1_LF>
+        <IntOffsetCorr_2_HF>2</IntOffsetCorr_2_HF>
+        <IntOffsetCorr_2_LF>0</IntOffsetCorr_2_LF>
+        <LF_LSB>0.00045</LF_LSB>
+        <MaxAmplitude>0.00116962</MaxAmplitude>
+        <Resistivity>497.038</Resistivity>
+      </channel>
+      <channel id="6">
+        <AdbError>0</AdbError>
+        <Atten_HF_HP_1Hz>0.691219</Atten_HF_HP_1Hz>
+        <Atten_LF_LP_4Hz>0</Atten_LF_LP_4Hz>
+        <DCOffset>0.00128725</DCOffset>
+        <ExtDCOffsetComp>0</ExtDCOffsetComp>
+        <ExtOffsetComp>0</ExtOffsetComp>
+        <GainAmpl>1</GainAmpl>
+        <GainCorr>1.00191</GainCorr>
+        <GainTest_1_1>24.3392</GainTest_1_1>
+        <GainTest_1_64>1500.79</GainTest_1_64>
+        <GainTest_64_1>0</GainTest_64_1>
+        <GainTest_8_8>1538.31</GainTest_8_8>
+        <HF_LSB>0.000601517</HF_LSB>
+        <IntOffsetCorr_1_HF>-4675</IntOffsetCorr_1_HF>
+        <IntOffsetCorr_1_LF>0</IntOffsetCorr_1_LF>
+        <IntOffsetCorr_2_HF>-9</IntOffsetCorr_2_HF>
+        <IntOffsetCorr_2_LF>0</IntOffsetCorr_2_LF>
+        <LF_LSB>0.00045</LF_LSB>
+        <MaxAmplitude>0.00115311</MaxAmplitude>
+        <Resistivity>360.716</Resistivity>
+      </channel>
+      <channel id="7">
+        <AdbError>0</AdbError>
+        <Atten_HF_HP_1Hz>0.699591</Atten_HF_HP_1Hz>
+        <Atten_LF_LP_4Hz>0</Atten_LF_LP_4Hz>
+        <DCOffset>-0.000567861</DCOffset>
+        <ExtDCOffsetComp>0</ExtDCOffsetComp>
+        <ExtOffsetComp>0</ExtOffsetComp>
+        <GainAmpl>1</GainAmpl>
+        <GainCorr>1.0008</GainCorr>
+        <GainTest_1_1>24.3326</GainTest_1_1>
+        <GainTest_1_64>1501.6</GainTest_1_64>
+        <GainTest_64_1>0</GainTest_64_1>
+        <GainTest_8_8>1537.57</GainTest_8_8>
+        <HF_LSB>0.000601548</HF_LSB>
+        <IntOffsetCorr_1_HF>-3788</IntOffsetCorr_1_HF>
+        <IntOffsetCorr_1_LF>0</IntOffsetCorr_1_LF>
+        <IntOffsetCorr_2_HF>4</IntOffsetCorr_2_HF>
+        <IntOffsetCorr_2_LF>0</IntOffsetCorr_2_LF>
+        <LF_LSB>0.00045</LF_LSB>
+        <MaxAmplitude>0.00135589</MaxAmplitude>
+        <Resistivity>204473</Resistivity>
+      </channel>
+      <channel id="8">
+        <AdbError>0</AdbError>
+        <Atten_HF_HP_1Hz>0.69024</Atten_HF_HP_1Hz>
+        <Atten_LF_LP_4Hz>0</Atten_LF_LP_4Hz>
+        <DCOffset>-0.000241207</DCOffset>
+        <ExtDCOffsetComp>0</ExtDCOffsetComp>
+        <ExtOffsetComp>0</ExtOffsetComp>
+        <GainAmpl>1</GainAmpl>
+        <GainCorr>1.0013</GainCorr>
+        <GainTest_1_1>24.3366</GainTest_1_1>
+        <GainTest_1_64>1499</GainTest_1_64>
+        <GainTest_64_1>0</GainTest_64_1>
+        <GainTest_8_8>1536.44</GainTest_8_8>
+        <HF_LSB>0.000601514</HF_LSB>
+        <IntOffsetCorr_1_HF>-2600</IntOffsetCorr_1_HF>
+        <IntOffsetCorr_1_LF>0</IntOffsetCorr_1_LF>
+        <IntOffsetCorr_2_HF>-1</IntOffsetCorr_2_HF>
+        <IntOffsetCorr_2_LF>0</IntOffsetCorr_2_LF>
+        <LF_LSB>0.00045</LF_LSB>
+        <MaxAmplitude>0.00117656</MaxAmplitude>
+        <Resistivity>188252</Resistivity>
+      </channel>
+      <channel id="9">
+        <AdbError>0</AdbError>
+        <Atten_HF_HP_1Hz>0.686659</Atten_HF_HP_1Hz>
+        <Atten_LF_LP_4Hz>0</Atten_LF_LP_4Hz>
+        <DCOffset>-0.000603562</DCOffset>
+        <ExtDCOffsetComp>0</ExtDCOffsetComp>
+        <ExtOffsetComp>0</ExtOffsetComp>
+        <GainAmpl>1</GainAmpl>
+        <GainCorr>1.00148</GainCorr>
+        <GainTest_1_1>24.339</GainTest_1_1>
+        <GainTest_1_64>1495.95</GainTest_1_64>
+        <GainTest_64_1>0</GainTest_64_1>
+        <GainTest_8_8>1539.56</GainTest_8_8>
+        <HF_LSB>0.000601157</HF_LSB>
+        <IntOffsetCorr_1_HF>-1440</IntOffsetCorr_1_HF>
+        <IntOffsetCorr_1_LF>0</IntOffsetCorr_1_LF>
+        <IntOffsetCorr_2_HF>3</IntOffsetCorr_2_HF>
+        <IntOffsetCorr_2_LF>0</IntOffsetCorr_2_LF>
+        <LF_LSB>0.00045</LF_LSB>
+        <MaxAmplitude>0.00127024</MaxAmplitude>
+        <Resistivity>206031</Resistivity>
+      </channel>
+    </AdbBoards>
+    <Board id="1">
+      <InitError>0</InitError>
+    </Board>
+    <Board id="2">
+      <InitError>0</InitError>
+    </Board>
+    <Board id="4">
+      <InitError>0</InitError>
+    </Board>
+    <Board id="5">
+      <InitError>0</InitError>
+    </Board>
+    <Board id="6">
+      <InitError>0</InitError>
+    </Board>
+  </ADU07Selftest>
+</measurement>

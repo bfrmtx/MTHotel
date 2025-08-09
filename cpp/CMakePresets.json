@@ -1,0 +1,18 @@
+{
+  "version": 9,
+  "configurePresets": [
+    {
+      "name": "vscode",
+      "displayName": "Configure preset using toolchain file",
+      "description": "Sets Ninja generator, build and install directory",
+      "generator": "Ninja",
+      "binaryDir": "${env:HOME}/build/mthotel/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INSTALL_PREFIX": "/usr/local/mthotel",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    }
+  ]
+}
