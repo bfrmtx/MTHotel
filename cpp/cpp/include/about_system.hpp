@@ -1,6 +1,10 @@
 #ifndef ABOUT_SYSTEM_HPP
 #define ABOUT_SYSTEM_HPP
 
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+
 #include <climits>
 #include <cstdint>
 #include <cstdlib>
