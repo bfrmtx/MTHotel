@@ -28,18 +28,35 @@
  * uint max 2^53 +   9,007,199,254,740,992
  * (compare 32bit)           4,294,967,296
  */
-static size_t max_survey_channels = 12; // the channel vector has to be resized to this size.
-static size_t max_runs = 999;
+
+/*!
+ * @brief Maximum number of channels; each channel is at a fixed position! As it comes from the data logger
+ * @details we have several times "Ex" for example, so we have to use the channel number to identify the channel.
+ * @warning we have physical "slots" for channels from 0 to 15; even if not used! and we have maybe Ex[0] and Ex[5] for example; Ex is NOT and indicator for [0].
+ */
+inline constexpr std::size_t max_survey_channels = 16;
+inline constexpr std::size_t max_runs = 999;
 #define JSON_MAX_IVALUE 9007199254740991
 #define JSON_MIN_IVALUE -9007199254740991
 const double mue0 = 4.0 * M_PI * 1.0E-7;
 const double min_fft_wl = 64;
 const double treat_as_null = 1E-32;
-const double treat_as_out_of_range = 1E+32; //!< EDI file
+/**
+ * @brief Threshold value used to identify out-of-range measurements in EDI files
+ *
+ * This constant defines the numerical threshold above which data values are
+ * considered invalid or out-of-range when processing EDI (Electrical Data Interchange)
+ * files. Values greater than or equal to this threshold should be treated as
+ * missing or invalid data points.
+ *
+ * @note This value follows the EDI file format specification for marking
+ *       invalid or missing measurements
+ */
+const double treat_as_out_of_range = 1E+32; //!< EDI file limit for out-of-range values
 // vector of strings for channel types Ex, Ey, Hx, Hy, Hz, REx, REy, RHx, RHy, RHz, emap: EEx, EEy; Ez may be needed for sub-marine
-// J TX ampere, ... jaw (away from flight direction forward), pitch (up & down nose), roll (over the wings "left/right" up & down))
+// J TX ampere, ... jaw Uy (away from flight direction forward), pitch Up (up & down nose), roll Ur (over the wings "left/right" up & down))
 // T for temperature, t for time
-static const std::vector<std::string> available_channel_types = {"Ex", "Ey", "Hx", "Hy", "Hz", "REx", "REy", "RHx", "RHy", "RHz", "EEx", "EEy", "Ez", "REz", "EEz", "Jx", "Jy", "Jz", "x", "y", "z", "T", "t"};
+static const std::vector<std::string> available_channel_types = {"Ex", "Ey", "Hx", "Hy", "Hz", "REx", "REy", "RHx", "RHy", "RHz", "EEx", "EEy", "Ez", "REz", "EEz", "Jx", "Jy", "Jz", "x", "y", "z", "T", "t", "Uy", "Up", "Ur"};
 static const std::vector<std::string> available_ac_spectra_types = {"ExEx", "ExEy", "HxHx", "HxHy", "HxHz", "HyHy", "HyHz", "HzHz"};
 static bool is_E(const std::string &channel_type) {
   // check if channel type is E, contains Ex, Ey or Ez as substring

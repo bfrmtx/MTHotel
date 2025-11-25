@@ -28,18 +28,61 @@ void create_inside_thread(std::shared_ptr<survey_tree> &tree, const std::string 
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
   // std::filesystem::path survey_path = "/home/bfr/tmp/Eastern_Mining/";
+
+  bool small_test = false;
+  // get the command line argument which is true or false for small test
+  if (argc > 1) {
+    std::string arg1 = argv[1];
+    if (arg1 == "small_test") {
+      std::cout << "Running small test" << std::endl;
+      small_test = true;
+    } else {
+      std::cout << "Running full test" << std::endl;
+    }
+  }
+
+  auto logger = std::make_shared<xlogger>();
   std::filesystem::path survey_path = "/tmp/Eastern_Mining/";
 
   auto pool = std::make_shared<BS::thread_pool<BS::tp::none>>(8);
-  auto survey = std::make_shared<survey_tree>(survey_path.string());
-  for (const auto &station_name : stations_to_create) {
-    pool->detach_task([&survey, &station_name]() {
-      create_inside_thread(survey, station_name, station_runs);
-    });
+  std::shared_ptr<survey_tree> survey;
+  try {
+    survey = std::make_shared<survey_tree>(survey_path.string()); // Create the empty or not empty survey tree at the specified path
+  } catch (const std::runtime_error &e) {
+    std::cerr << "Runtime error while creating survey tree at " << survey_path << ": " << e.what() << std::endl;
+    return 1;
+  } catch (const std::exception &e) {
+    std::cerr << "Error while creating survey tree at " << survey_path << ": " << e.what() << std::endl;
+    return 1;
   }
-  pool->wait();
+  survey->scan(); // Scan the directory to populate the tree
+  if (small_test) {
+    stations_to_create = {"small test"};
+    station_runs = {2};
+    for (const auto &station_name : stations_to_create) {
+      auto station = survey->add_child(station_name);
+      if (station) {
+        std::cout << "Station added: " << station->get_name() << std::endl;
+        // Add runs to the station
+        for (const auto &run_no : station_runs) {
+          station->add_child(run_no);
+          std::cout << "Run " << run_no << " added to station: " << station->get_name() << std::endl;
+        }
+      } else {
+        std::cerr << "Failed to add station: " << station_name << std::endl;
+      }
+    }
+
+  } else {
+    for (const auto &station_name : stations_to_create) {
+      pool->detach_task([&survey, &station_name]() {
+        create_inside_thread(survey, station_name, station_runs);
+      });
+    }
+    pool->wait();
+  }
   survey->list_children(); // List all children in the survey tree
   survey.reset();          // Clear the survey tree to release resources
   // ***********************************************************************

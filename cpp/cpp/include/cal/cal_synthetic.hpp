@@ -16,7 +16,7 @@
  * @brief  Synthetic transfer functions; not normalized; complex<double> ; mV as unit
  */
 
-static std::vector<std::complex<double>> gen_trf_mfs06e(const std::vector<double> &freqs, const ChopperStatus &chopper) {
+inline std::vector<std::complex<double>> gen_trf_mfs06e(const std::vector<double> &freqs, const ChopperStatus &chopper) {
   std::complex<double> im(0.0, 1.0);
   size_t i = 0;
   std::vector<std::complex<double>> cal(freqs.size());
@@ -43,7 +43,7 @@ static std::vector<std::complex<double>> gen_trf_mfs06e(const std::vector<double
   return cal;
 }
 
-static std::vector<std::complex<double>> gen_trf_mfs12e(const std::vector<double> &freqs, const ChopperStatus &chopper) {
+inline std::vector<std::complex<double>> gen_trf_mfs12e(const std::vector<double> &freqs, const ChopperStatus &chopper) {
   std::complex<double> im(0.0, 1.0);
   size_t i = 0;
   std::vector<std::complex<double>> cal(freqs.size());
@@ -58,7 +58,7 @@ static std::vector<std::complex<double>> gen_trf_mfs12e(const std::vector<double
   return cal;
 }
 
-static std::vector<std::complex<double>> gen_trf_mfs07e(const std::vector<double> &freqs, const ChopperStatus &chopper) {
+inline std::vector<std::complex<double>> gen_trf_mfs07e(const std::vector<double> &freqs, const ChopperStatus &chopper) {
   std::complex<double> im(0.0, 1.0);
   size_t i = 0;
   std::vector<std::complex<double>> cal(freqs.size());
@@ -81,7 +81,7 @@ static std::vector<std::complex<double>> gen_trf_mfs07e(const std::vector<double
   return cal;
 }
 
-static std::vector<std::complex<double>> gen_trf_mfs07(const std::vector<double> &freqs, const ChopperStatus &chopper) {
+inline std::vector<std::complex<double>> gen_trf_mfs07(const std::vector<double> &freqs, const ChopperStatus &chopper) {
   std::complex<double> im(0.0, 1.0);
   size_t i = 0;
   std::vector<std::complex<double>> cal(freqs.size());
@@ -107,7 +107,7 @@ static std::vector<std::complex<double>> gen_trf_mfs07(const std::vector<double>
 
 // all fluxgates do not have a chopper
 // Raklin Geomag-01
-static std::vector<std::complex<double>> gen_trf_fgs02(const std::vector<double> &freqs) {
+inline std::vector<std::complex<double>> gen_trf_fgs02(const std::vector<double> &freqs) {
   std::vector<std::complex<double>> cal(freqs.size());
   for (size_t i = 0; i < freqs.size(); ++i) {
     cal[i] = std::complex<double>(7.5000E-01, 0.0);
@@ -116,7 +116,7 @@ static std::vector<std::complex<double>> gen_trf_fgs02(const std::vector<double>
 }
 
 // bartington mag-03, low noise, 100 000 nT DEFAULT !
-static std::vector<std::complex<double>> gen_trf_fgs03e(const std::vector<double> &freqs) {
+inline std::vector<std::complex<double>> gen_trf_fgs03e(const std::vector<double> &freqs) {
   std::vector<std::complex<double>> cal(freqs.size());
   for (size_t i = 0; i < freqs.size(); ++i) {
     cal[i] = std::complex<double>(1.0000E-01, 0.0);
@@ -126,7 +126,7 @@ static std::vector<std::complex<double>> gen_trf_fgs03e(const std::vector<double
 
 // bartington mag-04, low noise, 70 000 nT, never sold yet
 
-static std::vector<std::complex<double>> gen_trf_fgs05e(const std::vector<double> &freqs) {
+inline std::vector<std::complex<double>> gen_trf_fgs05e(const std::vector<double> &freqs) {
 
   std::vector<std::complex<double>> cal(freqs.size());
   for (size_t i = 0; i < freqs.size(); ++i) {
@@ -136,7 +136,7 @@ static std::vector<std::complex<double>> gen_trf_fgs05e(const std::vector<double
   return cal;
 }
 // should reach E = 50mV / nT at 10 kHz
-static std::vector<std::complex<double>> gen_trf_shft02e(const std::vector<double> &freqs) {
+inline std::vector<std::complex<double>> gen_trf_shft02e(const std::vector<double> &freqs) {
   std::complex<double> im(0.0, 1.0);
   size_t i = 0;
   std::vector<std::complex<double>> cal(freqs.size());
@@ -156,7 +156,7 @@ static std::vector<std::complex<double>> gen_trf_shft02e(const std::vector<doubl
  * \param gain 1 used
  * \return cal; multiply with EXTRA gain in case you have not included that in LSB (bridget tests, external pre-amp)
  */
-static std::vector<std::complex<double>> gen_trf_adb_08e_hf(const std::vector<double> &freqs, const ADU &hp_filter, const ADU &gain_1) {
+inline std::vector<std::complex<double>> gen_trf_adb_08e_hf(const std::vector<double> &freqs, const ADU &hp_filter, const ADU &gain_1) {
 
   // input resistivity does not play a role
   std::complex<double> im(0.0, 1.0);
@@ -190,7 +190,7 @@ static std::vector<std::complex<double>> gen_trf_adb_08e_hf(const std::vector<do
  * \param gain_2
 
  */
-static std::vector<std::complex<double>> gen_trf_adb_07e_hf(const std::vector<double> &freqs, const ADU &hp_filter, const ADU &gain_1, const ADU &gain_2) {
+inline std::vector<std::complex<double>> gen_trf_adb_07e_hf(const std::vector<double> &freqs, const ADU &hp_filter, const ADU &gain_1, const ADU &gain_2) {
 
   std::complex<double> im(0.0, 1.0);
   std::vector<std::complex<double>> cal(freqs.size());
@@ -230,7 +230,7 @@ static std::vector<std::complex<double>> gen_trf_adb_07e_hf(const std::vector<do
  * \param gain_2
  * \return
  */
-static std::vector<std::complex<double>> gen_trf_adb_08e_lf(const std::vector<double> &freqs, const ADU &radio_filter, const ADU &lp_filter, const ADU &input_div, const double &resistance, const ADU &direct_mode, const ADU &gain_1) {
+inline std::vector<std::complex<double>> gen_trf_adb_08e_lf(const std::vector<double> &freqs, const ADU &radio_filter, const ADU &lp_filter, const ADU &input_div, const double &resistance, const ADU &direct_mode, const ADU &gain_1) {
 
   std::complex<double> im(0.0, 1.0);
   std::vector<std::complex<double>> cal(freqs.size());
@@ -362,7 +362,7 @@ inline std::pair<double, std::complex<double>> find_trf_adb_08e_lf(const double 
 }
 
 // im ADC 1,2,4,8,16,32,64 only direct mode
-static std::vector<std::complex<double>> gen_trf_adb_10e_lf(const std::vector<double> &freqs, const ADU &input_div, const double &resistance) {
+inline std::vector<std::complex<double>> gen_trf_adb_10e_lf(const std::vector<double> &freqs, const ADU &input_div, const double &resistance) {
   std::complex<double> im(0.0, 1.0);
   std::vector<std::complex<double>> cal(freqs.size());
   size_t i = 0;
@@ -382,7 +382,7 @@ static std::vector<std::complex<double>> gen_trf_adb_10e_lf(const std::vector<do
   return cal;
 }
 
-static std::vector<std::complex<double>> gen_trf_adb_07e_lf(const std::vector<double> &freqs, const ADU &radio_filter, const ADU &lp_filter, const ADU &input_div, const double &resistance, const ADU &gain_1) {
+inline std::vector<std::complex<double>> gen_trf_adb_07e_lf(const std::vector<double> &freqs, const ADU &radio_filter, const ADU &lp_filter, const ADU &input_div, const double &resistance, const ADU &gain_1) {
   std::complex<double> im(0.0, 1.0);
 
   std::vector<std::complex<double>> cal(freqs.size());
@@ -424,7 +424,7 @@ static std::vector<std::complex<double>> gen_trf_adb_07e_lf(const std::vector<do
   return cal;
 }
 
-static std::vector<std::complex<double>> gen_trf_adb_07e_mf(const std::vector<double> &freqs, const double &sample_freq, const ADU &radio_filter, const ADU &lp_filter, const ADU &hp_filter, const ADU &input_div, const double &resistance) {
+inline std::vector<std::complex<double>> gen_trf_adb_07e_mf(const std::vector<double> &freqs, const double &sample_freq, const ADU &radio_filter, const ADU &lp_filter, const ADU &hp_filter, const ADU &input_div, const double &resistance) {
   std::complex<double> im(0.0, 1.0);
   std::complex<double> p1;
 
@@ -470,7 +470,7 @@ static std::vector<std::complex<double>> gen_trf_adb_07e_mf(const std::vector<do
 
 // a wrapper for all systems, and all boards
 
-static std::vector<std::complex<double>> gen_system_cal(const std::vector<double> &freqs, const std::string &system, const double &resistance, const ADU &board, ADU &direct_mode, ADU &radio_filter, ADU &lp_filter, ADU &hp_filter, ADU &input_div, ADU &gain_1, ADU &gain_2) {
+inline std::vector<std::complex<double>> gen_system_cal(const std::vector<double> &freqs, const std::string &system, const double &resistance, const ADU &board, ADU &direct_mode, ADU &radio_filter, ADU &lp_filter, ADU &hp_filter, ADU &input_div, ADU &gain_1, ADU &gain_2) {
   std::vector<std::complex<double>> cal(freqs.size());
   if (system == "ADU-08e") {
     if (board == ADU::LF) {

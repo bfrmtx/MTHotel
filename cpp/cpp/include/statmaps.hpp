@@ -27,7 +27,7 @@ typedef std::unordered_map<size_t, double> statmap;
  */
 
 namespace g_stat {
-static std::vector<std::string> gauss_names{"d_n_x", "sum_x", "mean_x", "median_x", "variance_population_x", "variance_x", "stddev_population_x", "stddev_x", "skewness_x", "kurtosis_x", "min_x", "max_x", "range_x",
+inline std::vector<std::string> gauss_names{"d_n_x", "sum_x", "mean_x", "median_x", "variance_population_x", "variance_x", "stddev_population_x", "stddev_x", "skewness_x", "kurtosis_x", "min_x", "max_x", "range_x",
                                             "d_n_y", "sum_y", "mean_y", "median_y", "variance_population_y", "variance_y", "stddev_population_y", "stddev_y", "skewness_y", "kurtosis_y", "min_y", "max_y", "range_y",
                                             "covariance_xy", "correlation_xy", "slope_xy", "delta_slope_xy", "abscissa_xy", "sum_alldist_from_slope_xy", "student_t_upper_quantile", "student_t_inv",
                                             "student_t_upper_confidence_xy", "student_t_lower_confidence_xy", "student_t_test_against_other_slope"};

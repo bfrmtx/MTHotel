@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "vector_math.h"
+#include "vector_math.hpp"
 #include <iostream>
 #include <utility>
 

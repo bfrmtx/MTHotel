@@ -122,7 +122,7 @@ static bool is_pow2(const size_t &wl) {
   return ((wl & -wl) == wl);
 }
 
-static size_t next_power_of_two(const size_t &n) {
+inline constexpr std::size_t next_power_of_two(const size_t &n) {
   size_t target, m;
   if (n > (SIZE_MAX - 1) / 2)
     throw "next_power_of_two: vector too large";
@@ -141,7 +141,7 @@ static size_t next_power_of_two(const size_t &n) {
  * \param steps_per_decade steps per decade (like 11 for MSF-06e or 7 for MFS-07e)
  * \return vector of frequencies (or null vector if failed)
  */
-static std::vector<double> gen_equidistant_logvector(const double &start, const double &stop, const size_t &steps_per_decade) {
+inline std::vector<double> gen_equidistant_logvector(const double &start, const double &stop, const size_t &steps_per_decade) {
 
   // dist would be log_stop - log_start
   // we calculate per decade
@@ -175,7 +175,7 @@ static std::vector<double> gen_equidistant_logvector(const double &start, const 
 /*!
  * @brief generate a equally logarithmic spaced vector with fixed steps per decade and a fixed frequency list, low to high ASCENDING
  */
-static std::vector<double> gen_equidistant_logvector_fixed(const double &start, const double &stop) {
+inline std::vector<double> gen_equidistant_logvector_fixed(const double &start, const double &stop) {
   // dist would be log_stop - log_start
   // we calculate per decade
   std::vector<double> result;
@@ -817,7 +817,7 @@ private:
  * \param fftws
  * \return 4 for number like 1024
  */
-static size_t field_width(const std::vector<std::shared_ptr<fftw_freqs>> &fftws) {
+inline constexpr std::size_t field_width(const std::vector<std::shared_ptr<fftw_freqs>> &fftws) {
 
   std::vector<double> maxf;
   // rl is always <= wl !
@@ -830,7 +830,7 @@ static size_t field_width(const std::vector<std::shared_ptr<fftw_freqs>> &fftws)
   return xw.str().size();
 }
 
-static std::vector<std::stringstream> gnuplot_labels(const std::vector<std::shared_ptr<fftw_freqs>> &fftws, const std::shared_ptr<std::vector<double>> in_rmss = nullptr) {
+inline std::vector<std::stringstream> gnuplot_labels(const std::vector<std::shared_ptr<fftw_freqs>> &fftws, const std::shared_ptr<std::vector<double>> in_rmss = nullptr) {
   std::vector<double> fss(fftws.size());
   std::vector<size_t> wls(fftws.size());
   std::vector<size_t> rls(fftws.size());

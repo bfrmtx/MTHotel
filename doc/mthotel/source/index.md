@@ -16,6 +16,7 @@ fft/fft
 calibration/calibration
 downloads/downloads
 developers/developers
+developers/cpp
 11_by_three_is_three/11_by_three_is_three
 appendix/appendix
 ```

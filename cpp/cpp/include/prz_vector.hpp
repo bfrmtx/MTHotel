@@ -75,8 +75,8 @@ void parzen_t(const std::shared_ptr<std::vector<T>> &data, const std::vector<S> 
   parzen(*data, selected_freqs, parzendists, *result);
 }
 
-static size_t parzen_vector(const std::vector<double> &freqs, const std::vector<double> &target_freqs, const double &prz_radius,
-                            std::vector<double> &selected_freqs, std::vector<std::vector<double>> &parzendists) {
+inline constexpr std::size_t parzen_vector(const std::vector<double> &freqs, const std::vector<double> &target_freqs, const double &prz_radius,
+                                           std::vector<double> &selected_freqs, std::vector<std::vector<double>> &parzendists) {
 
   if (!freqs.size() || !target_freqs.size()) {
     std::ostringstream err_str(__func__, std::ios_base::ate);

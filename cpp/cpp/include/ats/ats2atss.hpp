@@ -105,10 +105,22 @@ public:
         }
       }
     }
-    this->chan->tmp_station = ats_file->get_ats_path().parent_path().parent_path().filename().string();
-    this->chan->tmp_origin = ats_file->get_ats_path().parent_path();
+    // Extract station name safely from path hierarchy
+    auto path = ats_file->get_ats_path();
+    if (path.has_parent_path() && path.parent_path().has_parent_path()) {
+      this->chan->tmp_station = path.parent_path().parent_path().filename().string();
+      this->chan->tmp_origin = path.parent_path();
+    } else {
+      // Fallback if path hierarchy is insufficient
+      this->chan->tmp_station = "unknown_station";
+      this->chan->tmp_origin = path.has_parent_path() ? path.parent_path() : path;
+    }
     this->chan->tmp_xml = ats_file->get_xmlpath();
     return this->chan;
+  }
+
+  void set_can_convert_data(const bool can_convert) {
+    this->can_convert_data = can_convert;
   }
 
   void convert_data(const bool no_e = false) {
@@ -449,6 +461,14 @@ public:
         if (++l < unsigned(argc)) {
           survey_tree_path = argv[l];
         }
+      } else if (marg == "-i") {
+        if (++l < unsigned(argc)) {
+          in_directory = argv[l];
+        }
+      } else if (marg == "-o") {
+        if (++l < unsigned(argc)) {
+          out_directory = argv[l];
+        }
       } else if (marg == "-v") {
         verbose = true;
       } else if (marg == "-no_e") {
@@ -470,14 +490,44 @@ public:
       }
       ++l; // move to the next argument
     }
-    if (survey_path_ats.empty()) {
-      std::cerr << "Error: No survey path provided. Use -s <survey_path> to specify the  input ATS survey path." << std::endl;
-      help = true; // show help if no survey path is provided
+    // Check that we have either survey paths OR directory paths, but not both
+    bool has_survey_paths = !survey_path_ats.empty() && !survey_tree_path.empty();
+    bool has_directory_paths = !in_directory.empty() && !out_directory.empty();
+
+    if (!has_survey_paths && !has_directory_paths) {
+      std::cerr << "Error: You must provide either survey paths (-s and -u) OR directory paths (-i and -o)." << std::endl;
+      std::cerr << "Use -s <survey_path> and -u <survey_tree_path> for survey processing," << std::endl;
+      std::cerr << "OR use -i <in_directory> and -o <out_directory> for simple directory conversion." << std::endl;
+      help = true;
     }
-    if (survey_tree_path.empty()) {
-      std::cerr << "Error: No survey tree path provided. Use -u <survey_tree_path> to specify the output survey tree path." << std::endl;
-      std::cerr << "the output survey tree path will be CREATED if it does not exist." << std::endl;
-      help = true; // show help if no survey tree path is provided
+
+    if (has_survey_paths && has_directory_paths) {
+      std::cerr << "Error: Cannot use both survey paths (-s, -u) and directory paths (-i, -o) simultaneously." << std::endl;
+      std::cerr << "Choose either survey processing or simple directory conversion." << std::endl;
+      help = true;
+    }
+
+    if (has_survey_paths) {
+      if (survey_path_ats.empty()) {
+        std::cerr << "Error: No survey path provided. Use -s <survey_path> to specify the input ATS survey path." << std::endl;
+        help = true;
+      }
+      if (survey_tree_path.empty()) {
+        std::cerr << "Error: No survey tree path provided. Use -u <survey_tree_path> to specify the output survey tree path." << std::endl;
+        std::cerr << "The output survey tree path will be CREATED if it does not exist." << std::endl;
+        help = true;
+      }
+    }
+
+    if (has_directory_paths) {
+      if (in_directory.empty()) {
+        std::cerr << "Error: No input directory provided. Use -i <in_directory> to specify the input directory." << std::endl;
+        help = true;
+      }
+      if (out_directory.empty()) {
+        std::cerr << "Error: No output directory provided. Use -o <out_directory> to specify the output directory." << std::endl;
+        help = true;
+      }
     }
     if (help) {
       std::cout << "Usage: " << myexecutable << " -s <survey_path> -u <survey_tree_path> [-v] [-e] [-h] [-r <start_run>] [station_names...]\n";
@@ -485,7 +535,7 @@ public:
       std::cout << "  -s <survey_path>       Path to the input ATS survey directory.\n";
       std::cout << "  -u <survey_tree_path>  Path to the output survey tree directory.\n";
       std::cout << "  -v                     Enable verbose output.\n";
-      std::cout << "  -e                     Disable E channel processing.\n";
+      std::cout << "  -no_e                  Disable E channel processing.\n";
       std::cout << "  -h, --help             Show this help message and exit.\n";
       std::cout << "  -r <start_run>         Start run number for processing (default: 1).\n";
       std::cout << "  station_names...       List of station names to process.\n\n";
@@ -498,13 +548,15 @@ public:
       std::cout << "  this can be the case if you already have a populated survey; you create a temporary survey tree, and then you can add the runs to the existing survey tree manually.\n";
       std::exit(0);
     }
-    if (survey_path_ats.empty() || survey_tree_path.empty()) {
-      std::cerr << "Error: Missing required paths.\n";
-      std::exit(0);
-    }
+    // if (survey_path_ats.empty() || survey_tree_path.empty()) {
+    //   std::cerr << "Error: Missing required paths.\n";
+    //   std::exit(0);
+    // }
   }
   std::string survey_path_ats;       //!< Path to the input survey directory
   std::string survey_tree_path;      //!< Path to the output survey tree directory
+  std::string in_directory;          //!< Input directory path for a quick and dirty conversion, together with out_directory
+  std::string out_directory;         //!< Output directory path for a quick and dirty conversion, together with in_directory
   bool verbose = false;              //!< Enable verbose output
   bool no_e = false;                 //!< Disable E channel processing
   bool help = false;                 //!< Show help message

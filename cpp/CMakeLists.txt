@@ -150,6 +150,7 @@ include_directories(${CPP_PROJECT_DIR}/include/ats)
 include_directories(${CPP_PROJECT_DIR}/include/cal)
 include_directories(${CPP_PROJECT_DIR}/include/cal/read_cal)
 include_directories(${CPP_PROJECT_DIR}/include/channel)
+include_directories(${CPP_PROJECT_DIR}/include/gnuplot)
 include_directories(${CPP_PROJECT_DIR}/math_vector)
 # add include path for xml/tinyxmlwriter
 include_directories(${CPP_PROJECT_DIR}/xml/tinyxmlwriter)

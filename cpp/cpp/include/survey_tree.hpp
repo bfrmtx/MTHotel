@@ -13,10 +13,14 @@
 #include "channel.hpp"
 #include "mt_base.hpp"
 #include "strings_etc.hpp"
+#include "xlogger.hpp"
 
-/*! @file survey_tree.hpp
+/*!
+ * @file survey_tree.hpp
  * the survey class is a tree structure with stations, runs and channels.
  * The survey class is a singleton, so there is only one instance of the survey class.
+ *
+ * @verbatim
  *└── Northern_Mining
  *    ├── config
  *    ├── db
@@ -27,91 +31,91 @@
  *    ├── jobs
  *    ├── log
  *    ├── meta
- *    │   ├── Kocatepe
- *    │   │   ├── run_001
- *    │   │   │   ├── 085_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
- *    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.json
- *    │   │   │   └── 085_ADU-07e_C004_THz_128Hz.json
- *    │   │   └── run_002
- *    │   │       ├── 085_2009-08-20_13-22-01_2009-08-21_06-59-59_R001_32H.xml
- *    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.json
- *    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.json
- *    │   │       ├── 085_ADU-07e_C002_THx_32Hz.json
- *    │   │       ├── 085_ADU-07e_C003_THy_32Hz.json
- *    │   │       └── 085_ADU-07e_C004_THz_32Hz.json
- *    │   └── Sarıçam
- *    │       ├── run_001
- *    │       │   ├── 084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
- *    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.json
- *    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.json
- *    │       │   ├── 084_ADU-07e_C002_THx_128Hz.json
- *    │       │   ├── 084_ADU-07e_C003_THy_128Hz.json
- *    │       │   └── 084_ADU-07e_C004_THz_128Hz.json
- *    │       └── run_002
- *    │           ├── 084_2009-08-20_13-22-01_2009-08-21_06-59-59_R001_32H.xml
- *    │           ├── 084_ADU-07e_C000_TEx_32Hz.json
- *    │           ├── 084_ADU-07e_C001_TEy_32Hz.json
- *    │           ├── 084_ADU-07e_C002_THx_32Hz.json
- *    │           ├── 084_ADU-07e_C003_THy_32Hz.json
- *    │           └── 084_ADU-07e_C004_THz_32Hz.json
+ *    │   ├── Kocatepe
+ *    │   │   ├── run_001
+ *    │   │   │   ├── 085_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
+ *    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.json
+ *    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.json
+ *    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.json
+ *    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.json
+ *    │   │   │   └── 085_ADU-07e_C004_THz_128Hz.json
+ *    │   │   └── run_002
+ *    │   │       ├── 085_2009-08-20_13-22-01_2009-08-21_06-59-59_R001_32H.xml
+ *    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.json
+ *    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.json
+ *    │   │       ├── 085_ADU-07e_C002_THx_32Hz.json
+ *    │   │       ├── 085_ADU-07e_C003_THy_32Hz.json
+ *    │   │       └── 085_ADU-07e_C004_THz_32Hz.json
+ *    │   └── Sarıçam
+ *    │       ├── run_001
+ *    │       │   ├── 084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
+ *    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.json
+ *    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.json
+ *    │       │   ├── 084_ADU-07e_C002_THx_128Hz.json
+ *    │       │   ├── 084_ADU-07e_C003_THy_128Hz.json
+ *    │       │   └── 084_ADU-07e_C004_THz_128Hz.json
+ *    │       └── run_002
+ *    │           ├── 084_2009-08-20_13-22-01_2009-08-21_06-59-59_R001_32H.xml
+ *    │           ├── 084_ADU-07e_C000_TEx_32Hz.json
+ *    │           ├── 084_ADU-07e_C001_TEy_32Hz.json
+ *    │           ├── 084_ADU-07e_C002_THx_32Hz.json
+ *    │           ├── 084_ADU-07e_C003_THy_32Hz.json
+ *    │           └── 084_ADU-07e_C004_THz_32Hz.json
  *    ├── processings
  *    ├── reports
  *    ├── shell
- *    │   ├── mkallproc.sh
- *    │   ├── plot_ascii_table_edi.sh
- *    │   └── procall.sh
+ *    │   ├── mkallproc.sh
+ *    │   ├── plot_ascii_table_edi.sh
+ *    │   └── procall.sh
  *    ├── stations
- *    │   ├── Kocatepe
- *    │   │   ├── run_001
- *    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.atss
- *    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.atss
- *    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.atss
- *    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.atss
- *    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C004_THz_128Hz.atss
- *    │   │   │   └── 085_ADU-07e_C004_THz_128Hz.json
- *    │   │   └── run_002
- *    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.atss
- *    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.json
- *    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.atss
- *    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.json
- *    │   │       ├── 085_ADU-07e_C002_THx_32Hz.atss
- *    │   │       ├── 085_ADU-07e_C002_THx_32Hz.json
- *    │   │       ├── 085_ADU-07e_C003_THy_32Hz.atss
- *    │   │       ├── 085_ADU-07e_C003_THy_32Hz.json
- *    │   │       ├── 085_ADU-07e_C004_THz_32Hz.atss
- *    │   │       └── 085_ADU-07e_C004_THz_32Hz.json
- *    │   └── Sarıçam
- *    │       ├── run_001
- *    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.atss
- *    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.json
- *    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.atss
- *    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.json
- *    │       │   ├── 084_ADU-07e_C002_THx_128Hz.atss
- *    │       │   ├── 084_ADU-07e_C002_THx_128Hz.json
- *    │       │   ├── 084_ADU-07e_C003_THy_128Hz.atss
- *    │       │   ├── 084_ADU-07e_C003_THy_128Hz.json
- *    │       │   ├── 084_ADU-07e_C004_THz_128Hz.atss
- *    │       │   └── 084_ADU-07e_C004_THz_128Hz.json
- *    │       └── run_002
- *    │           ├── 084_ADU-07e_C000_TEx_32Hz.atss
- *    │           ├── 084_ADU-07e_C000_TEx_32Hz.json
- *    │           ├── 084_ADU-07e_C001_TEy_32Hz.atss
- *    │           ├── 084_ADU-07e_C001_TEy_32Hz.json
- *    │           ├── 084_ADU-07e_C002_THx_32Hz.atss
- *    │           ├── 084_ADU-07e_C002_THx_32Hz.json
- *    │           ├── 084_ADU-07e_C003_THy_32Hz.atss
- *    │           ├── 084_ADU-07e_C003_THy_32Hz.json
- *    │           ├── 084_ADU-07e_C004_THz_32Hz.atss
- *    │           └── 084_ADU-07e_C004_THz_32Hz.json
+ *    │   ├── Kocatepe
+ *    │   │   ├── run_001
+ *    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.atss
+ *    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.json
+ *    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.atss
+ *    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.json
+ *    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.atss
+ *    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.json
+ *    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.atss
+ *    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.json
+ *    │   │   │   ├── 085_ADU-07e_C004_THz_128Hz.atss
+ *    │   │   │   └── 085_ADU-07e_C004_THz_128Hz.json
+ *    │   │   └── run_002
+ *    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.atss
+ *    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.json
+ *    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.atss
+ *    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.json
+ *    │   │       ├── 085_ADU-07e_C002_THx_32Hz.atss
+ *    │   │       ├── 085_ADU-07e_C002_THx_32Hz.json
+ *    │   │       ├── 085_ADU-07e_C003_THy_32Hz.atss
+ *    │   │       ├── 085_ADU-07e_C003_THy_32Hz.json
+ *    │   │       ├── 085_ADU-07e_C004_THz_32Hz.atss
+ *    │   │       └── 085_ADU-07e_C004_THz_32Hz.json
+ *    │   └── Sarıçam
+ *    │       ├── run_001
+ *    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.atss
+ *    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.json
+ *    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.atss
+ *    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.json
+ *    │       │   ├── 084_ADU-07e_C002_THx_128Hz.atss
+ *    │       │   ├── 084_ADU-07e_C002_THx_128Hz.json
+ *    │       │   ├── 084_ADU-07e_C003_THy_128Hz.atss
+ *    │       │   ├── 084_ADU-07e_C003_THy_128Hz.json
+ *    │       │   ├── 084_ADU-07e_C004_THz_128Hz.atss
+ *    │       │   └── 084_ADU-07e_C004_THz_128Hz.json
+ *    │       └── run_002
+ *    │           ├── 084_ADU-07e_C000_TEx_32Hz.atss
+ *    │           ├── 084_ADU-07e_C000_TEx_32Hz.json
+ *    │           ├── 084_ADU-07e_C001_TEy_32Hz.atss
+ *    │           ├── 084_ADU-07e_C001_TEy_32Hz.json
+ *    │           ├── 084_ADU-07e_C002_THx_32Hz.atss
+ *    │           ├── 084_ADU-07e_C002_THx_32Hz.json
+ *    │           ├── 084_ADU-07e_C003_THy_32Hz.atss
+ *    │           ├── 084_ADU-07e_C003_THy_32Hz.json
+ *    │           ├── 084_ADU-07e_C004_THz_32Hz.atss
+ *    │           └── 084_ADU-07e_C004_THz_32Hz.json
  *    └── tmp
- *
+ * @endverbatim
  */
 
 // Scan for channels in the run directory
@@ -125,18 +129,64 @@
 class survey_tree;
 
 namespace fs = std::filesystem;
+
+/**
+ * @brief A class representing a survey run directory containing channel data files.
+ * also read the intro file documentation survey_tree.hpp
+ * The run_d class manages a collection of survey channels stored as JSON files in a specific
+ * directory. It provides thread-safe access to channel data and metadata operations.
+ *
+ * @details This class automatically scans the specified directory for JSON files that represent
+ * survey channels. Each valid channel file is loaded into a shared_ptr<channel> and stored
+ * in a fixed-size vector indexed by channel number. The class ensures thread safety through
+ * the use of shared mutexes for read operations and unique locks for write operations.
+ *
+ * Key features:
+ * - Automatic directory scanning for .json channel files
+ * - Thread-safe access to channel data
+ * - Fixed-size channel array (max_survey_channels)
+ * - Metadata extraction (sample rate, datetime, timer)
+ * - Parent survey_tree relationship support
+ *
+ * @note The directory must exist before creating an instance of this class.
+ * @note Channel numbers are extracted from filenames and must be valid (< max_survey_channels).
+ * @note All channels in a run are expected to have consistent metadata (sample rate, datetime).
+ *
+ * @warning If the specified directory doesn't exist or isn't a directory, an error message
+ * is printed to std::cerr but the object is still constructed.
+ *
+ * Thread Safety:
+ * - Read operations (ls, nchannels, get_*) use shared locks for concurrent access
+ * - Write operations (scan) use unique locks for exclusive access
+ * - The channels vector is protected by mutex_ for all operations
+ *
+ * @see channel class for individual channel data representation.
+ *
+ * @note The run_d class look for .json ONLY as channel files. So when filling the survey_tree, you put them first.
+ * You treat the creation of .json file as a **NOT expensive** operation, wich can run serialized. The creation of .atss files
+ * is more expensive, and can be done in parallel later on, because the the creation thread can be started from the channel class directly.
+ */
 class run_d {
 public:
+  /*!
+   * @brief Constructor that initializes the run_d instance by scanning the specified directory.
+   * @param path The filesystem path to the run directory containing channel JSON files.
+   * @note The directory must exist or be created before using this constructor.
+   */
   explicit run_d(const fs::path &path) :
       basePath(path) {
     // directory must exist or created before using it
     if (!fs::exists(basePath) || !fs::is_directory(basePath)) {
       std::cerr << "Directory does not exist: " << basePath << "\n";
     }
-    this->scan();
+    this->scan(true);
   }
-
-  size_t scan() {
+  /*!
+   * @brief Scans the run directory for channel JSON files and loads them into the channels vector. scan does not CHECK FOR .atss files!
+   * @param rescan If true, existing channels will be reloaded; if false, existing channels will be skipped.
+   * @return The number of valid channels found and loaded.
+   */
+  size_t scan(const bool &rescan = false) {
     std::unique_lock lock(mutex_);
     size_t count = 0;
     for (const auto &entry : fs::directory_iterator(basePath)) {
@@ -145,6 +195,10 @@ public:
         // Only process .json files as valid channel files
         size_t channel_no = mstr::channel_number_from_channel_file(entry.path());
         if (channel_no != SIZE_MAX && channel_no < max_survey_channels) {
+          // if the channel already exists, we skip it
+          if ((!rescan) && (channels[channel_no] != nullptr)) {
+            continue;
+          }
           channels[channel_no] = std::make_shared<channel>(entry.path());
           count++;
         }
@@ -217,11 +271,12 @@ public:
     return p_timer(); // No valid channels found
   }
 
-  std::vector<std::shared_ptr<channel>> channels = std::vector<std::shared_ptr<channel>>(max_survey_channels, nullptr);
-  std::shared_ptr<survey_tree> parent; //!< Parent survey_tree, if any
+  std::vector<std::shared_ptr<channel>> channels = std::vector<std::shared_ptr<channel>>(max_survey_channels, nullptr); //!< follow the documentation mt_base.hpp max_survey_channels
+  std::shared_ptr<survey_tree> parent;                                                                                  //!< Parent survey_tree, if any
 private:
   fs::path basePath;
   mutable std::shared_mutex mutex_; //!< Mutex for thread-safe access to channels
+  xlogger logger;
 };
 
 /*!
@@ -230,7 +285,7 @@ private:
  * @details This is used to check if two runs are the same, and my remove duplicate runs
  * @details they have the same amount of files AND the channels are same.
  */
-static auto compare_same_content = [](const std::shared_ptr<run_d> &lhs, const std::shared_ptr<run_d> &rhs) {
+inline auto compare_same_content = [](const std::shared_ptr<run_d> &lhs, const std::shared_ptr<run_d> &rhs) {
   if (!lhs || !rhs) {
     return false; // If either is null, they are not the same
   }
@@ -258,9 +313,10 @@ static auto compare_same_content = [](const std::shared_ptr<run_d> &lhs, const s
 };
 
 /*!
- * @brief compare start times of two runs; we late sort the runs by their start time (earlier run first)
+ * @brief compare start times of two runs; we later sort the runs by their start time (earlier run first)
+ * @return true if lhs is earlier than rhs, false otherwise
  */
-static auto compare_earlier_run = [](const std::shared_ptr<run_d> &lhs, const std::shared_ptr<run_d> &rhs) {
+inline auto compare_earlier_run = [](const std::shared_ptr<run_d> &lhs, const std::shared_ptr<run_d> &rhs) {
   if (!lhs || !rhs)
     return false; // If either is null, we cannot compare
 
@@ -271,6 +327,9 @@ static auto compare_earlier_run = [](const std::shared_ptr<run_d> &lhs, const st
   return false; // If either is null, we cannot compare
 };
 
+/*!
+ * @brief Is a class representing a survey tree structure with stations and runs.
+ */
 class survey_tree : public std::enable_shared_from_this<survey_tree> {
 private:
   std::string name;
@@ -279,6 +338,7 @@ private:
   mutable std::shared_mutex mutex_;
   int level; //!< Level of the node in the tree, 0 for survey root, 1 for stations, 2 for runs
   fs::path basePath;
+  xlogger logger;
 
   // For level 2 nodes, hold a single run_d instance
   std::shared_ptr<run_d> run;
@@ -296,7 +356,7 @@ public:
     std::error_code ec;
     fs::create_directories(basePath, ec);
     if (ec) {
-      std::cerr << "Failed to create directory: " << basePath << " (" << ec.message() << ")\n";
+      logger << "Failed to create directory: " << basePath << " (" << ec.message() << ")";
     }
     if (level == 0) {
       bool is_created = false;
@@ -305,10 +365,14 @@ public:
       if (fs::is_empty(basePath)) {
         // Directory is empty, create survey directories and stations
         create_survey_dirs(basePath, survey_dirs());
+        logger << "Created survey directory structure in: " << basePath;
         is_created = true;
       }
       // b) if not empty, check for basePath / stations
       if (!fs::exists(basePath / "stations") || !fs::is_directory(basePath / "stations")) {
+        if (!is_created) {
+          logger << "Survey directory missing 'stations' subdirectory: " << (basePath / "stations");
+        }
         throw std::runtime_error("Survey directory is not properly initialized");
       } else {
         this->basePath = basePath / "stations";
@@ -372,6 +436,7 @@ public:
 
   std::shared_ptr<survey_tree> add_child(int id) {
     if (level >= 2) {
+      logger << "Cannot add numeric children beyond level 2";
       throw std::logic_error("Cannot add numeric children beyond level 2");
     }
     std::string childName = (level == 0)
@@ -438,6 +503,7 @@ public:
 
   void set_run(std::shared_ptr<run_d> runObj) {
     if (level != 2) {
+      logger << "Only level-2 directories can attach run_d instances";
       throw std::logic_error("Only level-2 directories can attach run_d instances");
     }
     std::unique_lock lock(mutex_);

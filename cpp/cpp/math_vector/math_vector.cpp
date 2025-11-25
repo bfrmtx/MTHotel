@@ -1262,8 +1262,7 @@ void two_pass_variance::calc_all() {
   this->variance_data[g_stat::kurtosis_x] = this->d_kurtosis;
 }
 
-std::ostream &operator<<(std::ostream &out,
-                         const two_pass_variance &a) {
+std::ostream &operator<<(std::ostream &out, const two_pass_variance &a) {
   if (4 > a.d_n) {
     out << "two_pass_variance NOT VALID, size must be > 3" << std::endl;
     return out;

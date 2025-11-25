@@ -832,9 +832,10 @@ public:
    * @return
    */
   bool is_type(const std::string &type) const {
-    if (type.size() > 1)
+    if (type.size() > 1) {
       std::cerr << "channel::is_type: type string is too long, must be 1: " << type << std::endl;
-    return false; // only one char allowed
+      return false; // only one char allowed
+    }
     if (type == "E")
       return (this->channel_type[0] == 'E' || this->channel_type[0] == 'e');
     if (type == "H")
@@ -848,11 +849,9 @@ public:
     if (type == "T") {
       return (this->channel_type[0] == 'T' || this->channel_type[0] == 't');
     }
-    // Euler angles Y(aw), P(itch), R(oll)
+    // Euler angles Y(aw) Uy, P(itch) Up, R(oll) Ur
     if (type == "U") {
-      return (this->channel_type[0] == 'U' || this->channel_type[0] == 'u' || this->channel_type[0] == 'Y' ||
-              this->channel_type[0] == 'y' || this->channel_type[0] == 'P' || this->channel_type[0] == 'p' ||
-              this->channel_type[0] == 'R' || this->channel_type[0] == 'r');
+      return (this->channel_type[0] == 'U' || this->channel_type[0] == 'u');
     }
     // if we reach here, we have no match
     std::cerr << "channel::is_type: unknown type: " << type << std::endl;

@@ -202,9 +202,8 @@ $F_{off}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1
 
 ### MFS-12e
 
-**preliminary**<br>
 $P_{1} = i \cdot \frac{1}{16 Hz}, \enspace P_{2} = i \cdot \frac{1}{9645 Hz} \enspace$
-$\enspace P_{4} = i \cdot \frac{1}{53051 Hz}$
+$\enspace P_{4} = i \cdot \frac{1}{50048 Hz}$
 
 #### Chopper free
 $F(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4} $
