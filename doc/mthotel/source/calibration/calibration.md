@@ -205,7 +205,11 @@ $F_{off}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1
 $P_{1} = i \cdot \frac{1}{16 Hz}, \enspace P_{2} = i \cdot \frac{1}{9645 Hz} \enspace$
 $\enspace P_{4} = i \cdot \frac{1}{50048 Hz}$
 
-#### Chopper free
+#### Switch free
+In the old days we used copper on == LF mode and chopper off == HF mode.<br>
+Now we have a switch free design, so only one transfer function is used.<br>
+However, the amplifier still has a chopper stage, which is always on, but invisible in the transfer function. <br>
+The transfer function is a mix of both modes:<br>
 $F(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4} $
 
 

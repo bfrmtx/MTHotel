@@ -1,8 +1,10 @@
 #include "ptspc_lib.h"
+#include <algorithm>
+#include <set>
 
 // constructor
-ptspc_lib::ptspc_lib() {
-  this->pool = std::make_shared<BS::thread_pool<BS::tp::none>>();
+ptspc_lib::ptspc_lib(std::shared_ptr<BS::thread_pool<BS::tp::none>> pool_in) {
+  this->pool = pool_in;
   // get the executable path
   this->ptspc_path = get_exec_dir();
   // cd up to bin
@@ -26,15 +28,59 @@ ptspc_lib::ptspc_lib() {
 }
 
 // get the options from the GUI or command line arguments "my arguments == margs"
-void ptspc_lib::get_options(const std::vector<std::string> &margs, const bool &has_gui) {
-  size_t l = 0;
-  // Iterate through the arguments and process them
-  for (l = 0; l < margs.size(); ++l) {
-    std::string marg = margs[l];
-    if (marg == "-u") {
-      if (++l >= margs.size())
-        throw std::runtime_error("-u requires an argument");
-      fs::path survey_name = margs[l];
+void ptspc_lib::get_options(const std::list<std::string> &args, const bool &has_gui) {
+  std::list<std::string> margs = args;
+  this->has_gui = has_gui;
+  // we iterate over the arguments and delete them when processed
+  // we start with options that require no arguments
+  auto it = margs.begin();
+  while (it != margs.end()) {
+    if (*it == "-sb") {
+      same_base = true;
+      it = margs.erase(it);
+    } else if (*it == "-m6") {
+      magnify_06e = true;
+      it = margs.erase(it);
+    } else if (*it == "-m7") {
+      magnify_07e = true;
+      it = margs.erase(it);
+    } else if (*it == "-rwy") {
+      railway = true;
+      it = margs.erase(it);
+    } else if (*it == "-lowres") {
+      lowres = true;
+      it = margs.erase(it);
+    } else if (*it == "-highres") {
+      highres = true;
+      it = margs.erase(it);
+    } else if (*it == "-i") {
+      inner_range = true;
+      it = margs.erase(it);
+    } else if (*it == "-cplt") {
+      no_cal_plot = false;
+      it = margs.erase(it);
+    } else if (*it == "-syscal") {
+      syscal = true;
+      it = margs.erase(it);
+    } else if (*it == "-n") {
+      normalize = true;
+      it = margs.erase(it);
+    } else if (*it == "-sm") {
+      smooth = true;
+      it = margs.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  // now options which require one or more arguments; next argument will start with -
+  it = margs.begin();
+  while (it != margs.end()) {
+    if (*it == "-u") {
+      it = margs.erase(it); // erase -u; next is survey name, because erase moves the iterator forward
+      if (it == margs.end() || it->starts_with("-")) {
+        throw std::runtime_error("No survey name provided after -u");
+      }
+      fs::path survey_name = *it;
       if (!fs::is_directory(survey_name)) {
         std::ostringstream err_str(__func__, std::ios_base::ate);
         err_str << " -u survey_dir needs an existing directory with stations inside" << std::endl;
@@ -42,157 +88,153 @@ void ptspc_lib::get_options(const std::vector<std::string> &margs, const bool &h
         throw std::runtime_error(err_str.str());
       }
       survey_name = fs::canonical(survey_name);
-      survey = std::make_shared<survey_tree>(survey_name);
+      survey = std::make_shared<survey_tree>(survey_name, true); // read-only mode
       if (survey == nullptr) {
         std::ostringstream err_str(__func__, std::ios_base::ate);
         err_str << " first use -u survey_name in order to init the survey";
         throw std::runtime_error(err_str.str());
       }
-      survey->scan();
-    } else if (marg == "-s") {
-      if (survey == nullptr) {
-        std::ostringstream err_str(__func__, std::ios_base::ate);
-        err_str << " first use -u survey_name in order to init the survey";
-        throw std::runtime_error(err_str.str());
+      it = margs.erase(it); // erase survey name
+    } else if (*it == "-s") {
+      // Parse station block: -s station_name -r run1 run2 ... -ch channel1 channel2 ...
+      it = margs.erase(it); // erase -s
+
+      if (it == margs.end() || it->starts_with("-")) {
+        throw std::runtime_error("No station name provided after -s");
       }
-      // repeat until we find a - or the end of the arguments
-      while ((l + 1) < margs.size() && !margs[l + 1].empty() && margs[l + 1][0] != '-') {
-        std::string station_name = margs[++l];
-        stations.emplace_back(survey->get_child(station_name));
-        if (stations.back() == nullptr) {
-          std::ostringstream err_str(__func__, std::ios_base::ate);
-          err_str << " secondly use -s station_name [station names] in order to init station[s]";
-          err_str << " station_name " << station_name << " not found in survey " << survey->get_path().string() << std::endl;
-          stations.clear();
-          throw std::runtime_error(err_str.str());
+
+      // Create new station configuration
+      station_config config;
+      config.name = *it;
+      it = margs.erase(it); // erase station name
+
+      // Expect -r next
+      if (it == margs.end() || *it != "-r") {
+        throw std::runtime_error("Expected -r after station name '" + config.name + "'");
+      }
+      it = margs.erase(it); // erase -r
+
+      if (it == margs.end() || it->starts_with("-")) {
+        throw std::runtime_error("No run numbers provided after -r for station '" + config.name + "'");
+      }
+
+      // Collect run numbers until we hit -ch
+      while (it != margs.end() && *it != "-ch") {
+        if (it->starts_with("-")) {
+          throw std::runtime_error("Expected -ch after run numbers for station '" + config.name + "', found: " + *it);
         }
-      }
-    } else if (marg == "-c") {
-      while ((l + 1) < margs.size() && !margs[l + 1].empty() && margs[l + 1][0] != '-') {
-        std::string channel_type = margs[++l];
-        if (std::find(available_channel_types.begin(), available_channel_types.end(), channel_type) == available_channel_types.end()) {
-          std::ostringstream err_str(__func__, std::ios_base::ate);
-          err_str << " channel type " << channel_type << " not available" << std::endl;
-          throw std::runtime_error(err_str.str());
+        try {
+          config.run_numbers.emplace_back(static_cast<size_t>(std::stoul(*it)));
+        } catch (const std::invalid_argument &e) {
+          throw std::runtime_error("Invalid run number format: '" + *it + "' for station '" + config.name + "' - must be a positive integer");
+        } catch (const std::out_of_range &e) {
+          throw std::runtime_error("Run number out of range: '" + *it + "' for station '" + config.name + "' - value too large");
         }
-        channel_types.emplace_back(channel_type);
-        auto_cross_spectra_names.emplace_back(channel_type, channel_type);
+        it = margs.erase(it);
       }
-    } else if (marg == "-cx") {
-      while ((l + 2) < margs.size() && !margs[l + 1].empty() && margs[l + 1][0] != '-') {
-        std::string first_channel = margs[++l];
-        if ((l + 1) >= margs.size())
-          throw std::runtime_error("-cx requires two arguments");
-        std::string second_channel = margs[++l];
-        if (first_channel == second_channel) {
-          std::ostringstream err_str(__func__, std::ios_base::ate);
-          err_str << " first and second channel must be different, you want cross spectra with -cx option" << std::endl;
-          throw std::runtime_error(err_str.str());
-        }
-        std::string ac = first_channel + second_channel;
-        if (std::find(available_ac_spectra_types.begin(), available_ac_spectra_types.end(), ac) == available_ac_spectra_types.end()) {
-          std::ostringstream err_str(__func__, std::ios_base::ate);
-          err_str << " ac spectra type " << ac << " not available" << std::endl;
-          throw std::runtime_error(err_str.str());
-        }
-        if ((std::find(channel_types.begin(), channel_types.end(), first_channel) == channel_types.end()) ||
-            (std::find(channel_types.begin(), channel_types.end(), second_channel) == channel_types.end())) {
-          std::ostringstream err_str(__func__, std::ios_base::ate);
-          err_str << " first and second channel must be in channel_types (the -c option)" << std::endl;
-          throw std::runtime_error(err_str.str());
-        }
-        auto_cross_spectra_names.emplace_back(first_channel, second_channel);
+
+      // Expect -ch next
+      if (it == margs.end() || *it != "-ch") {
+        throw std::runtime_error("Expected -ch after run numbers for station '" + config.name + "'");
       }
-      bcross_spectra = true;
-    } else if (marg == "-ref") {
-      if (++l >= margs.size())
-        throw std::runtime_error("-ref requires an argument");
-      ref_channel = margs[l];
-    } else if (marg == "-sb") {
-      same_base = true;
-    } else if (marg == "-m6") {
-      magnify_06e = true;
-    } else if (marg == "-m7") {
-      magnify_07e = true;
-    } else if (marg == "-rwy") {
-      railway = true;
-    } else if (marg == "-lowres") {
-      lowres = true;
-    } else if (marg == "-highres") {
-      highres = true;
-    } else if (marg == "-r") {
-      br = true;
-    } else if (marg == "-i") {
-      inner_range = true;
-    } else if (marg == "-cplt") {
-      no_cal_plot = false;
-    } else if (marg == "-syscal") {
-      syscal = true;
-    } else if (marg == "-n") {
-      normalize = true;
-    } else if (marg == "-sm") {
-      smooth = true;
-    } else if (marg == "-mc") {
-      use_master_cal = true;
-      master_cal = std::make_unique<get_from_master_cal>(master_cal_db);
-    } else if (marg == "-ml") {
-      if (++l >= margs.size())
-        throw std::runtime_error("-ml requires an argument");
-      median_limit = mstr::mystod(margs[l]);
-      if (median_limit < 0.0 || median_limit > 1.0) {
-        std::cout << " median limit must be between 0.0 and 1.0" << std::endl;
-        throw std::runtime_error("median limit out of range");
+      it = margs.erase(it); // erase -ch
+
+      if (it == margs.end() || it->starts_with("-")) {
+        throw std::runtime_error("No channel types provided after -ch for station '" + config.name + "'");
       }
-    } else if (marg == "-f_range") {
-      if ((l + 2) >= margs.size())
-        throw std::runtime_error("-f_range requires two arguments");
-      f_range.first = mstr::mystod(margs[++l]);
-      f_range.second = mstr::mystod(margs[++l]);
-      if (f_range.first > f_range.second) {
-        std::cout << " must be min max: f_range.first < f_range.second" << std::endl;
-        throw std::runtime_error("frequency range invalid");
+
+      // Collect channel types until we hit next option or end
+      while (it != margs.end() && !it->starts_with("-")) {
+        config.channels.emplace_back(*it);
+        it = margs.erase(it);
       }
-      if (f_range.first <= 0) {
-        std::cout << " f_range.first > 0 for log plot" << std::endl;
-        throw std::runtime_error("frequency range invalid");
-      }
-    } else if (marg == "-a_range") {
-      if ((l + 2) >= margs.size())
-        throw std::runtime_error("-a_range requires two arguments");
-      a_range.first = mstr::mystod(margs[++l]);
-      a_range.second = mstr::mystod(margs[++l]);
-      if (a_range.first > a_range.second) {
-        std::cout << " must be min max: a_range.first < a_range.second" << std::endl;
-        throw std::runtime_error("amplitude range invalid");
-      }
-      if (a_range.first <= 0) {
-        std::cout << " a_range.first > 0 for log plot" << std::endl;
-        throw std::runtime_error("amplitude range invalid");
-      }
-    } else if (marg == "-p_range") {
-      if ((l + 2) >= margs.size())
-        throw std::runtime_error("-p_range requires two arguments");
-      p_range.first = mstr::mystod(margs[++l]);
-      p_range.second = mstr::mystod(margs[++l]);
-      if (p_range.first > p_range.second) {
-        std::cout << " must be min max: p_range.first < p_range.second" << std::endl;
-        throw std::runtime_error("phase range invalid");
-      }
-    } else if (marg == "-pl") {
-      if (++l >= margs.size())
-        throw std::runtime_error("-pl requires an argument");
-      pwr_base = mstr::mystod(margs[l]);
-      std::cout << "power lines suppressed >= " << pwr_base << " Hz" << std::endl;
-    } else if (marg == "-") {
-      std::cerr << "\nunrecognized option " << marg << std::endl;
-      throw std::runtime_error("unrecognized option: " + marg);
-    } else if (!marg.empty() && marg[0] == '-') {
-      std::cerr << "\nunrecognized option " << marg << std::endl;
-      throw std::runtime_error("unrecognized option: " + marg);
+
+      // Store the station configuration
+      station_configs.emplace_back(std::move(config));
+    } else {
+      ++it;
     }
-    // else: skip, already incremented l
+  }
+
+  survey->scan(); // scan the survey directory for stations and runs
+  survey->list_children_recursive();
+
+  // Process station configurations
+  process_station_configs();
+}
+
+void ptspc_lib::process_station_configs() {
+  if (station_configs.empty()) {
+    return; // No station configurations to process
+  }
+
+  if (survey == nullptr) {
+    throw std::runtime_error("Survey is not initialized - use -u survey_name before -s options");
+  }
+
+  // Clear existing data structures
+  stations.clear();
+  runs.clear();
+  run_numbers.clear();
+  channel_types.clear();
+
+  std::set<std::string> unique_channels; // To collect all unique channel types
+
+  for (const auto &config : station_configs) {
+    // Get station from survey
+    auto station = survey->get_child(config.name);
+    if (station == nullptr) {
+      throw std::runtime_error("Station '" + config.name + "' not found in survey");
+    }
+    stations.emplace_back(station);
+
+    // Process runs for this station
+    for (const auto &run_no : config.run_numbers) {
+      auto run = station->get_run(run_no);
+      if (run == nullptr) {
+        throw std::runtime_error("Run " + std::to_string(run_no) + " not found in station '" + config.name + "'");
+      }
+      runs.emplace_back(run);
+
+      // Add run number if not already present
+      if (std::find(run_numbers.begin(), run_numbers.end(), run_no) == run_numbers.end()) {
+        run_numbers.emplace_back(run_no);
+      }
+    }
+
+    // Add channel types to unique set
+    for (const auto &channel : config.channels) {
+      unique_channels.insert(channel);
+    }
+  }
+
+  // Convert unique channels to vector
+  for (const auto &channel : unique_channels) {
+    channel_types.emplace_back(channel);
+  }
+
+  // Sort run numbers for consistent processing
+  std::sort(run_numbers.begin(), run_numbers.end());
+
+  std::cout << "Processed " << station_configs.size() << " station configurations:" << std::endl;
+  for (const auto &config : station_configs) {
+    std::cout << "  Station: " << config.name;
+    std::cout << ", Runs: ";
+    for (size_t i = 0; i < config.run_numbers.size(); ++i) {
+      if (i > 0)
+        std::cout << ", ";
+      std::cout << config.run_numbers[i];
+    }
+    std::cout << ", Channels: ";
+    for (size_t i = 0; i < config.channels.size(); ++i) {
+      if (i > 0)
+        std::cout << ", ";
+      std::cout << config.channels[i];
+    }
+    std::cout << std::endl;
   }
 }
+
 void ptspc_lib::get_run_numbers(const std::vector<size_t> &run_numbers_in) {
   if (run_numbers_in.empty()) {
     std::ostringstream err_str(__func__, std::ios_base::ate);
@@ -223,17 +265,19 @@ void ptspc_lib::read_survey() {
   for (const auto &irun : run_numbers) {
     for (const auto &schan : channel_types) {
       for (auto &station : stations) {
-        if (station->get_run(irun) == nullptr) {
+        auto xrun = station->get_run(irun);
+        if (xrun == nullptr) {
           std::cerr << station->get_name() << " run " << irun << " not found" << std::endl;
           throw std::runtime_error("Run not found in station: " + station->get_name() + " run: " + std::to_string(irun));
         }
-        if (station->at(irun, schan) == nullptr) {
+        if (xrun->get_channel(schan) == nullptr) {
           std::cerr << station->get_name() << " channel " << schan << " not found" << std::endl;
           throw std::runtime_error("Channel not found in station: " + station->get_name() + " channel: " + schan);
         }
       }
     }
   }
+  /*
   for (const auto &irun : run_numbers) {
     for (const auto &schan : channel_types) {
       wl = (size_t)stations.back()->at(irun, schan)->get_sample_rate(); // want 1 Hz bandwidth if possible
@@ -253,8 +297,10 @@ void ptspc_lib::read_survey() {
     for (auto &station : stations)
       station->get_run(irun)->init_raw_spectra(pool); // this does not start a thread, it just prepares the raw spectra
   }
+  */
 }
 
+/*
 void ptspc_lib::read_info_console() {
   double f_or_s;
   std::string unit;
@@ -408,6 +454,9 @@ void ptspc_lib::dump_ac_spectra_coh_noise() {
     run->raw_spc->dump_noise_prz_spectra();
   }
 }
+*/
+
+//////////////////////////////////////////////////////////////////////////////////////
 
 /*
 ptspc_lib::ptspc_lib(std::shared_ptr<survey_tree> survey,
@@ -447,16 +496,16 @@ ptspc_lib::ptspc_lib(std::shared_ptr<survey_tree> survey,
   // get the runs from the stations
   for (const auto &station : stations) {
     for (const auto &run_no : run_numbers) {
-      auto run = station->get_child(std::format("run_{:03}", run_no));
+      auto run = station->get_child(std::format("run_{:0{}}", run_no, run_digits));
       if (run == nullptr) {
         std::ostringstream err_str(__func__, std::ios_base::ate);
-        err_str << " run " << std::format("run_{:03}", run_no) << " not found in station " << station->get_path() << std::endl;
+        err_str << " run " << std::format("run_{:0{}}", id, run_digits) << " not found in station " << station->get_path() << std::endl;
         throw std::runtime_error(err_str.str());
       }
       runs.emplace_back(run->get_run());
       if (runs.back() == nullptr) {
         std::ostringstream err_str(__func__, std::ios_base::ate);
-        err_str << " run_d pointer is null for run " << std::format("run_{:03}", run_no) << " in station " << station->get_path() << std::endl;
+        err_str << " run_d pointer is null for run " << std::format("run_{:0{}}", run_no, run_digits) << " in station " << station->get_path() << std::endl;
         throw std::runtime_error(err_str.str());
       }
     }

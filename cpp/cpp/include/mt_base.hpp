@@ -31,11 +31,35 @@
 
 /*!
  * @brief Maximum number of channels; each channel is at a fixed position! As it comes from the data logger
- * @details we have several times "Ex" for example, so we have to use the channel number to identify the channel.
- * @warning we have physical "slots" for channels from 0 to 15; even if not used! and we have maybe Ex[0] and Ex[5] for example; Ex is NOT and indicator for [0].
+ *
+ * ## Details
+
+ * ### Channel
+ *
+ * A channel is a configuration of a sensor connected to a specific slot (that is the channel number, unique) in the data logger.<br>
+ * Each channel has a type (e.g., Ex, Ey, Hx, Hy, Hz, etc.) and is associated with a unique channel number corresponding to its slot.<br>
+ * The channel shall contain the calibration data and other metadata specific to the SENSOR connected to that slot.<br>
+ * The sensor does NOT appear as a separate entity in the system; it is always part of a channel.<br>
+ * We can have Hx[2] and Hx[5] for example; both are different channels connectedOn land, Hx shall be North direction, offshore and airborne it may differ, even vary.<br>
+ * ### Run
+ *
+ * A run represents a recording started at a specific UTC time for a defined duration and defined sample rate [Hz]. atss file size divided by sizeof(double) == samples and divided by sample rate) returns the duration. The duration is NOT stored in the json header.<br>
+ *
+ * ### Station
+ *
+ * A station is a physical location where multiple runs are recorded using various channels.<br>
+ * Each station can have multiple runs, and each run can contain data from multiple channels.<br>
+ * For airborne surveys, a station may represent a specific flight path or area of interest.<br>
+ *
+ * ### Survey
+ *
+ * A survey is a collection of stations.<br>
  */
 inline constexpr std::size_t max_survey_channels = 16;
-inline constexpr std::size_t max_runs = 999;
+// maximum number of runs; change both if needed
+inline constexpr std::size_t max_runs = 999; // maximum number of runs per station
+inline constexpr std::size_t run_digits = 3; // number of digits for run formatting like run_001
+//
 #define JSON_MAX_IVALUE 9007199254740991
 #define JSON_MIN_IVALUE -9007199254740991
 const double mue0 = 4.0 * M_PI * 1.0E-7;

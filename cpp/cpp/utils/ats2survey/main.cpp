@@ -29,9 +29,16 @@ int main(int argc, char **argv) {
       }
       // append the lowest level directory name from in_dir to out_dir to create a new subdirectory
       out_dir /= in_dir.filename();
-      ;
+
       if (!std::filesystem::exists(out_dir)) {
         std::filesystem::create_directories(out_dir);
+      }
+
+      if (options.start_run > 0) {
+        out_dir /= mstr::run2string(options.start_run, run_digits);
+        if (!std::filesystem::exists(out_dir)) {
+          std::filesystem::create_directories(out_dir);
+        }
       }
 
       std::vector<std::shared_ptr<ats2atss>> conversions; // and look for .ats files

@@ -446,13 +446,14 @@ template <class T>
  * \param width field width
  * \return string with at least width characters, starting with 0 or -0 in case
  */
-inline std::string zero_fill_field(const T num, unsigned int width) {
+inline std::string zero_fill_field(const T num, const std::size_t width) {
+  std::size_t w = width;
   std::ostringstream oss;
   if (num < 0) {
     oss << '-';
-    --width;
+    --w; // reduce width for negative sign
   }
-  oss << std::setfill('0') << std::setw(width) << (num < 0 ? -num : num);
+  oss << std::setfill('0') << std::setw(w) << (num < 0 ? -num : num);
   return oss.str();
 }
 
@@ -613,10 +614,9 @@ inline std::vector<std::stringstream> field_width_right_adjusted_freqs_periods(c
  * where XXX is the run number zero-padded to 3 digits.
  * \return run_001 or run_012 and so on
  */
-inline std::string run2string(const auto &run) {
-
+inline std::string run2string(const auto &run, const std::size_t run_digits) {
   std::string srun("run_");
-  return srun + mstr::zero_fill_field(run, 3);
+  return srun + mstr::zero_fill_field(run, run_digits);
 }
 
 /*!

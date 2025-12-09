@@ -531,13 +531,14 @@ public:
     }
     if (help) {
       std::cout << "Usage: " << myexecutable << " -s <survey_path> -u <survey_tree_path> [-v] [-e] [-h] [-r <start_run>] [station_names...]\n";
+      std::cout << "   OR: " << myexecutable << " -i <in_directory> -o <out_directory> [-v] [-e] [-h]\n\n";
       std::cout << "Options:\n";
       std::cout << "  -s <survey_path>       Path to the input ATS survey directory.\n";
       std::cout << "  -u <survey_tree_path>  Path to the output survey tree directory.\n";
       std::cout << "  -v                     Enable verbose output.\n";
       std::cout << "  -no_e                  Disable E channel processing.\n";
       std::cout << "  -h, --help             Show this help message and exit.\n";
-      std::cout << "  -r <start_run>         Start run number for processing (default: 1).\n";
+      std::cout << "  -r <start_run>         Start run number for processing output (default: 1).\n";
       std::cout << "  station_names...       List of station names to process.\n\n";
       std::cout << "Example: " << myexecutable << " -s /old_data/Northern_Mining/ -u /survey/Northern_Mining/ converts all\n";
       std::cout << "         with -no_e you can disable the E channel processing, for example parallel test with no E-Field connected.\n";

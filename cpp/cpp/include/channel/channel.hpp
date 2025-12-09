@@ -334,8 +334,9 @@ public:
 
 /*!
  * \brief The channel class is the FILENAME part of the atss format consisting of binary .atss, JSON .json
- *  the tags of the filename are NOT repeated in the JSON
- *  For more information, visit: https://example.com/documentation
+ * the tags of the filename are NOT repeated in the JSON
+ * For more information, visit: https://example.com/documentation
+ * A channel also need all information to be treated as unique identifier.
  */
 class channel {
 
@@ -777,12 +778,19 @@ public:
     return this->filepath_wo_ext.parent_path();
   }
 
-  std::filesystem::path get_site_dir() const {
+  std::filesystem::path get_station_dir() const {
     return this->filepath_wo_ext.parent_path().parent_path();
   }
 
-  std::filesystem::path get_site_name() const {
+  std::filesystem::path get_station_name() const {
     return this->filepath_wo_ext.parent_path().parent_path().filename();
+  }
+
+  std::filesystem::path get_survey_dir() const {
+    return this->filepath_wo_ext.parent_path().parent_path().parent_path();
+  }
+  std::filesystem::path get_survey_name() const {
+    return this->filepath_wo_ext.parent_path().parent_path().parent_path().filename();
   }
 
   // simple set and get
@@ -872,7 +880,7 @@ public:
       err_str << "::can not create run, I am a root dir";
       throw std::runtime_error(err_str.str());
     }
-    newrun /= mstr::run2string(run);
+    newrun /= mstr::run2string(run, run_digits);
     if (!std::filesystem::exists(newrun)) {
       success = std::filesystem::create_directory(newrun);
     } else
@@ -1829,11 +1837,11 @@ static auto compare_channel_run_eq = [](const std::shared_ptr<channel> &lhs, con
 };
 
 static auto compare_channel_site_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
-  return (lhs->get_site_dir() == rhs->get_site_dir());
+  return (lhs->get_station_dir() == rhs->get_station_dir());
 };
 
 static auto compare_channel_site_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
-  return ((lhs->get_site_dir() == rhs->get_site_dir()) && (lhs->get_run_dir() == rhs->get_run_dir()));
+  return ((lhs->get_station_dir() == rhs->get_station_dir()) && (lhs->get_run_dir() == rhs->get_run_dir()));
 };
 
 static auto same_run = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {

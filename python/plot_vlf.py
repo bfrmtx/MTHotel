@@ -60,3 +60,4 @@ for name, freq_khz in transmitter_frequencies.items():
         plt.text(freq_khz, plt.ylim()[1]*0.8, name, rotation=90, verticalalignment='top', fontsize=14) 
 
 plt.show()
+

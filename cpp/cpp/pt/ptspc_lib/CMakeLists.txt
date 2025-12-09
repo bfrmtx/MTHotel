@@ -18,6 +18,12 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE raw_spectra
 )
 
+# Make headers available to targets that link against this library
+target_include_directories(${PROJECT_NAME} 
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    PUBLIC $<INSTALL_INTERFACE:include>
+)
+
 #IF (WIN32)
 #set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS -pthread LINK_FLAGS -lpthread)
 #ENDIF()

@@ -3,6 +3,7 @@
 
 #include "channel.hpp"
 #include "freqs.hpp"
+#include "mt_base.hpp"
 #include <algorithm>
 #include <chrono>
 #include <complex>
@@ -29,14 +30,22 @@
 #include "survey_tree.hpp"
 #include "vector_math.hpp"
 
+struct station_config {
+  std::string name;                  //!< station name
+  std::vector<size_t> run_numbers;   //!< run numbers for this station
+  std::vector<std::string> channels; //!< channel types for this station
+  // std::vector<std::pair<std::string, std::string>>
+  //     auto_cross_spectra_names; //!< auto and cross spectra names for this station
+};
+
 class ptspc_lib {
 public:
   // ptspc_lib(std::shared_ptr<survey_tree> survey,
   //           std::vector<std::string> stations_names,
   //           const std::vector<size_t> run_numbers, const std::filesystem::path &exePath);
-  ptspc_lib();
+  ptspc_lib(std::shared_ptr<BS::thread_pool<BS::tp::none>> pool_in);
   ~ptspc_lib() = default;
-  ptspc_lib(const ptspc_lib &) = delete;
+  // ptspc_lib(const ptspc_lib &) = delete;
 
 private:
   std::shared_ptr<survey_tree> survey;                                       //!< shared pointer to the survey
@@ -46,6 +55,7 @@ private:
   std::vector<std::string> channel_types;                                    //!< vector of channel types
   std::vector<std::pair<std::string, std::string>> auto_cross_spectra_names; //!< vector of auto and cross spectra names
   std::vector<std::shared_ptr<fftw_freqs>> tmp_fft_freqs;                    //!< vector of fftw_freqs for labels
+  std::vector<station_config> station_configs;                               //!< vector of station configurations
 
   // variables for options
   bool same_base = false; // // always compare against first RMS, default no (outer), yes likely for inner f range
@@ -89,17 +99,18 @@ private:
   inner_outer<double> innerouter; //!< inner and outer range for the resulting spectra, we do not want all frequencies
 
   // functions
+public:
   void
-  get_options(const std::vector<std::string> &margs, const bool &has_gui); //!< get the options from main
-  void get_run_numbers(const std::vector<size_t> &run_numbers_in);         //!< get the run numbers from the command line arguments or main GUI
-  void read_survey();                                                      //!< read the survey from the database
-  void read_info_console();                                                //!< output for console
-  void process_spectra();                                                  //!< process the spectra; this executes the fft
-  void collect_and_calibrate();                                            //!< the queue in the channel is (if) calibrated and transformed to e vector of vector complex; here the spectra will be finally moved into the runs and into a raw_spectra object
-  void run_info_console();                                                 //!< output the run information to the console
-  void stack_ac_spectra();                                                 //!< stack the auto cross spectra for each channel type with fft freqs
-  void parzen_ac_coh_noise_spectra();                                      //!< create the parzen auto cross spectra for each channel type withtarget frequencies and coherence and noise spectra
-  void dump_ac_spectra_coh_noise();                                        //!< dump the auto cross spectra, coherence and noise spectra to files
+  get_options(const std::list<std::string> &args, const bool &has_gui); //!< get the options from main
+  void get_run_numbers(const std::vector<size_t> &run_numbers_in);      //!< get the run numbers from the command line arguments or main GUI
+  void read_survey();                                                   //!< read the survey from the database
+  void read_info_console();                                             //!< output for console
+  void process_spectra();                                               //!< process the spectra; this executes the fft
+  void collect_and_calibrate();                                         //!< the queue in the channel is (if) calibrated and transformed to e vector of vector complex; here the spectra will be finally moved into the runs and into a raw_spectra object
+  void run_info_console();                                              //!< output the run information to the console
+  void stack_ac_spectra();                                              //!< stack the auto cross spectra for each channel type with fft freqs
+  void parzen_ac_coh_noise_spectra();                                   //!< create the parzen auto cross spectra for each channel type withtarget frequencies and coherence and noise spectra
+  void dump_ac_spectra_coh_noise();                                     //!< dump the auto cross spectra, coherence and noise spectra to files
 
   void collect_channels();          //!< collect channels from the survey
   void create_auto_cross_spectra(); //!< create auto and cross spectra
@@ -119,6 +130,8 @@ private:
   void plot_fft_freqs();           //!< plot the fft frequencies
   void create_survey_tree();       //!< create the survey tree
   void scan_survey();              //!< scan the survey for stations and runs
+  void process_station_configs();  //!< process parsed station configurations
   void create_survey_dirs();       //!< create the survey directories
 };
+
 #endif // PTSPC_LIB_H

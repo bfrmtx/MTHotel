@@ -12,6 +12,7 @@
 // my classes
 #include "channel.hpp"
 #include "mt_base.hpp"
+#include "raw_spectra.hpp"
 #include "strings_etc.hpp"
 #include "xlogger.hpp"
 
@@ -232,7 +233,18 @@ public:
     return channels; // that must be size of max_survey_channels, filled with nullptrs if not used
   }
 
-  double get_sample_rate() const {
+  std::shared_ptr<channel> get_channel(const std::string &channel_type) const {
+    std::shared_lock lock(mutex_);
+    for (const auto &channel : channels) {
+      if (channel && channel->get_channel_type() == channel_type) {
+        return channel;
+      }
+    }
+    return nullptr; // Channel not found
+  }
+
+  double
+  get_sample_rate() const {
     std::shared_lock lock(mutex_);
     if (channels.empty()) {
       return 0.0; // No channels available
@@ -273,6 +285,8 @@ public:
 
   std::vector<std::shared_ptr<channel>> channels = std::vector<std::shared_ptr<channel>>(max_survey_channels, nullptr); //!< follow the documentation mt_base.hpp max_survey_channels
   std::shared_ptr<survey_tree> parent;                                                                                  //!< Parent survey_tree, if any
+  std::shared_ptr<raw_spectra> raw_spc;                                                                                 //!< raw spectra for the run - contains Ex, Ey, Hx, Hy, Hz, REx, REy, RHx, RHy, RHz, EEx, EEy (emap)
+
 private:
   fs::path basePath;
   mutable std::shared_mutex mutex_; //!< Mutex for thread-safe access to channels
@@ -344,6 +358,12 @@ private:
   std::shared_ptr<run_d> run;
 
 public:
+  /*!
+   * @brief Construct a new survey_tree object, general purpose constructor
+   * @param name
+   * @param parent
+   * @details if a run exists at level 2, a run_d instance is created automatically
+   */
   survey_tree(const std::string name, std::shared_ptr<survey_tree> parent = nullptr) :
       name(name),
       parent(parent),
@@ -384,11 +404,43 @@ public:
       run = std::make_shared<run_d>(basePath);
     }
   }
+  // Read-only constructor for opening existing surveys
+
+  /*!
+   * @brief Construct a new survey_tree object in read-only mode
+   * @param name
+   * @param read_only
+   */
+  survey_tree(const std::string name, bool read_only) :
+      name(name),
+      parent(), // No parent for top-level read-only survey
+      level(0), // Always level 0 (survey root) for read-only constructor
+      basePath(fs::path{name}) {
+
+    if (read_only) {
+      // Read-only mode: only validate existing directories, don't create
+      if (!fs::exists(basePath) || !fs::is_directory(basePath)) {
+        throw std::runtime_error("Directory does not exist: " + basePath.string());
+      }
+
+      // For read-only survey root, check that stations directory exists
+      if (!fs::exists(basePath / "stations") || !fs::is_directory(basePath / "stations")) {
+        throw std::runtime_error("Survey directory missing 'stations' subdirectory");
+      }
+      this->basePath = basePath / "stations";
+      logger << "Opened existing survey at: " << basePath;
+    } else {
+      throw std::runtime_error("This constructor is only for read-only mode");
+    }
+
+    // Don't create run_d for level 0 in read-only mode
+  }
   void scan() {
     if (level != 0) {
       return;
     }
     std::unique_lock lock(mutex_);
+    std::cout << "\n";
     for (const auto &entry : fs::directory_iterator(basePath)) {
       // station dirs, level 1
       if (entry.is_directory()) {
@@ -406,12 +458,37 @@ public:
         for (const auto &entry : fs::directory_iterator(child->get_path())) {
           if (entry.is_directory()) {
             std::string runName = entry.path().filename().string();
-            if (std::regex_match(runName, std::regex(R"(run_(\d{3}))"))) {
+            std::string pattern = "run_(\\d{" + std::to_string(run_digits) + "})";
+            if (std::regex_match(runName, std::regex(pattern))) {
+              // add the run as child
+              child->children[runName] = std::make_shared<survey_tree>(runName, child);
+              // but not the run_d instance, that is expensive, so we create it only when needed
               std::cout << "Found run: " << runName << " in " << child->get_path() << "\n";
+              // std::cout << "Found run: " << runName << " in " << child->get_path() << "\n";
             }
           }
         }
       }
+    }
+  }
+
+  bool is_survey_root() const {
+    return level == 0;
+  }
+  bool is_station() const {
+    return level == 1;
+  }
+  bool is_run() const {
+    return level == 2;
+  }
+
+  void disable_run() {
+    if (level != 2) {
+      return;
+    }
+    std::unique_lock lock(mutex_);
+    if (run != nullptr) {
+      run.reset();
     }
   }
 
@@ -441,7 +518,7 @@ public:
     }
     std::string childName = (level == 0)
                                 ? std::format("{}", id)
-                                : std::format("run_{:03}", id);
+                                : std::format("run_{:0{}}", id, run_digits);
     return add_child(childName);
   }
 
@@ -451,7 +528,7 @@ public:
     }
     std::string childName = (level == 0)
                                 ? std::format("{}", id)
-                                : std::format("run_{:03}", id);
+                                : std::format("run_{:0{}}", id, run_digits);
     return get_child(childName);
   }
 
@@ -466,7 +543,8 @@ public:
     }
 
     int maxId = -1;
-    std::regex runPattern(R"(run_(\d{3}))");
+    std::string pattern = "run_(\\d{" + std::to_string(run_digits) + "})";
+    std::regex runPattern(pattern);
 
     if (scanDisk) {
       for (const auto &entry : fs::directory_iterator(get_path())) {
@@ -510,6 +588,10 @@ public:
     run = std::move(runObj);
   }
 
+  /*!
+   * @brief At level 2 (run leaves), get the run_d instance associated with this survey_tree node.
+   * @return a shared_ptr to the run_d instance (not a leaf), or nullptr if not at level 2.
+   */
   std::shared_ptr<run_d> get_run() const {
     if (level != 2)
       return nullptr;
@@ -517,6 +599,31 @@ public:
     return run;
   }
 
+  /*!
+   * @brief At level 1 (station directories), get the run_d instance associated with a specific run number.
+   * @param run_no The run number to retrieve.
+   * @return a shared_ptr to the run_d instance, or nullptr if not found.
+   * @details you may retrieved a std::vector<std::shared_ptr<survey_tree>> stations; then for each station call get_run(run_no);
+   */
+  std::shared_ptr<run_d> get_run(const size_t &run_no) const {
+    if (level != 1) {
+      throw std::logic_error("get_run(run_no) only valid at level 1 (station directories)");
+    }
+    std::shared_lock lock(mutex_);
+    std::string runName = std::format("run_{:0{}}", run_no, run_digits);
+    auto it = children.find(runName);
+    if (it != children.end()) {
+      return it->second->get_run();
+    }
+    return nullptr; // Run not found
+  }
+
+  /*!
+   * @brief At level 0 (survey directories), get the run_d instance associated with a specific station and run number.
+   * @param station The station name to retrieve.
+   * @param run_no The run number to retrieve.
+   * @return a shared_ptr to the run_d instance, or nullptr if not found.
+   */
   std::shared_ptr<run_d> get_run(const std::string &station, const size_t &run_no) const {
     if (level != 0) {
       throw std::logic_error("get_run() only valid at level 0 (survey directories)");
@@ -527,7 +634,7 @@ public:
       auto stationNode = it->second;
       // now we have the station node, continue to find the run by iterating through its children
       for (const auto &[runName, runNode] : stationNode->children) {
-        if (runName == std::format("run_{:03}", run_no)) {
+        if (runName == std::format("run_{:0{}}", run_no, run_digits)) {
           return runNode->get_run();
         }
       }

@@ -3,6 +3,7 @@ project(test_survey_create LANGUAGES CXX)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(${CMAKE_SOURCE_DIR}/cmake/rpath.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/out_of_tree_build.cmake)
+include_directories(${CMAKE_SOURCE_DIR}/cpp/pt/ptspc_lib)
 
 
 # Add test source file(s)
