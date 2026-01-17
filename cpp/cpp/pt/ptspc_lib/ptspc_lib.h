@@ -28,15 +28,8 @@
 #include "sqlite_handler.hpp"
 #include "strings_etc.hpp"
 #include "survey_tree.hpp"
+#include "survey_tree_cmdline.hpp"
 #include "vector_math.hpp"
-
-struct station_config {
-  std::string name;                  //!< station name
-  std::vector<size_t> run_numbers;   //!< run numbers for this station
-  std::vector<std::string> channels; //!< channel types for this station
-  // std::vector<std::pair<std::string, std::string>>
-  //     auto_cross_spectra_names; //!< auto and cross spectra names for this station
-};
 
 class ptspc_lib {
 public:
@@ -48,11 +41,14 @@ public:
   // ptspc_lib(const ptspc_lib &) = delete;
 
 private:
-  std::shared_ptr<survey_tree> survey;                                       //!< shared pointer to the survey
-  std::vector<std::shared_ptr<survey_tree>> stations;                        //!< vector of shared pointers to stations (children of survey)
-  std::vector<std::shared_ptr<run_d>> runs;                                  //!< vector of shared pointers to runs
-  std::vector<size_t> run_numbers;                                           //!< vector of run numbers
-  std::vector<std::string> channel_types;                                    //!< vector of channel types
+  std::shared_ptr<survey_tree_d> survey;                //!< shared pointer to the survey
+  std::shared_ptr<survey_tree_d> survey_tmp;            //!< shared pointer to the survey
+  std::filesystem::path survey_path;                    //!< name of the survey
+  std::vector<std::shared_ptr<survey_tree_d>> stations; //!< vector of shared pointers to stations (children of survey)
+  std::vector<std::shared_ptr<run_d>> runs;             //!< vector of shared pointers to ALL runs
+  std::vector<std::shared_ptr<channel>> channels;       //!< vector of shared pointers to ALL channels
+  // std::vector<size_t> run_numbers;                                           //!< vector of run numbers
+  // std::vector<std::string> channel_types;                                    //!< vector of channel types
   std::vector<std::pair<std::string, std::string>> auto_cross_spectra_names; //!< vector of auto and cross spectra names
   std::vector<std::shared_ptr<fftw_freqs>> tmp_fft_freqs;                    //!< vector of fftw_freqs for labels
   std::vector<station_config> station_configs;                               //!< vector of station configurations
@@ -83,8 +79,8 @@ private:
   double pwr_base = 0.0;                      //!< power line base frequency, if != 0, power lines are suppressed like 50, 100, 150 Hz and so on
   bool use_master_cal = false;                //!< use the master calibration for all channels in case we don't have a calibration inside the json file
   std::unique_ptr<get_from_master_cal> master_cal;
-  size_t min_wl = 1024; //!< minimum window length for fftw
-  size_t min_rl = 256;  //!< minimum read length for fftw
+  size_t min_wl = 512; //!< minimum window length for fftw; typical frequency for PST
+  size_t min_rl = 256; //!< minimum read length for fftw, if wl < min_wl, rl = min_rl -> padding
   std::vector<std::pair<double, double>> power_lines_ranges = {{12, 20}, {46, 54}, {146, 154}};
   bool br = false;      //!< prepare for runs, default no
   bool has_gui = false; //!< has a GUI, default no
@@ -100,17 +96,17 @@ private:
 
   // functions
 public:
-  void
-  get_options(const std::list<std::string> &args, const bool &has_gui); //!< get the options from main
-  void get_run_numbers(const std::vector<size_t> &run_numbers_in);      //!< get the run numbers from the command line arguments or main GUI
-  void read_survey();                                                   //!< read the survey from the database
-  void read_info_console();                                             //!< output for console
-  void process_spectra();                                               //!< process the spectra; this executes the fft
-  void collect_and_calibrate();                                         //!< the queue in the channel is (if) calibrated and transformed to e vector of vector complex; here the spectra will be finally moved into the runs and into a raw_spectra object
-  void run_info_console();                                              //!< output the run information to the console
-  void stack_ac_spectra();                                              //!< stack the auto cross spectra for each channel type with fft freqs
-  void parzen_ac_coh_noise_spectra();                                   //!< create the parzen auto cross spectra for each channel type withtarget frequencies and coherence and noise spectra
-  void dump_ac_spectra_coh_noise();                                     //!< dump the auto cross spectra, coherence and noise spectra to files
+  void get_options(const std::list<std::string> &args, const bool &has_gui); //!< get the options from main command line
+  void process_station_configs(const bool verbose = false);                  //!< process parsed station configurations
+  void prepare_fft(const bool verbose = false);                              //!< prepare the fft for all channels
+  void process_raw_spectra();                                                //!< process the spectra; this executes the fft
+  void set_inner_outer_frequencies_prepare_spectra();                        //!< set the inner and outer frequencies for all channels / spectra  ; we don't want mostly NOT the complete, especially not the upper part. Then prepare the spectra (from queue of vectors to vector of vectors)
+
+  void collect_and_calibrate();       //!< the queue in the channel is (if) calibrated and transformed to e vector of vector complex; here the spectra will be finally moved into the runs and into a raw_spectra object
+  void run_info_console();            //!< output the run information to the console
+  void stack_ac_spectra();            //!< stack the auto cross spectra for each channel type with fft freqs
+  void parzen_ac_coh_noise_spectra(); //!< create the parzen auto cross spectra for each channel type withtarget frequencies and coherence and noise spectra
+  void dump_ac_spectra_coh_noise();   //!< dump the auto cross spectra, coherence and noise spectra to files
 
   void collect_channels();          //!< collect channels from the survey
   void create_auto_cross_spectra(); //!< create auto and cross spectra
@@ -130,7 +126,6 @@ public:
   void plot_fft_freqs();           //!< plot the fft frequencies
   void create_survey_tree();       //!< create the survey tree
   void scan_survey();              //!< scan the survey for stations and runs
-  void process_station_configs();  //!< process parsed station configurations
   void create_survey_dirs();       //!< create the survey directories
 };
 

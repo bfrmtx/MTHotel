@@ -5,6 +5,7 @@
 int main(int argc, char **argv) {
   // Your code here
   command_line_options_ats2atss options(argc, argv);
+  auto pool = std::make_shared<BS::thread_pool<BS::tp::none>>();
 
   std::cout << "Starting ATS to ATSS conversion..." << std::endl;
   if (options.help) {
@@ -66,7 +67,6 @@ int main(int argc, char **argv) {
         conversion->set_can_convert_data(true); // we can convert data now
       }
       // now convert data using a thread pool
-      auto pool = std::make_shared<BS::thread_pool<BS::tp::none>>();
       for (const auto &conversion : conversions) {
         pool->detach_task([conversion, no_e = options.no_e]() {
           conversion->convert_data(no_e);
@@ -93,15 +93,16 @@ int main(int argc, char **argv) {
   }
   std::filesystem::path survey_path_ats = options.survey_path_ats;
   std::filesystem::path survey_tree_path = options.survey_tree_path;
+
   bool verbose = options.verbose;
   bool no_e = options.no_e;
   size_t start_run = options.start_run;
   std::vector<std::string> stations = options.stations;
   std::cout << "Scanning ATSS target survey directory: " << survey_tree_path << std::endl;
-  auto survey = std::make_shared<survey_tree>(survey_tree_path);
-  survey->scan(); // Scan the directory to populate the tree
+  auto survey = std::make_shared<survey_tree_d>(survey_tree_path, pool, 3, false, verbose);
+  survey->scan(true, true); // Scan the directory to populate the tree
   if (verbose) {
-    survey->list_children_recursive(); // List all children in the survey tree
+    survey->ls(true, 3); // List all children in the survey tree
   }
   std::shared_ptr<survey_ats> ats_survey;
   try {
@@ -130,7 +131,7 @@ int main(int argc, char **argv) {
       for (const auto &[run_path, run] : station->runs) {
         std::cout << "Adding run: " << run_path.filename() << " to station: " << station_name << std::endl;
         auto run_tree = station_tree->addAutoRun(start_run, true); // Add a run to the station tree
-        run->set_output_dir(run_tree->get_path());                 // Set the output directory for the run
+        run->set_output_dir(run_tree->get_base_path());            // Set the output directory for the run
         run->write_headers(no_e);                                  // Write the headers for the run
       }
     } catch (const std::exception &e) {
@@ -138,7 +139,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  auto pool = std::make_shared<BS::thread_pool<BS::tp::none>>();
   // convert_data for each run in the survey
   for (const auto &[station_name, station] : ats_survey->stations) {
     // if stations is empty, we process all stations, else we only process stations in the vector

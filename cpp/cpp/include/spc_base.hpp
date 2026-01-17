@@ -22,9 +22,9 @@
  * Each  spectrum is associated with a name and stored as a shared pointer to a vector or a vector of vectors.
  * The class also allows setting and getting the bandwidth of the spectra.
  * Do not use channel = channel; we don't want counters on channel objects here; later in main it is desired to delete the shared pointers
- * The channel object CONTAINS THE FREQUENCIES!
- * vector: that is e.g. a stacked result, and in case of coherence of type double <br
- * vector of vectors: that is e.g. unstacked (first vector) of of complex spectra (second vector) <br>
+ * The channel object CONTAINS THE FREQUENCIES! <br>
+ * ----> vector: that is e.g. a stacked result, and in case of coherence of type double <br>
+ * ----> vector of vectors: that is e.g. unstacked (first vector) of complex spectra (second vector) <br>
  * the channel wich we created should contain the frequencies, same size as the spectra (second vector) <br>
  * the <b>internal ch_map</b> shall contain the channel objects, which are used to create the spectra! Must be a pair map object!
  * a <Hx,> is mostly the vector of vector of complex raw spectra, which you want to work on
@@ -113,6 +113,7 @@ public:
   // 3) ************************* move a channel object to the collection ************************
   /*!
    * @brief this is called for a channel object, we ALWAYS move the spectrum from the channel to the collection; channel has a shared pointer!
+   * @details a channel ONLY contains his own spectrum, so not <Ex, Ey> etc.
    * @param chan the channel object can be set to be remote or emap; this will be considered
    */
   void move_spectra(std::shared_ptr<channel> chan) {

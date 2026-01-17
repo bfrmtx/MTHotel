@@ -28,34 +28,11 @@ namespace fs = std::filesystem;
 class raw_spectra : public spc_base<std::vector<std::complex<double>>> {
 public:
   /*!
-   * \brief raw_spectra
-   * \param fft_freqs copy of a shared pointer; the raw spectra contain trimmed results - so a subset of the complete FFT
+   * @brief raw_spectra for basic creation of the raw_spectra object, the channels (after their fft) are set later, e.g. by move_raw_spectra
+   * @details only checks the thread pool pointer
    */
-
-  raw_spectra(std::shared_ptr<BS::thread_pool<BS::tp::none>> &pool, std::shared_ptr<fftw_freqs> &fft_freqs) {
+  raw_spectra(std::shared_ptr<BS::thread_pool<BS::tp::none>> &pool) {
     this->pool = pool;
-    // this->fft_freqs = fft_freqs;
-    // if (this->fft_freqs == nullptr) {
-    //   throw std::runtime_error("raw_spectra: fft_freqs is nullptr");
-    // }
-    if (pool == nullptr) {
-      throw std::runtime_error("raw_spectra: pool is nullptr");
-    }
-  }
-
-  raw_spectra(std::shared_ptr<BS::thread_pool<BS::tp::none>> &pool, const std::vector<std::shared_ptr<channel>> &channels) {
-    this->pool = pool;
-    // all fft_freqs will be the same - so take the fist valid one - only if this->fft_freqs is nullptr
-    // for (auto &c : channels) {
-    //   if ((c->fft_freqs != nullptr) && (this->fft_freqs == nullptr)) {
-    //     this->fft_freqs = std::make_shared<fftw_freqs>(c->fft_freqs);
-    //     // this->fft_freqs = c->fft_freqs;
-    //     break;
-    //   }
-    // }
-    // if (this->fft_freqs == nullptr) {
-    //   throw std::runtime_error("raw_spectra: fft_freqs is nullptr");
-    // }
     if (pool == nullptr) {
       throw std::runtime_error("raw_spectra: pool is nullptr");
     }
@@ -70,16 +47,9 @@ public:
   void coherence_raw_spectra_prz(); // we call it parzen but is a simple spline smoothing
 
   /*!
-   * \brief raw_spectra destructor
+   * @brief raw_spectra destructor
    */
-  ~raw_spectra() {
-    this->pool.reset();
-    auto it = this->channels.begin();
-    for (auto &c : this->channels) {
-      c.reset();
-    }
-    this->channels.clear();
-  }
+  ~raw_spectra() = default;
 
   /*!
    * \brief move_raw_spectra moves the raw spectra from the channel to the raw_spectra object (after channel has read it from the file)
@@ -127,8 +97,7 @@ public:
   std::vector<double> get_spectra_generic(const spc_base<double> &data_container,
                                           const std::function<std::vector<double>()> &get_freqs,
                                           const std::pair<std::string, std::string> &name,
-                                          bool is_remote = false,
-                                          bool is_emap = false) const;
+                                          bool is_remote = false, bool is_emap = false) const;
 
   std::vector<double> get_abs_sa_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const {
     return get_spectra_generic(this->sa, [this]() { return this->fft_freqs->get_frequencies(); }, name, is_remote, is_emap);

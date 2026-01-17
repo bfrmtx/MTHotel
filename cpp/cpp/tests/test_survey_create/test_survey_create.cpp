@@ -1,4 +1,3 @@
-#include "BS_thread_pool.hpp"
 #include "survey_tree.hpp"
 #include <filesystem>
 #include <iostream>
@@ -7,10 +6,10 @@
 
 std::vector<std::string> stations_to_create = {"Station_1", "Station_2", "Station_3", "Station_4", "Station_5", "Station_6", "Station_7", "Station_8", "Station_9", "Station_10"};
 
-// vector size_t 1... 100
+// vector size_t 1... 70
 std::vector<size_t> station_runs = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70};
 
-void create_inside_thread(std::shared_ptr<survey_tree> &tree, const std::string &station_name, std::vector<size_t> &runs) {
+void create_inside_thread(std::shared_ptr<survey_tree_d> &tree, const std::string &station_name, std::vector<size_t> &runs) {
   try {
     auto station = tree->add_child(station_name);
     if (station) {
@@ -47,9 +46,9 @@ int main(int argc, char **argv) {
   std::filesystem::path survey_path = "/tmp/Eastern_Mining/";
 
   auto pool = std::make_shared<BS::thread_pool<BS::tp::none>>(8);
-  std::shared_ptr<survey_tree> survey;
+  std::shared_ptr<survey_tree_d> survey;
   try {
-    survey = std::make_shared<survey_tree>(survey_path.string()); // Create the empty or not empty survey tree at the specified path
+    survey = std::make_shared<survey_tree_d>(survey_path.string(), pool, 3, false); // Create the empty or not empty survey tree at the specified path
   } catch (const std::runtime_error &e) {
     std::cerr << "Runtime error while creating survey tree at " << survey_path << ": " << e.what() << std::endl;
     return 1;
@@ -57,7 +56,7 @@ int main(int argc, char **argv) {
     std::cerr << "Error while creating survey tree at " << survey_path << ": " << e.what() << std::endl;
     return 1;
   }
-  survey->scan(); // Scan the directory to populate the tree
+  survey->scan(true); // Scan the directory to populate the tree
   if (small_test) {
     stations_to_create = {"small test"};
     station_runs = {2};
@@ -83,14 +82,15 @@ int main(int argc, char **argv) {
     }
     pool->wait();
   }
-  survey->list_children(); // List all children in the survey tree
-  survey.reset();          // Clear the survey tree to release resources
+  survey->ls();   // List all children in the survey tree
+  survey.reset(); // Clear the survey tree to release resources
+  return EXIT_SUCCESS;
   // ***********************************************************************
-  std::cout << "test 2" << std::endl;
-  survey_path = "/home/bfr/tmp/Eastern_Mining/";
-  survey = std::make_shared<survey_tree>(survey_path.string());
-  survey->scan();                    // Scan the directory to populate the tree
-  survey->list_children_recursive(); // List all children in the survey tree
+  // std::cout << "test 2" << std::endl;
+  // survey_path = "/home/bfr/tmp/Eastern_Mining/";
+  // survey = std::make_shared<survey_tree_d>(survey_path.string(), pool, 3, false); // Create the empty or not empty survey tree at the specified path
+  // survey->scan();                                                                 // Scan the directory to populate the tree
+  // survey->ls();                                                                   // List all children in the survey tree
 
   // try {
   //   tree.set_root(survey_path);
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
   //   for (const auto &station : stations) {
   //     std::cout << "Station: " << station->name() << ", Path: " << station->path() << std::endl;
   //     // Example of getting runs for each station
-  //     auto runs = station->get_runs();
+  //     auto runs = station->get_runs_data();
   //     std::cout << "Number of runs in station " << station->name() << ": " << runs.size() << std::endl;
   //     for (const auto &run : runs) {
   //       std::cout << "  Run: " << run->path() << std::endl;
@@ -136,8 +136,8 @@ int main(int argc, char **argv) {
 
   // std::filesystem::path temp_path = std::filesystem::temp_directory_path();
   // std::cout << "System temporary directory: " << temp_path << std::endl;
-  // // survey_tree is implemented as a singleton, so you cannot create a new instance directly.
-  // // The only way to access the instance is via survey_tree::instance().
+  // // survey_tree_d is implemented as a singleton, so you cannot create a new instance directly.
+  // // The only way to access the instance is via survey_tree_d::instance().
   // std::filesystem::path test_create(temp_path / "survey_test");
   // try {
   //   tree.create_root(test_create);
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
   // }
 
   // // Create a survey tree with multiple stations and runs, we using thread-pool to handle the creation of runs in parallel
-  // // and check the thread-safety of the survey_tree class
+  // // and check the thread-safety of the survey_tree_d class
   // /*for (const auto &station_name : stations_to_create) {
   //   try {
   //     tree.add_child(station_name);
@@ -180,5 +180,5 @@ int main(int argc, char **argv) {
   //   });
   // }
   // pool->wait();
-  return 0;
+  // return 0;
 }

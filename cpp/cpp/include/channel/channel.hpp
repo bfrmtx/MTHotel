@@ -1,5 +1,5 @@
-#ifndef ATSS_H
-#define ATSS_H
+#ifndef CHANNEL_HPP
+#define CHANNEL_HPP
 
 #include "atmm.hpp"
 #include "cal_base.hpp"
@@ -10,6 +10,7 @@
 ////
 #include <bitset>
 #include <chrono>
+#include <cmath>
 #include <complex>
 #include <cstddef>
 #include <cstdlib>
@@ -22,6 +23,7 @@
 #include <queue>
 #include <shared_mutex>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -134,8 +136,12 @@ public:
     return *this;
   }
 
+  /*!
+   * @brief compares the START TIMES of two p_timer objects
+   * @param rhs
+   * @return true if earlier than rhs
+   */
   bool operator<(const p_timer &rhs) const {
-
     if (this->tt < rhs.tt)
       return true; // second diff
     if (this->tt > rhs.tt)
@@ -143,8 +149,12 @@ public:
     return (this->fracs < rhs.fracs); // else compare sub samples
   }
 
+  /*!
+   * @brief compares the START TIMES of two p_timer objects
+   * @param rhs
+   * @return true if later than rhs
+   */
   bool operator>(const p_timer &rhs) const {
-
     if (this->tt > rhs.tt)
       return true; // second diff
     if (this->tt < rhs.tt)
@@ -219,6 +229,11 @@ public:
     return *this;
   }
 
+  /*!
+   * @brief compares two p_timer objects for equality
+   * @param rhs
+   * @return true if equal START and STOP times !!!
+   */
   bool operator==(const p_timer &rhs) const {
     if (this->sample_rate != rhs.sample_rate)
       return false;
@@ -227,16 +242,22 @@ public:
     return ((this->tt == rhs.tt) && (this->fracs == rhs.fracs));
   }
 
+  /*!
+   * @brief returns the timer at the specified sample index
+   * @param nth_sample
+   * @details p_timer.tt AND p_timer.fracs are SET! For intermediate usage.
+   * @return timer at sample nth_sample or an empty timer if nth_sample is out of range;
+   */
   p_timer sample_time(const size_t nth_sample) const {
-    p_timer nt(*this);
+    p_timer nt(*this); // copy current timer
     if (nth_sample <= this->samples)
       nt.spos = nth_sample;
     else
       return p_timer();
 
     double fullsecs, tsseg = (double(nt.spos)) / this->sample_rate;
-    nt.fracs = modf(tsseg, &fullsecs);
-    nt.tt += (uint64_t)fullsecs;
+    nt.fracs = modf(tsseg, &fullsecs); // fractions are set
+    nt.tt += (uint64_t)fullsecs;       // add full seconds - a new object is born, it is a NEW START TIME!
     return nt;
   }
 
@@ -250,6 +271,12 @@ public:
     return (int64_t)pos1 + (int64_t)pos2;
   }
 
+  /*!
+   * @brief returns the p_timer at the start of the channel
+   * @details check that sample_rate and samples for both channels if you want to compare two channels !!! <br>
+   * use also if samples are still zero !!!
+   * @return start p_timer (sample 0)
+   */
   p_timer p_start() const {
     return this->sample_time(0);
   }
@@ -272,8 +299,7 @@ public:
     }
   }
 
-  std::string
-  sample_datetime(const size_t &sample, const int iso_0_date_1_time_2 = 0) const {
+  std::string sample_datetime(const size_t &sample, const int iso_0_date_1_time_2 = 0) const {
     auto nt = this->sample_time(sample);
     return mstr::iso8601_time_t(nt.tt, iso_0_date_1_time_2, nt.fracs);
   }
@@ -983,9 +1009,109 @@ public:
     return str;
   }
 
+  void ltrim(const size_t cut_first_n_samples) {
+    if (cut_first_n_samples >= this->pt.samples) {
+      std::ostringstream err_str((std::string("channel::") + __func__), std::ios_base::ate);
+      err_str << "::can not cut more samples than available: " << cut_first_n_samples << " >= " << this->pt.samples;
+      throw std::runtime_error(err_str.str());
+    }
+    this->pt.samples -= cut_first_n_samples;
+    this->pt.spos = 0;
+    this->pt.tt += static_cast<time_t>(cut_first_n_samples / this->pt.sample_rate);
+    double rem = std::fmod(static_cast<double>(cut_first_n_samples), this->pt.sample_rate);
+    this->pt.fracs += rem / this->pt.sample_rate;
+    if (this->pt.fracs >= 1.0) {
+      this->pt.tt += static_cast<time_t>(this->pt.fracs);
+      this->pt.fracs = std::fmod(this->pt.fracs, 1.0);
+    }
+    // update the json file
+    this->write_header();
+    // cut the first n samples from the data file
+    std::filesystem::path atss_file_in = this->get_atss_filepath();
+    // check input file
+    std::ifstream infile(atss_file_in, std::ios::binary);
+    if (!std::filesystem::exists(atss_file_in)) {
+      std::ostringstream err_str((std::string("channel::") + __func__), std::ios_base::ate);
+      err_str << "::data file does not exist: " << atss_file_in;
+      throw std::runtime_error(err_str.str());
+    }
+    // open input file
+    if (!infile.is_open()) {
+      std::ostringstream err_str((std::string("channel::") + __func__), std::ios_base::ate);
+      err_str << "::can not open data file for reading: " << atss_file_in;
+      throw std::runtime_error(err_str.str());
+    }
+    std::filesystem::path atss_file_out = atss_file_in;
+    atss_file_out += ".tmp";
+    std::ofstream outfile(atss_file_out, std::ios::binary | std::ios::trunc);
+    // open output file
+    if (!outfile.is_open()) {
+      std::ostringstream err_str((std::string("channel::") + __func__), std::ios_base::ate);
+      err_str << "::can not open temporarydata file for writing: " << atss_file_out;
+      throw std::runtime_error(err_str.str());
+    }
+    // read and write in chunks
+    size_t chunk_size = 8388608; // 8 MB
+
+    // bytes to cut
+    size_t bytes_to_cut = cut_first_n_samples * sizeof(double);
+    infile.seekg(bytes_to_cut, std::ios::beg);
+    std::vector<char> buffer(chunk_size);
+    while (infile) {
+      infile.read(buffer.data(), buffer.size());
+      std::streamsize bytes_read = infile.gcount();
+      if (bytes_read > 0) {
+        outfile.write(buffer.data(), bytes_read);
+      }
+    }
+    infile.close();
+    outfile.close();
+    // replace original file with the new file
+    std::filesystem::remove(atss_file_in);
+    std::filesystem::rename(atss_file_out, atss_file_in);
+  }
+
+  /*!
+   * @brief trim cut samples from the end NO change of header needed
+   * @param cut_last_n_samples
+   */
+  void rtrim(const size_t cut_last_n_samples) {
+    if (!cut_last_n_samples)
+      return;
+    if (cut_last_n_samples >= this->pt.samples) {
+      std::ostringstream err_str((std::string("channel::") + __func__), std::ios_base::ate);
+      err_str << "::can not cut more samples than available: " << cut_last_n_samples << " >= " << this->pt.samples;
+      throw std::runtime_error(err_str.str());
+    }
+    this->pt.samples -= cut_last_n_samples;
+    // update the json file not needed
+
+    // cut the last n samples from the data file
+    std::filesystem::path atss_file_in = this->get_atss_filepath();
+    size_t new_file_size = this->pt.samples * sizeof(double);
+    try {
+      std::filesystem::resize_file(atss_file_in, new_file_size);
+    } catch (const std::filesystem::filesystem_error &e) {
+      std::ostringstream err_str((std::string("channel::") + __func__), std::ios_base::ate);
+      err_str << "::can not resize data file: " << atss_file_in << " error: " << e.what();
+      throw std::runtime_error(err_str.str());
+    }
+  }
+
+  /*!
+   * @brief trim cut samples from begin and end and change header accordingly
+   * @param cut_first_n_samples
+   * @param cut_last_n_samples
+   */
+  void trim(const size_t cut_first_n_samples, const size_t cut_last_n_samples) {
+    this->ltrim(cut_first_n_samples);
+    this->rtrim(cut_last_n_samples);
+  }
+
   std::filesystem::path filepath_wo_ext; //!< path without extension ... aka remember me
-  p_timer pt;                            //!< that is the timer class with fractions of seconds
-  std::shared_ptr<calibration> cal;      //!< calibration class
+  // *********** maybe add parent node from survey tree later **************
+  p_timer pt;                       //!< that is the timer class with fractions of seconds
+  std::shared_ptr<calibration> cal; //!< calibration class
 
   // JSON values + datetime from p_timer
   double latitude = 0.0;    //!< decimal degree such as 52.2443, ISO 6709, +/- 90
@@ -1654,6 +1780,64 @@ public:
 
     return ss.str();
   }
+  bool operator==(const channel &rhs) const {
+    if (pt != rhs.pt) {
+      return false;
+    }
+
+    double eps = 1E-10; // tight tolerance for sampling rate
+    if (std::fabs(get_sample_rate() - rhs.get_sample_rate()) > eps) {
+      return false;
+    }
+
+    eps = 1E-6; // relaxed tolerance for position-related fields
+    if (std::fabs(latitude - rhs.latitude) > eps) {
+      return false;
+    }
+    if (std::fabs(longitude - rhs.longitude) > eps) {
+      return false;
+    }
+    if (std::fabs(elevation - rhs.elevation) > eps) {
+      return false;
+    }
+    if (std::fabs(angle - rhs.angle) > eps) {
+      return false;
+    }
+    if (std::fabs(tilt - rhs.tilt) > eps) {
+      return false;
+    }
+    if (std::fabs(resistance - rhs.resistance) > eps) {
+      return false;
+    }
+
+    if (filter != rhs.filter) {
+      return false;
+    }
+    if (units != rhs.units) {
+      return false;
+    }
+    if (source != rhs.source) {
+      return false;
+    }
+    if (serial != rhs.serial) {
+      return false;
+    }
+    if (system != rhs.system) {
+      return false;
+    }
+    if (channel_no != rhs.channel_no) {
+      return false;
+    }
+    if (channel_type != rhs.channel_type) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool operator!=(const channel &rhs) const {
+    return !(*this == rhs);
+  }
 
 private:
   /*!
@@ -1760,93 +1944,131 @@ private:
     this->ts_slice_inv.resize(this->fft_freqs->get_wl(), 0.0);
     this->plan_inv = fftw_plan_dft_c2r_1d(this->fft_freqs->get_wl(), reinterpret_cast<fftw_complex *>(&this->spc_slice[0]), &this->ts_slice_inv[0], FFTW_ESTIMATE);
   }
+
 }; // end channel class
 
-/*!
- * \brief operator == for std::shared_ptr<channel>
- * std::shared_ptr<channel> ch1 = std::make_shared<channel>();
- * std::shared_ptr<channel> ch2 = std::make_shared<channel>();
- *  // ... initialize ch1 and ch2 ...
- *
- * if (ch1 == ch2) {
- *   // This calls your custom operator == for shared_ptr<channel>
- *   // we don't want to know if they are the same object!
- * }
- */
-static bool operator==(const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) {
-  if (lhs == nullptr || rhs == nullptr)
-    return false; // one of the pointers is nullptr
-  // fist compare the timer pt (we have the == operator defined for p_timer
-  if (lhs->pt != rhs->pt)
-    return false;
-
-  double eps = 1E-10; // for double comparison
-  if (fabs(lhs->get_sample_rate() - rhs->get_sample_rate()) > eps)
-    return false;
-  if (fabs(lhs->latitude - rhs->latitude) > eps)
-    return false;
-  if (fabs(lhs->longitude - rhs->longitude) > eps)
-    return false;
-  if (fabs(lhs->elevation - rhs->elevation) > eps)
-    return false;
-  if (fabs(lhs->angle - rhs->angle) > eps)
-    return false;
-  if (fabs(lhs->tilt - rhs->tilt) > eps)
-    return false;
-  if (fabs(lhs->resistance - rhs->resistance) > eps)
-    return false;
-
-  // end of double comparison
-
-  if (lhs->filter != rhs->filter)
-    return false;
-  if (lhs->units != rhs->units)
-    return false;
-  if (lhs->source != rhs->source)
-    return false;
-  if (lhs->serial != rhs->serial)
-    return false;
-  if (lhs->system != rhs->system)
-    return false;
-  if (lhs->channel_no != rhs->channel_no)
-    return false;
-  if (lhs->channel_type != rhs->channel_type)
-    return false;
-  return true; // all checks passed, we have an equal channel
+// helper to enforce non-null channel pointers in comparators
+static inline const std::shared_ptr<channel> &
+ensure_channel_ptr(const std::shared_ptr<channel> &ptr, const char *ctx) {
+  if (!ptr) {
+    throw std::runtime_error(std::string(ctx) + ": null channel pointer");
+  }
+  return ptr;
 }
 
+/*!
+ * @brief lexicographical sort by channel filename, Ex is before Ey, Hx before Hy before Hz and so on
+ */
 static auto compare_channel_name_lt = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+  ensure_channel_ptr(lhs, "compare_channel_name_lt");
+  ensure_channel_ptr(rhs, "compare_channel_name_lt");
   return lhs->filename() < rhs->filename();
 };
 
+/*!
+ * @brief returns true if lhs start time is less than rhs start time; using std::sort you get the earliest first
+ */
 static auto compare_channel_start_lt = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+  ensure_channel_ptr(lhs, "compare_channel_start_lt");
+  ensure_channel_ptr(rhs, "compare_channel_start_lt");
   return lhs->pt < rhs->pt;
 };
 
+/*!
+ * @brief returns true if lhs start time is equal to rhs start time
+ */
 static auto compare_channel_start_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
-  // operator for pointer, * invoces the < operator wich is defined for a pointer rhs
+  ensure_channel_ptr(lhs, "compare_channel_start_eq");
+  ensure_channel_ptr(rhs, "compare_channel_start_eq");
   return lhs->pt == rhs->pt;
 };
 
+/*!
+ * @brief returns true if lhs sampling rate is equal to rhs sampling rate
+ */
 static auto compare_channel_sampling_rate_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+  ensure_channel_ptr(lhs, "compare_channel_sampling_rate_eq");
+  ensure_channel_ptr(rhs, "compare_channel_sampling_rate_eq");
   return (lhs->get_sample_rate() == rhs->get_sample_rate());
 };
 
+/*!
+ * @brief returns true if lhs run directory is equal to rhs run directory, that is the parent dir ../run_xxxx/
+ */
 static auto compare_channel_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+  ensure_channel_ptr(lhs, "compare_channel_run_eq");
+  ensure_channel_ptr(rhs, "compare_channel_run_eq");
   return (lhs->get_run_dir() == rhs->get_run_dir());
 };
 
-static auto compare_channel_site_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+/*!
+ * @brief returns true if lhs station directory is equal to rhs station directory. that is the parent, parent directory ../run_xxxx/station_yyyy/
+ */
+static auto compare_channel_station_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+  ensure_channel_ptr(lhs, "compare_channel_station_eq");
+  ensure_channel_ptr(rhs, "compare_channel_station_eq");
   return (lhs->get_station_dir() == rhs->get_station_dir());
 };
 
-static auto compare_channel_site_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+/*!
+ * @brief returns true if lhs station directory and run directory are equal to rhs station directory and run directory. e.g. we are in the same station and same run
+ */
+static auto compare_channel_station_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+  ensure_channel_ptr(lhs, "compare_channel_station_run_eq");
+  ensure_channel_ptr(rhs, "compare_channel_station_run_eq");
   return ((lhs->get_station_dir() == rhs->get_station_dir()) && (lhs->get_run_dir() == rhs->get_run_dir()));
 };
 
+/*!
+ * @brief returns true if lhs start time and sample rate are equal to rhs start time and sample rate, but channel numbers are different
+ */
 static auto same_run = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+  ensure_channel_ptr(lhs, "same_run");
+  ensure_channel_ptr(rhs, "same_run");
   return ((lhs->pt == rhs->pt) && (lhs->get_sample_rate() == rhs->get_sample_rate() && (lhs->get_channel_no() != rhs->get_channel_no())));
 };
+
+/*!
+ * @brief returns true if lhs start time and sample rate are equal to rhs start time and sample rate, channel types and stop times are also equal
+ */
+static auto is_parallel_channel = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
+  ensure_channel_ptr(lhs, "is_parallel_channel");
+  ensure_channel_ptr(rhs, "is_parallel_channel");
+  return ((lhs->pt == rhs->pt) && (lhs->get_sample_rate() == rhs->get_sample_rate() && (lhs->get_channel_type() == rhs->get_channel_type())));
+};
+
+/*!
+ * @brief repair_run_files
+ * @param channels vector of channels pointers to repair
+ * @details throws an error if start time is not the same (serious problem!), perform a rtrim to the shortest length and make sure that all channels have the same number of samples
+ */
+static size_t repair_run_files(std::vector<std::shared_ptr<channel>> &channels) {
+  if (channels.size() < 2)
+    return 0; // nothing to do
+  // first check start times
+  auto first_start = channels[0]->pt;
+  for (size_t i = 1; i < channels.size(); ++i) {
+    if (channels[i]->pt != first_start) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << "::different start times found between channels " << channels[0]->filename() << " and " << channels[i]->filename();
+      throw std::runtime_error(err_str.str());
+    }
+  }
+  // now find the minimum samples
+  size_t min_samples = channels[0]->samples();
+  for (size_t i = 1; i < channels.size(); ++i) {
+    if (channels[i]->samples() < min_samples)
+      min_samples = channels[i]->samples();
+  }
+  // now rtrim all to min_samples
+  for (size_t i = 0; i < channels.size(); ++i) {
+    size_t samples_to_trim = channels[i]->samples() - min_samples;
+    if (samples_to_trim > 0) {
+      channels[i]->rtrim(samples_to_trim);
+    }
+  }
+  return min_samples;
+}
 
 static std::string make_time_string_now() {
   auto now = std::chrono::system_clock::now();
@@ -1968,25 +2190,5 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
   chan->resistance = 1000;
 }
 
-#endif // ATSS_H
-
-/*
- *
-
-bool operator < (const std::shared_ptr<p_timer>& rhs) const {
-
-    if (this->tt < rhs->tt) return true;      // second diff
-    if (this->tt > rhs->tt) return false;     // second diff
-    return (this->fracs < rhs->fracs);        // else compare sub samples
-
-}
-
-auto compare_channel_start_lt = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
-    // operator for pointer, * invoces the < operator wich is defined for a pointer rhs
-    return *lhs->pt < rhs->pt;
-};
-
-
-
-
-*/
+// helper to enforce non-null channel pointers in comparators
+#endif // CHANNEL_HPP

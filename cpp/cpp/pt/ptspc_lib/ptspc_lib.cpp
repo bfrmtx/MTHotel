@@ -38,10 +38,10 @@ void ptspc_lib::get_options(const std::list<std::string> &args, const bool &has_
     if (*it == "-sb") {
       same_base = true;
       it = margs.erase(it);
-    } else if (*it == "-m6") {
+    } else if (*it == "-m6") { // limited frequency range for MFS-06e
       magnify_06e = true;
       it = margs.erase(it);
-    } else if (*it == "-m7") {
+    } else if (*it == "-m7") { // limited frequency range for MFS-07e
       magnify_07e = true;
       it = margs.erase(it);
     } else if (*it == "-rwy") {
@@ -56,16 +56,16 @@ void ptspc_lib::get_options(const std::list<std::string> &args, const bool &has_
     } else if (*it == "-i") {
       inner_range = true;
       it = margs.erase(it);
-    } else if (*it == "-cplt") {
+    } else if (*it == "-cplt") { // activate calibration plots AND CALIBRATION
       no_cal_plot = false;
       it = margs.erase(it);
     } else if (*it == "-syscal") {
       syscal = true;
       it = margs.erase(it);
-    } else if (*it == "-n") {
+    } else if (*it == "-n") { // normalize the calibration amplitude by f (old style)
       normalize = true;
       it = margs.erase(it);
-    } else if (*it == "-sm") {
+    } else if (*it == "-sm") { // smooth the spectra with a parzen window
       smooth = true;
       it = margs.erase(it);
     } else {
@@ -88,247 +88,117 @@ void ptspc_lib::get_options(const std::list<std::string> &args, const bool &has_
         throw std::runtime_error(err_str.str());
       }
       survey_name = fs::canonical(survey_name);
-      survey = std::make_shared<survey_tree>(survey_name, true); // read-only mode
-      if (survey == nullptr) {
+      survey_tmp = std::make_shared<survey_tree_d>(survey_name, this->pool, run_digits, true); // read-only mode first
+      if (survey_tmp == nullptr) {
         std::ostringstream err_str(__func__, std::ios_base::ate);
         err_str << " first use -u survey_name in order to init the survey";
         throw std::runtime_error(err_str.str());
       }
-      it = margs.erase(it); // erase survey name
-    } else if (*it == "-s") {
-      // Parse station block: -s station_name -r run1 run2 ... -ch channel1 channel2 ...
-      it = margs.erase(it); // erase -s
-
-      if (it == margs.end() || it->starts_with("-")) {
-        throw std::runtime_error("No station name provided after -s");
-      }
-
-      // Create new station configuration
+      this->survey_path = survey_name;
+      it = margs.erase(it);   // erase survey name
+    } else if (*it == "-s") { // get one or more station names
+      it = margs.erase(it);   // erase -s
       station_config config;
-      config.name = *it;
-      it = margs.erase(it); // erase station name
-
-      // Expect -r next
-      if (it == margs.end() || *it != "-r") {
-        throw std::runtime_error("Expected -r after station name '" + config.name + "'");
-      }
-      it = margs.erase(it); // erase -r
-
-      if (it == margs.end() || it->starts_with("-")) {
-        throw std::runtime_error("No run numbers provided after -r for station '" + config.name + "'");
-      }
-
-      // Collect run numbers until we hit -ch
-      while (it != margs.end() && *it != "-ch") {
-        if (it->starts_with("-")) {
-          throw std::runtime_error("Expected -ch after run numbers for station '" + config.name + "', found: " + *it);
-        }
-        try {
-          config.run_numbers.emplace_back(static_cast<size_t>(std::stoul(*it)));
-        } catch (const std::invalid_argument &e) {
-          throw std::runtime_error("Invalid run number format: '" + *it + "' for station '" + config.name + "' - must be a positive integer");
-        } catch (const std::out_of_range &e) {
-          throw std::runtime_error("Run number out of range: '" + *it + "' for station '" + config.name + "' - value too large");
-        }
-        it = margs.erase(it);
-      }
-
-      // Expect -ch next
-      if (it == margs.end() || *it != "-ch") {
-        throw std::runtime_error("Expected -ch after run numbers for station '" + config.name + "'");
-      }
-      it = margs.erase(it); // erase -ch
-
-      if (it == margs.end() || it->starts_with("-")) {
-        throw std::runtime_error("No channel types provided after -ch for station '" + config.name + "'");
-      }
-
-      // Collect channel types until we hit next option or end
-      while (it != margs.end() && !it->starts_with("-")) {
-        config.channels.emplace_back(*it);
-        it = margs.erase(it);
-      }
-
-      // Store the station configuration
+      it = config.create_station_config(it, margs);
       station_configs.emplace_back(std::move(config));
     } else {
       ++it;
     }
   }
 
-  survey->scan(); // scan the survey directory for stations and runs
-  survey->list_children_recursive();
-
-  // Process station configurations
-  process_station_configs();
+  // enable / disable both lines in case for debugging
+  // survey_tmp->scan(true, true); // scan the survey directory recursively for stations and runs; you don't need that for select_only
+  // survey_tmp->ls(true, 3);      // list the survey structure with 3 indentation spaces, call scan first
 }
 
-void ptspc_lib::process_station_configs() {
+void ptspc_lib::process_station_configs(const bool verbose) {
+
+  if (survey_tmp == nullptr) {
+    throw std::runtime_error("Survey scanner is not initialized");
+  }
   if (station_configs.empty()) {
-    return; // No station configurations to process
+    // No station configurations to process
+    throw std::runtime_error("No station configurations provided, empty");
   }
-
+  this->channels.clear();
+  this->runs.clear();
+  this->stations.clear();
+  if (verbose) {
+    std::cout << "SURVEY " << survey_tmp->get_name() << " at " << survey_path.string() << std::endl;
+    std::cout << "Processing " << station_configs.size() << " station configurations..." << std::endl;
+    std::cout << "Creating selective survey tree based on provided station configurations..." << std::endl
+              << std::endl;
+  }
+  try {
+    survey = survey_tmp->select_only(station_configs); // survey_tmp does not need to be scanned before select_only
+  } catch (const std::runtime_error &e) {
+    std::cerr << "Error during selective survey tree creation: " << e.what() << std::endl;
+    throw;
+  }
   if (survey == nullptr) {
-    throw std::runtime_error("Survey is not initialized - use -u survey_name before -s options");
+    throw std::runtime_error("Selective survey tree creation failed, survey is nullptr");
+  }
+  survey_tmp.reset(); // free temporary survey scanner
+
+  this->runs = survey->get_runs_data();
+  for (const auto &run : runs) {
+    auto run_channels = run->get_channels();
+    this->channels.insert(this->channels.end(), run_channels.begin(), run_channels.end());
   }
 
-  // Clear existing data structures
-  stations.clear();
-  runs.clear();
-  run_numbers.clear();
-  channel_types.clear();
-
-  std::set<std::string> unique_channels; // To collect all unique channel types
-
-  for (const auto &config : station_configs) {
-    // Get station from survey
-    auto station = survey->get_child(config.name);
-    if (station == nullptr) {
-      throw std::runtime_error("Station '" + config.name + "' not found in survey");
-    }
-    stations.emplace_back(station);
-
-    // Process runs for this station
-    for (const auto &run_no : config.run_numbers) {
-      auto run = station->get_run(run_no);
-      if (run == nullptr) {
-        throw std::runtime_error("Run " + std::to_string(run_no) + " not found in station '" + config.name + "'");
+  if (verbose) {
+    for (const auto &run : runs) {
+      // std::cout << run->get_sample_rate() << " Hz" << std::endl;
+      std::cout << "station: " << run->get_parent()->get_name() << " run: " << run->get_name() << std::endl;
+      std::cout << "Channels:" << std::endl;
+      for (const auto &chan : run->get_channels()) {
+        // get channels() has no nullptr entries compared to get_channel_vector()
+        std::cout << "  " << chan->brief() << std::endl;
       }
-      runs.emplace_back(run);
-
-      // Add run number if not already present
-      if (std::find(run_numbers.begin(), run_numbers.end(), run_no) == run_numbers.end()) {
-        run_numbers.emplace_back(run_no);
-      }
+      std::cout << std::endl;
     }
-
-    // Add channel types to unique set
-    for (const auto &channel : config.channels) {
-      unique_channels.insert(channel);
-    }
-  }
-
-  // Convert unique channels to vector
-  for (const auto &channel : unique_channels) {
-    channel_types.emplace_back(channel);
-  }
-
-  // Sort run numbers for consistent processing
-  std::sort(run_numbers.begin(), run_numbers.end());
-
-  std::cout << "Processed " << station_configs.size() << " station configurations:" << std::endl;
-  for (const auto &config : station_configs) {
-    std::cout << "  Station: " << config.name;
-    std::cout << ", Runs: ";
-    for (size_t i = 0; i < config.run_numbers.size(); ++i) {
-      if (i > 0)
-        std::cout << ", ";
-      std::cout << config.run_numbers[i];
-    }
-    std::cout << ", Channels: ";
-    for (size_t i = 0; i < config.channels.size(); ++i) {
-      if (i > 0)
-        std::cout << ", ";
-      std::cout << config.channels[i];
-    }
-    std::cout << std::endl;
   }
 }
-
-void ptspc_lib::get_run_numbers(const std::vector<size_t> &run_numbers_in) {
-  if (run_numbers_in.empty()) {
-    std::ostringstream err_str(__func__, std::ios_base::ate);
-    err_str << " no run numbers given, use -r run_number [run_number] ...";
-    throw std::runtime_error(err_str.str());
-  }
-  for (const auto &run_number : run_numbers_in) {
-    for (const auto &station : stations) {
-      auto run = station->get_run(run_number);
-      if (run == nullptr) {
-        std::ostringstream err_str(__func__, std::ios_base::ate);
-        err_str << " run number " << run_number << " not found in station " << station->get_name() << std::endl;
-        throw std::runtime_error(err_str.str());
-      }
-      runs.emplace_back(run);
-    }
-    this->run_numbers.emplace_back(run_number);
-  }
-}
-
-void ptspc_lib::read_survey() {
+void ptspc_lib::prepare_fft(const bool verbose) {
   if (survey == nullptr) {
-    std::ostringstream err_str(__func__, std::ios_base::ate);
-    err_str << " survey is not initialized, use -u survey_name";
-    throw std::runtime_error(err_str.str());
+    throw std::runtime_error("Survey is not initialized, use -u survey_name");
   }
-  // check existence of all channels and runs first
-  for (const auto &irun : run_numbers) {
-    for (const auto &schan : channel_types) {
-      for (auto &station : stations) {
-        auto xrun = station->get_run(irun);
-        if (xrun == nullptr) {
-          std::cerr << station->get_name() << " run " << irun << " not found" << std::endl;
-          throw std::runtime_error("Run not found in station: " + station->get_name() + " run: " + std::to_string(irun));
-        }
-        if (xrun->get_channel(schan) == nullptr) {
-          std::cerr << station->get_name() << " channel " << schan << " not found" << std::endl;
-          throw std::runtime_error("Channel not found in station: " + station->get_name() + " channel: " + schan);
-        }
-      }
-    }
-  }
-  /*
-  for (const auto &irun : run_numbers) {
-    for (const auto &schan : channel_types) {
-      wl = (size_t)stations.back()->at(irun, schan)->get_sample_rate(); // want 1 Hz bandwidth if possible
-      rl = wl;
-      if (wl < min_wl) {
+  size_t wl, rl;
+  for (const auto &run : runs) {
+    wl = (size_t)run->get_sample_rate(); // want 1 Hz bandwidth if possible
+    rl = wl;
+    if (wl < min_wl) {
+      if (verbose) {
         std::cout << "window length " << wl << " is less than minimum " << min_wl << ", using minimum" << std::endl;
-        wl = min_wl; // use minimum window length, causes padding
-        rl = min_rl; // use minimum read length
       }
-      // init a fftw for each run - all channels have the same sample rate in each run
-      // bandwidth 1 Hz ; during the first loop / irun fft_freqs are created, otherwise copied
-      // if nullptr is given, the fft_freqs are created INSIDE the channel (best practice)
-      for (auto &station : stations) // all stations have the same run numbers
-        station->at(irun, schan)->init_fftw(nullptr, false, wl, rl);
+      wl = min_wl; // use minimum window length, causes padding, 512 and rl = 256 is 256 data and 256 zero padding
+      rl = min_rl; // use minimum read length
     }
-    // raws are connected to the thread pool - one for each run; the fft_freqs are connected to the channel, first valid is taken
-    for (auto &station : stations)
-      station->get_run(irun)->init_raw_spectra(pool); // this does not start a thread, it just prepares the raw spectra
-  }
-  */
-}
-
-/*
-void ptspc_lib::read_info_console() {
-  double f_or_s;
-  std::string unit;
-  for (const auto &irun : run_numbers) {
-    for (const auto &schan : channel_types) {
-      auto station = stations.back();
-      mstr::sample_rate_to_str(station->at(irun, schan)->get_sample_rate(), f_or_s, unit);
-      std::cout << "use sample rates of " << f_or_s << " " << unit << std::endl;
+    // init a fftw for each run - all channels have the same sample rate in each run
+    // bandwidth 1 Hz ; during the first loop / irun fft_freqs are created, otherwise copied
+    // if nullptr is given, the fft_freqs are created INSIDE the channel (best practice)
+    for (const auto &chan : run->get_channels()) { // all channels have the same run numbers
+      chan->init_fftw(nullptr, false, wl, rl);
+    }
+    run->init_raw_spectra(); // this does not start a thread, it just prepares the raw spectra
+    if (verbose) {
+      std::cout << "Prepared FFTW for run: " << run->get_name() << " with window length: " << wl << " and read length: " << rl << std::endl;
     }
   }
 }
-
-void ptspc_lib::process_spectra() {
-  thread_index = 0; // reset thread index
-  for (const auto &irun : run_numbers) {
-    for (const auto &schan : channel_types) { // schan = string channel
+void ptspc_lib::process_raw_spectra() {
+  // finally calls read_all_fftw(false, nullptr) for each channel
+  // and pool->detach_task to read in parallel
+  if (survey == nullptr) {
+    throw std::runtime_error("Survey is not initialized, use -u survey_name");
+  }
+  size_t thread_index = 0;
+  for (const auto &run : runs) {
+    for (const auto &chan : run->get_channels()) {
       try {
-
-        // the read_all_fftw pushes the fftw slices into a queue inside the channel object
-        // pool->push_task(&channel::read_all_fftw, station->at(irun, schan), false, nullptr); // each channel is read in parallel
-        for (auto &station : stations) {
-          std::cout << "push thread " << thread_index++ << std::endl;
-          // ---> at this point the time series is read and the FFT result will be INSIDE the channel object
-          pool->detach_task([irun, schan, &station]() { station->at(irun, schan)->read_all_fftw(false, nullptr); });
-        }
-      }
-
-      catch (const std::runtime_error &error) {
+        pool->detach_task([chan]() { chan->read_all_fftw(false, nullptr); });
+        std::cout << "push thread " << thread_index++ << std::endl;
+      } catch (const std::runtime_error &error) {
         std::cerr << error.what() << std::endl;
         std::cerr << "could not execute fftw" << std::endl;
         throw std::runtime_error("Error executing FFTW: " + std::string(error.what()));
@@ -341,11 +211,91 @@ void ptspc_lib::process_spectra() {
   pool->wait(); // wait for all tasks to finish, read time series and perform fftw
 }
 
+void ptspc_lib::set_inner_outer_frequencies_prepare_spectra() {
+  if (survey == nullptr) {
+    throw std::runtime_error("Survey is not initialized, use -u survey_name");
+  }
+  std::vector<int> selected_channels(this->channels.size(), 0);
+  int idx = 0;
+  for (const auto &chan : this->channels) {
+    if (magnify_06e) {
+      if (chan->get_sample_rate() > 64000)
+        innerouter.set_low_high(chan->fft_freqs->set_lower_upper_f(680, 14000, true)); // cut off spectra; we need these values later
+      if (chan->get_sample_rate() < 513)
+        innerouter.set_low_high(chan->fft_freqs->set_lower_upper_f(10, 200, true)); // cut off spectra; we need these values later
+    } else if (magnify_07e) {
+      if (chan->get_sample_rate() > 64000)
+        innerouter.set_low_high(chan->fft_freqs->set_lower_upper_f(680, 60000, true)); // cut off spectra; we need these values later
+      if (chan->get_sample_rate() < 513)
+        innerouter.set_low_high(chan->fft_freqs->set_lower_upper_f(10, 200, true)); // cut off spectra; we need these values later
+    } else
+      innerouter.set_low_high(chan->fft_freqs->auto_range(0.05, 0.5)); // cut off spectra; we need these values later
+
+    if (no_cal_plot == false) { // we WANT calibration
+      std::cout << "calibration" << std::endl;
+      if (use_master_cal) {
+        if (master_cal == nullptr) {
+          std::ostringstream err_str(__func__, std::ios_base::ate);
+          err_str << " no master calibration NULLPTR " << chan->cal->sensor << " " << chan->cal->serial2string() << std::endl;
+          std::cerr << err_str.str();
+          throw std::runtime_error(err_str.str());
+        } else {
+          master_cal->get_master_cal(chan->cal);
+          chan->cal->set_master_as_caldata();
+        }
+      }
+      if (chan->cal->f.size() == 0) {
+        std::ostringstream err_str(__func__, std::ios_base::ate);
+        err_str << " no calibration data available for " << chan->cal->sensor << " " << chan->cal->serial2string() << std::endl;
+        std::cerr << err_str.str();
+      } else {
+        // a) want calibration and
+        // b) have calibration data
+        selected_channels[idx] = 1; // mark as to be calibrated
+      }
+      ++idx;
+    }
+  }
+  idx = 0;
+  for (const auto &chan : this->channels) {
+    if (selected_channels[idx] == 1) {
+      // chan->cal->interpolate(chan->fft_freqs->get_frequencies()); we thread this
+      pool->detach_task([chan]() { chan->cal->interpolate(chan->fft_freqs->get_frequencies()); });
+    }
+    ++idx;
+  }
+  pool->wait();
+  idx = 0;
+  for (const auto &chan : this->channels) {
+    if (selected_channels[idx] == 1) {
+      // chan->cal->gen_cal_sensor(chan->fft_freqs->get_frequencies()); we thread this
+      pool->detach_task([chan]() { chan->cal->gen_cal_sensor(chan->fft_freqs->get_frequencies()); });
+    }
+    ++idx;
+  }
+  pool->wait();
+  idx = 0;
+  for (const auto &chan : this->channels) {
+    if (selected_channels[idx] == 1) {
+      // chan->cal->join_lower_theo_and_measured_interpolated(); we thread this
+      pool->detach_task([chan]() { chan->cal->join_lower_theo_and_measured_interpolated(); });
+    }
+    ++idx;
+  }
+  pool->wait();
+  for (const auto &chan : this->channels) {
+    // now prepare the raw spectra inside the channel object
+    // chan->prepare_raw_spc(!no_cal_plot, syscal, true); // this prepares the spc vector of vectors inside the channel object
+    pool->detach_task([chan, this]() { chan->prepare_raw_spc(!this->no_cal_plot, this->syscal, true); });
+  }
+  pool->wait(); // wait for all tasks to finish, prepare raw spectra inside channels
+}
+/*
 void ptspc_lib::collect_and_calibrate() {
   for (const auto &irun : run_numbers) {
     for (const auto &schan : channel_types) {
       for (auto &station : stations) {
-        auto chan = station->get_run(irun)->get_channel(schan);
+        auto chan = station->get_run_data(irun)->get_channel(schan);
         // ***************************** HENCE that here we are really remove frequencies from the fft_freqs *********************************************************
         if (magnify_06e) {
           if (chan->get_sample_rate() > 64000)
@@ -502,7 +452,7 @@ ptspc_lib::ptspc_lib(std::shared_ptr<survey_tree> survey,
         err_str << " run " << std::format("run_{:0{}}", id, run_digits) << " not found in station " << station->get_path() << std::endl;
         throw std::runtime_error(err_str.str());
       }
-      runs.emplace_back(run->get_run());
+      runs.emplace_back(run->get_run_data());
       if (runs.back() == nullptr) {
         std::ostringstream err_str(__func__, std::ios_base::ate);
         err_str << " run_d pointer is null for run " << std::format("run_{:0{}}", run_no, run_digits) << " in station " << station->get_path() << std::endl;

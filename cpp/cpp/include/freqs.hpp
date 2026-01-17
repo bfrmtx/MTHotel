@@ -292,11 +292,31 @@ public:
   }
 
   /*!
-   * @brief get the bandwidth of the fft - that is half the sample rate; divide by rl to get the frequency resolution of fft
+   * @brief get the bandwidth of the fft - that is half the physical resolution of the FFT, divide by rl.
    * @return
    */
   double get_bw() const {
-    return this->sample_rate / 2.;
+    return this->sample_rate / double(this->rl);
+  }
+
+  /*!
+   * @brief get the bin width of the fft - that is the frequency resolution of the FFT - maybe INTERPOLATED.
+   * @details bin width is different from bandwidth, especially when zero padding is used. <br> BUT if you want to fetch all data points from FFT, use bin width for your container.
+   * @return
+   */
+  double get_bin_width() const {
+    return this->sample_rate / double(this->wl);
+  }
+
+  /*!
+   * @brief get the bandwidth of the fft using Welch's method - that is half the physical resolution of the FFT, divide by rl / n_segments.
+   * @param n_segments
+   * @return
+   */
+  double get_bw_welch(const size_t &n_segments) const {
+    if (n_segments < 1)
+      return this->get_bw();
+    return this->sample_rate / double(this->rl / n_segments);
   }
 
   double get_wincal() const {
