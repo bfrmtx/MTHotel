@@ -15,9 +15,12 @@
 #include <utility>
 #include <vector>
 
+#include "json.hpp"
 #include "mt_base.hpp"
 #include "prz_vector.hpp"
 #include "strings_etc.hpp"
+
+using jsn = nlohmann::ordered_json;
 
 template <typename T, typename Iterator>
 void detrend(Iterator first, const Iterator last) {
@@ -215,6 +218,13 @@ inline std::vector<double> gen_equidistant_logvector_fixed(const double &start, 
   result.push_back(stop);
   return result;
 }
+//
+//
+//
+// *****************************************************  F F T W _ F R E Q S *********************************************************
+//
+//
+//
 
 /*!
  * @brief The fftw_freqs class stores the FFT parameters for FFTW; the fftw plan is INSIDE the channel as well as the result of the FFTW
@@ -279,6 +289,16 @@ public:
     this->wl = rhs->wl;
     this->rl = rhs->rl;
     this->sample_rate = rhs->sample_rate;
+    if (rl > wl) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: read length must be equal or smaller than window length, rl: " << rl << " wl: " << wl;
+      throw std::runtime_error(err_str.str());
+    }
+    if (!sample_rate) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: sample rate must be greater than 0";
+      throw std::runtime_error(err_str.str());
+    }
     this->idx_range = rhs->idx_range;
     this->idx_range_slice = rhs->idx_range_slice;
     this->wincal = rhs->wincal;
@@ -289,6 +309,95 @@ public:
     this->raw_stacks = rhs->raw_stacks;
     this->smooth_index = rhs->smooth_index;
     this->nlines_avg = rhs->nlines_avg;
+  }
+
+  /*!
+   * @brief constructor to load from a JSON file; the JSON file must contain all the necessary parameters for the FFT; the frequencies are generated from low to high, ASCENDING
+   * @param filepath
+   */
+  fftw_freqs(const std::filesystem::path &filepath) {
+    std::ifstream i(filepath);
+    if (!i.is_open()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: can not open file " << filepath;
+      throw std::runtime_error(err_str.str());
+    }
+    jsn j;
+    i >> j;
+    i.close();
+    this->load_from_json(j);
+  }
+
+  void load_from_json(const jsn &j) {
+    this->sample_rate = j.at("sample_rate").get<double>();
+    this->wl = j.at("wl").get<size_t>();
+    this->rl = j.at("rl").get<size_t>();
+    auto idx_rng = j.at("idx_range").get<std::vector<size_t>>();
+    if (idx_rng.size() != 2) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: idx_range size invalid in json";
+      throw std::runtime_error(err_str.str());
+    }
+    this->idx_range = std::make_pair(idx_rng[0], idx_rng[1]);
+    auto idx_rng_slice = j.at("idx_range_slice").get<std::vector<size_t>>();
+    if (idx_rng_slice.size() != 2) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: idx_range_slice size invalid in json";
+      throw std::runtime_error(err_str.str());
+    }
+    this->idx_range_slice = std::make_pair(idx_rng_slice[0], idx_rng_slice[1]);
+    this->wincal = j.at("wincal").get<double>();
+    this->target_freqs = j.at("target_freqs").get<std::vector<double>>();
+    this->selected_freqs = j.at("selected_freqs").get<std::vector<double>>();
+    this->parzendists = j.at("parzendists").get<std::vector<std::vector<double>>>();
+    this->prz_radius = j.at("prz_radius").get<double>();
+    this->raw_stacks = j.at("raw_stacks").get<size_t>();
+    this->smooth_index = j.at("smooth_index").get<std::vector<size_t>>();
+    this->nlines_avg = j.at("nlines_avg").get<size_t>();
+  }
+
+  /*!
+   * @brief save the fftw_freqs object to a JSON object
+   * @param j
+   */
+  void save_to_json(jsn &j) const {
+    j["sample_rate"] = this->sample_rate;
+    j["wl"] = this->wl;
+    j["rl"] = this->rl;
+    j["idx_range"] = {this->idx_range.first, this->idx_range.second};
+    j["idx_range_slice"] = {this->idx_range_slice.first, this->idx_range_slice.second};
+    j["wincal"] = this->wincal;
+    j["target_freqs"] = this->target_freqs;
+    j["selected_freqs"] = this->selected_freqs;
+    j["parzendists"] = this->parzendists;
+    j["prz_radius"] = this->prz_radius;
+    j["raw_stacks"] = this->raw_stacks;
+    j["smooth_index"] = this->smooth_index;
+    j["nlines_avg"] = this->nlines_avg;
+  }
+
+  /*!
+   * @brief Save the fftw_freqs object to a JSON file
+   * @param filepath The path to the file where data will be written
+   * @details uses ordered_json for better readability, file will be created or overwritten
+   * @details if filename does not end with json, it will be added
+   * @throws runtime_error if file can not be created or written
+   */
+  void save(const std::filesystem::path &filepath) const {
+    jsn j;
+    this->save_to_json(j);
+    std::filesystem::path my_filepath = filepath;
+    if (filepath.extension() != ".json") {
+      my_filepath += ".json";
+    }
+    std::ofstream o(my_filepath);
+    if (!o.good()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << ":: can not open file " << my_filepath;
+      throw std::runtime_error(err_str.str());
+    }
+    o << std::setw(2) << j << std::endl;
+    o.close();
   }
 
   /*!

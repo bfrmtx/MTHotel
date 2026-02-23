@@ -1,5 +1,5 @@
-#ifndef PTSPC_LIB_H
-#define PTSPC_LIB_H
+#ifndef PTSPC_LIB_HPP
+#define PTSPC_LIB_HPP
 
 #include "channel.hpp"
 #include "freqs.hpp"
@@ -67,6 +67,7 @@ private:
   bool normalize = false;                     //!< normalize the calibration amplitude by f (old style)
   bool smooth = false;                        //!< smooth the spectra with a running average
   bool bcross_spectra = false;                //!< calculate cross spectra
+  bool all_auto_spectra = false;              //!< calculate all auto spectra (HxHx, HyHy, ExEx, EyEy, ...) for same channel
   std::pair<double, double> f_range = {0, 0}; //!< frequency range
   std::pair<double, double> a_range = {0, 0}; //!< amplitude range
   std::pair<double, double> p_range = {0, 0}; //!< phase range
@@ -102,11 +103,21 @@ public:
   void process_raw_spectra();                                                //!< process the spectra; this executes the fft
   void set_inner_outer_frequencies_prepare_spectra();                        //!< set the inner and outer frequencies for all channels / spectra  ; we don't want mostly NOT the complete, especially not the upper part. Then prepare the spectra (from queue of vectors to vector of vectors)
 
-  void collect_and_calibrate();       //!< the queue in the channel is (if) calibrated and transformed to e vector of vector complex; here the spectra will be finally moved into the runs and into a raw_spectra object
+  void move_raw_spectra(); //!< move the raw spectra from channels to runs and raw_spectra objects
+
+  void prepare_auto_spectra(const bool verbose = false); //!< prepare auto and cross spectra names
+
+  void stack_spectra(); //!< stack the auto spectra for each channel type with fft freqs
+
+  void save(const fs::path &top_dir_ = fs::path(), const std::string &sub_dir_ = ""); //!< save the ptspc_lib data to files in top_dir/sub_dir by creating survey !! below subdir with same structure as survey tree
+
+  void
+  collect_and_calibrate();            //!< the queue in the channel is (if) calibrated and transformed to e vector of vector complex; here the spectra will be finally moved into the runs and into a raw_spectra object
   void run_info_console();            //!< output the run information to the console
   void stack_ac_spectra();            //!< stack the auto cross spectra for each channel type with fft freqs
   void parzen_ac_coh_noise_spectra(); //!< create the parzen auto cross spectra for each channel type withtarget frequencies and coherence and noise spectra
-  void dump_ac_spectra_coh_noise();   //!< dump the auto cross spectra, coherence and noise spectra to files
+
+  /*void dump_ac_spectra_coh_noise();   //!< dump the auto cross spectra, coherence and noise spectra to files
 
   void collect_channels();          //!< collect channels from the survey
   void create_auto_cross_spectra(); //!< create auto and cross spectra
@@ -127,6 +138,7 @@ public:
   void create_survey_tree();       //!< create the survey tree
   void scan_survey();              //!< scan the survey for stations and runs
   void create_survey_dirs();       //!< create the survey directories
+  */
 };
 
-#endif // PTSPC_LIB_H
+#endif // PTSPC_LIB_HPP

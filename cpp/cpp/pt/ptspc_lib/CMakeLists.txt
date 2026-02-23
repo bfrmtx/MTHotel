@@ -7,7 +7,7 @@ include_directories(${CMAKE_SOURCE_DIR}/cpp/mt/raw_spectra)
 
 
 set(SOURCES ptspc_lib.cpp)
-set(HEADERS_INSTALL ptspc_lib.h)
+set(HEADERS_INSTALL ptspc_lib.hpp)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES}  ${HEADERS_INSTALL})
 

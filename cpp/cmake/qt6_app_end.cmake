@@ -4,16 +4,31 @@ if(QT_VERSION_MAJOR GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
     )
 endif()
-target_link_libraries(${PROJECT_NAME}
-    # adds Core and Gui automatically
-    PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-)
-IF(TARGET Qt6::PrintSupport)
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::PrintSupport)
-ENDIF()
+# target_link_libraries(${PROJECT_NAME}
+#     # adds Core and Gui automatically
+#     PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
+# )
+# IF(TARGET Qt6::PrintSupport)
+#     target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::PrintSupport)
+# ENDIF()
 
-# could be set if libraries from earlier projects are needed
-target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_INSTALL_PREFIX}/lib )
+# # Handle qcustomplot linking if configured
+# IF(QCUSTOMPLOT_USE_OPENGL)
+#     target_link_libraries(${PROJECT_NAME}
+#         PRIVATE Qt${QT_VERSION_MAJOR}::OpenGL
+#     )
+#     IF(WIN32)
+#         target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL32)
+#     ENDIF()
+# ENDIF()
+
+# target_link_libraries(${PROJECT_NAME}
+#     PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
+#     PRIVATE qcustomplot
+# )
+
+# # could be set if libraries from earlier projects are needed
+# target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_INSTALL_PREFIX}/lib )
 
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -22,6 +37,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
 include(GNUInstallDirs)

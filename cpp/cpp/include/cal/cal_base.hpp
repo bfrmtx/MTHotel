@@ -73,9 +73,18 @@ public:
   uint64_t get_serial() const {
     return this->serial;
   }
-  std::string get_sensor_and_serial() const {
+
+  std::string get_serial_string(const unsigned int FieldWidth = 0) const {
     std::ostringstream oss;
-    oss << this->sensor << " #" << this->serial;
+    if (FieldWidth > 0)
+      oss << std::setw(FieldWidth) << std::setfill('0') << this->serial;
+    else
+      oss << this->serial;
+    return oss.str();
+  }
+  std::string get_sensor_and_serial(const unsigned int FieldWidth = 0) const {
+    std::ostringstream oss;
+    oss << this->sensor << " #" << this->get_serial_string(FieldWidth);
     return oss.str();
   }
 

@@ -24,16 +24,14 @@ void raw_spectra::advanced_stack_all(const double &fraction_to_use) {
       err_str << "::fraction_to_use must be between 0.01 and 1.0";
       throw std::runtime_error(err_str.str());
     }
-    if (this->sa.is_auto_spc(ac.first)) {
-      // this->pool->submit_task([this, ac, fraction_to_use]() {
-      //   this->do_advanced_stack_auto(ac.first, fraction_to_use);
-      // });
-      this->pool->detach_task([this, &ac, fraction_to_use]() {
-        this->do_advanced_stack_auto(ac.first, fraction_to_use);
+    if (is_auto_spectra(ac.first)) {
+      this->pool->detach_task([this, chan_pair = ac.first, fraction_to_use]() {
+        std::cerr << "stacking auto spectra for " << chan_pair.first->channel_type << " " << chan_pair.second->channel_type << std::endl;
+        this->do_advanced_stack_auto(chan_pair, fraction_to_use);
       });
     } else {
-      this->pool->detach_task([this, &ac, fraction_to_use]() {
-        this->do_advanced_stack_cross(ac.first, fraction_to_use);
+      this->pool->detach_task([this, chan_pair = ac.first, fraction_to_use]() {
+        this->do_advanced_stack_cross(chan_pair, fraction_to_use);
       });
     }
   }
@@ -88,9 +86,9 @@ void raw_spectra::smooth_stack_all() {
   }
 }
 
-std::pair<double, double> raw_spectra::get_abs_sa_spectra_min_max(const std::pair<std::string, std::string> &name, const bool is_remote, const bool is_emap) const {
+std::pair<double, double> raw_spectra::get_abs_sa_spectra_min_max(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
   std::pair<double, double> result(DBL_MIN, DBL_MAX);
-  auto v = this->get_abs_sa_spectra(name, is_remote, is_emap);
+  auto v = this->get_abs_sa_spectra(chan_pair);
   auto xmm = std::minmax_element(v.cbegin(), v.cend());
   result.first = *xmm.first;
   result.second = *xmm.second;
@@ -98,9 +96,9 @@ std::pair<double, double> raw_spectra::get_abs_sa_spectra_min_max(const std::pai
 }
 
 std::string
-raw_spectra::get_sensor_name(const std::pair<std::string, std::string> &name) const {
-  auto name1 = name.first;
-  auto name2 = name.second;
+raw_spectra::get_sensor_name(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
+  auto name1 = chan_pair.first->channel_type;
+  auto name2 = (chan_pair.second != nullptr) ? chan_pair.second->channel_type : std::string();
   auto result1 = name1;
   auto result2 = name2;
   // add is_remote and is_emap
@@ -120,9 +118,9 @@ raw_spectra::get_sensor_name(const std::pair<std::string, std::string> &name) co
   return name1 + ", " + name2;
 }
 
-std::string raw_spectra::get_sensor_serial(const std::pair<std::string, std::string> &name) const {
-  auto name1 = name.first;
-  auto name2 = name.second;
+std::string raw_spectra::get_sensor_serial(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
+  auto name1 = chan_pair.first->channel_type;
+  auto name2 = (chan_pair.second != nullptr) ? chan_pair.second->channel_type : std::string();
   auto result1 = name1;
   auto result2 = name2;
   // add is_remote and is_emap
@@ -142,9 +140,9 @@ std::string raw_spectra::get_sensor_serial(const std::pair<std::string, std::str
   return result1 + ", " + result2;
 }
 
-std::string raw_spectra::get_sensor_name_serial(const std::pair<std::string, std::string> &name, const bool cat_underscore) const {
-  auto name1 = name.first;
-  auto name2 = name.second;
+std::string raw_spectra::get_sensor_name_serial(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair, const bool cat_underscore) const {
+  auto name1 = chan_pair.first->channel_type;
+  auto name2 = (chan_pair.second != nullptr) ? chan_pair.second->channel_type : std::string();
   auto result1 = name1;
   auto result2 = name2;
   std::string serial1;
@@ -173,9 +171,9 @@ std::string raw_spectra::get_sensor_name_serial(const std::pair<std::string, std
   return result1 + " " + serial1 + ", " + result2 + " " + serial2;
 }
 
-std::string raw_spectra::get_sampling_rate(const std::pair<std::string, std::string> &name) const {
+std::string raw_spectra::get_sampling_rate(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
   for (const auto &c : this->channels) {
-    if (c->channel_type == name.first) {
+    if (c->channel_type == chan_pair.first->channel_type) {
       return mstr::sample_rate_to_str_simple(c->get_sample_rate());
     }
   }
@@ -189,13 +187,13 @@ void raw_spectra::multiply_sa_spectra(const double &factor) {
   }
 }
 
-std::vector<double> raw_spectra::get_spectra_generic(const spc_base<double> &data_container, const std::function<std::vector<double>()> &get_freqs, const std::pair<std::string, std::string> &name, bool is_remote, bool is_emap) const {
+std::vector<double> raw_spectra::get_spectra_generic(const spc_base<double> &data_container, const std::function<std::vector<double>()> &get_freqs, const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
   if (data_container.size() == 0) {
     std::ostringstream err_str(__func__, std::ios_base::ate);
-    err_str << "::no spectra found!" << name.first << " " << name.second;
+    err_str << "::no spectra found!";
     throw std::runtime_error(err_str.str());
   }
-  return data_container.get_spectra_vec(name);
+  return data_container.get_spectra_vec(chan_pair);
 }
 
 void raw_spectra::dump_spectra_generic(const spc_base<double> &data_container,
@@ -208,16 +206,25 @@ void raw_spectra::dump_spectra_generic(const spc_base<double> &data_container,
   // Create dump directory if needed
   fs::path home_dir_dump(getenv("HOME"));
   home_dir_dump /= "dump_spectra";
-  if (!std::filesystem::exists(home_dir_dump)) {
-    std::filesystem::create_directory(home_dir_dump);
+  try {
+    if (!std::filesystem::exists(home_dir_dump)) {
+      std::filesystem::create_directory(home_dir_dump);
+    }
+  } catch (const std::filesystem::filesystem_error &e) {
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << "::failed to create dump directory " << home_dir_dump << ": " << e.what();
+    throw std::runtime_error(err_str.str());
   }
 
   // Dump all spectra in the container to files
   for (const auto &ac : data_container) {
-    std::string spc_name = ac.first.first + "_" + ac.first.second;
-    std::string coils = this->get_sensor_name_serial(ac.first, true);
+    auto chan1_type = ac.first.first != nullptr ? ac.first.first->channel_type : std::string();
+    auto chan2_type = ac.first.second != nullptr ? ac.first.second->channel_type : std::string();
+    std::string spc_name = chan1_type + "_" + chan2_type;
+    std::string sensor1_and_2 = this->get_sensor_name_serial(ac.first, true);
+
     std::string sampling_rate = this->get_sampling_rate(ac.first);
-    fs::path filename = home_dir_dump / (spc_name + "_" + coils + "_" + sampling_rate + spectra_type + ".dat");
+    fs::path filename = home_dir_dump / (spc_name + "_" + sensor1_and_2 + "_" + sampling_rate + spectra_type + ".dat");
 
     std::ofstream out(filename);
     if (!out) {
@@ -233,13 +240,67 @@ void raw_spectra::dump_spectra_generic(const spc_base<double> &data_container,
     }
     out.close();
   }
+  // now we save also save the channel(s) as json
+  for (const auto &chan : this->channels) {
+    fs::path filename = home_dir_dump / (chan->channel_type + "_" + chan->cal->serial2string() + "_channel.json");
+    chan->save(filename);
+  }
+  // now we save also the fft_freqs as json, we can only ONE fft_freqs in raw_spectra
+  if (this->fft_freqs != nullptr) {
+    fs::path filename = home_dir_dump / ("fft_freqs.json");
+    this->fft_freqs->save(filename);
+  }
+}
+void raw_spectra::load_from_rundir_result(const std::string &which_spectra_type, const std::filesystem::path &top_dir) {
+  std::string expected_extension = ".datfa";
+  std::shared_ptr<fftw_freqs> freqs_read;
+  if (which_spectra_type == "sa") {
+    freqs_read = this->sa.load_from_rundir(top_dir, expected_extension);
+  } else if (which_spectra_type == "sa_prz") {
+    freqs_read = this->sa_prz.load_from_rundir(top_dir, expected_extension);
+  } else if (which_spectra_type == "sa_avg") {
+    freqs_read = this->sa_avg.load_from_rundir(top_dir, expected_extension);
+  } else if (which_spectra_type == "noise") {
+    freqs_read = this->noise.load_from_rundir(top_dir, expected_extension);
+  } else if (which_spectra_type == "noise_prz") {
+    freqs_read = this->noise_prz.load_from_rundir(top_dir, expected_extension);
+  } else {
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << "::unknown spectra type: " << which_spectra_type;
+    throw std::runtime_error(err_str.str());
+  }
+  if (this->fft_freqs == nullptr) {
+    this->fft_freqs = std::make_shared<fftw_freqs>(freqs_read);
+  } else {
+    if (this->fft_freqs->get_frequencies() != freqs_read->get_frequencies()) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << "::fft frequencies read from " << top_dir << " do not match existing fft frequencies in raw_spectra";
+      throw std::runtime_error(err_str.str());
+    }
+  }
 }
 
-void raw_spectra::do_advanced_stack_auto(const std::pair<std::string, std::string> &name, const double &fraction_to_use) {
-  auto in = this->get_spectra(name.first); // complex spectra, vector of vectors from raw_spectra, I am a map!
-  size_t n = in->at(0).size();             // f size
-  auto out = this->sa.get_spectra(name);   // double spectra, vector, we reserved the space in advance,sa is a map!
-  bool adv = (fraction_to_use < 0.99999);  // adv is false if fraction_to_use is 1.0
+void raw_spectra::do_advanced_stack_auto(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair, const double &fraction_to_use) {
+  // chan_pair should be (channel, channel) where both point to the same channel for auto spectra
+  // But wait - we need to get the<X, null> spectra from the raw_spectra first, not the auto spectra
+  // The raw data is stored with nullptr as second channel
+
+  std::shared_ptr<std::vector<std::vector<std::complex<double>>>> in;
+  std::shared_ptr<std::vector<double>> out;
+  size_t n;
+
+  try {
+    auto single_chan = std::make_pair(chan_pair.first, nullptr);
+    in = this->get_spectra(single_chan);   // Get the raw spectra <X, null>, complex spectra, vector of vectors from raw_spectra
+    n = in->at(0).size();                  // f size
+    out = this->sa.get_spectra(chan_pair); // Get or create output auto spectra <X, X>
+  } catch (const std::exception &e) {
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << "::error retrieving spectra for auto stacking: " << e.what();
+    throw std::runtime_error(err_str.str());
+  }
+
+  bool adv = (fraction_to_use < 0.99999); // adv is false if fraction_to_use is 1.0
   out->resize(n, 0.0);
   for (size_t i = 0; i < n; ++i) {                  //   for frequencies
     auto ff = bvec::absv(bvec::get_fslice(*in, i)); // get all stacks for f
@@ -252,13 +313,29 @@ void raw_spectra::do_advanced_stack_auto(const std::pair<std::string, std::strin
   // out is a shared pointer to a vector of doubles, we don't need to return it or copy it
 }
 
-void raw_spectra::do_advanced_stack_cross(const std::pair<std::string, std::string> &name, const double &fraction_to_use) {
-  auto in1 = this->get_spectra(name.first);  // complex spectra, vector of vectors like <Hx, > - single spectra
-  auto in2 = this->get_spectra(name.second); // complex spectra, vector of vectors like <Hy, > - single spectra
-  auto out = this->sa.get_spectra(name);     // double spectra vector, we reserved the space in advance like <Hx, Hy> - auto or cross spectra
-  size_t n = in1->at(0).size();              // f size
-  bool adv = (fraction_to_use < 1.0);
-  out->resize(n, 0.0); // stack size
+void raw_spectra::do_advanced_stack_cross(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair, const double &fraction_to_use) {
+  // chan_pair is like <X, Y> (two different channels)
+  // Get the raw spectra <X, null> and <Y, null>
+  std::shared_ptr<std::vector<std::vector<std::complex<double>>>> in1;
+  std::shared_ptr<std::vector<std::vector<std::complex<double>>>> in2;
+  std::shared_ptr<std::vector<double>> out;
+  size_t n;
+  bool adv;
+
+  try {
+    auto single_chan1 = std::make_pair(chan_pair.first, nullptr);
+    auto single_chan2 = std::make_pair(chan_pair.second, nullptr);
+    in1 = this->get_spectra(single_chan1); // complex spectra, vector of vectors like <Hx, null> - single spectra
+    in2 = this->get_spectra(single_chan2); // complex spectra, vector of vectors like <Hy, null> - single spectra
+    out = this->sa.get_spectra(chan_pair); // double spectra vector, we reserved the space in advance like <Hx, Hy> - cross spectra
+    n = in1->at(0).size();                 // f size
+    adv = (fraction_to_use < 1.0);
+    out->resize(n, 0.0); // stack size
+  } catch (const std::exception &e) {
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << "::error retrieving spectra for cross stacking: " << e.what();
+    throw std::runtime_error(err_str.str());
+  }
 
   for (size_t i = 0; i < n; ++i) {        // for all f
     auto ff1 = bvec::get_fslice(*in1, i); // get all stacks for f
@@ -273,16 +350,30 @@ void raw_spectra::do_advanced_stack_cross(const std::pair<std::string, std::stri
   }
 }
 
-void raw_spectra::do_cross_coherence_raw_spectra(const std::pair<std::string, std::string> &name, const size_t &n_f_smooth) {
-  // name is like <Hx, Hy>
-  auto in1 = this->get_spectra(name.first);  // complex spectra, vector of vectors like <Hx, > - single spectra
-  auto in2 = this->get_spectra(name.second); // complex spectra, vector of vectors like <Hy, > - single spectra
-  auto out = this->coh.get_spectra(name);    // double spectra vector, we reserved the space in advance like <Hx, Hy> - auto or cross spectra
+void raw_spectra::do_cross_coherence_raw_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair, const size_t &n_f_smooth) {
+  // chan_pair is like <Hx, Hy> - a cross spectrum pair
+  // Get the raw spectra <Hx, null> and <Hy, null>
+  std::shared_ptr<std::vector<std::vector<std::complex<double>>>> in1;
+  std::shared_ptr<std::vector<std::vector<std::complex<double>>>> in2;
+  std::shared_ptr<std::vector<double>> out;
+  size_t n;
+
+  try {
+    auto single_chan1 = std::make_pair(chan_pair.first, nullptr);
+    auto single_chan2 = std::make_pair(chan_pair.second, nullptr);
+    in1 = this->get_spectra(single_chan1);  // complex spectra, vector of vectors like <Hx, null> - single spectra
+    in2 = this->get_spectra(single_chan2);  // complex spectra, vector of vectors like <Hy, null> - single spectra
+    out = this->coh.get_spectra(chan_pair); // double spectra vector, we reserved the space in advance
+    n = in1->at(0).size();                  // f size
+  } catch (const std::exception &e) {
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << "::error retrieving spectra for coherence calculation: " << e.what();
+    throw std::runtime_error(err_str.str());
+  }
   //
   // *out = bvec::coherence_raw_spectra_smooth<double, std::complex<double>>(*in1, *in2, 4);
   // return;
   // new style
-  size_t n = in1->at(0).size();           // f size
   out->resize(n, 0.0);                    // f size
   for (size_t i = 0; i < n; ++i) {        // for all f
     auto ff1 = bvec::get_fslice(*in1, i); // get all stacks for f
@@ -306,9 +397,9 @@ void raw_spectra::do_cross_coherence_raw_spectra(const std::pair<std::string, st
 
   // now we can calculate the noise spectra noise = SpectraAmpl * sqrt (1 - coherency)
   // noise has been prepared before, so we can use it; it double
-  auto out2 = this->noise.get_spectra(name);
+  auto out2 = this->noise.get_spectra(chan_pair);
   // we have the stacked spectra, get
-  auto sa_spectra = this->sa.get_spectra(name);
+  auto sa_spectra = this->sa.get_spectra(chan_pair);
 
   out2->resize(n, 0.0);                                                    // f size
   for (size_t i = 0; i < n; ++i) {                                         // for all f
@@ -329,10 +420,8 @@ void raw_spectra::coherence_raw_spectra(const size_t &n_f_smooth) {
     err_str << "::only one spectra available, cannot calculate coherency";
     throw std::runtime_error(err_str.str());
   }
-  // get the channel map
-  // the spc_base class is derived from std::map<std::pair<std::string, std::string>, std::shared_ptr<std::vector<double>>>
-  // so we can iterate over all spectra in THIS raw_spectra object, get the  std::map<std::pair<std::string, std::string>, std::shared_ptr<std::vector<double>>>
-  std::vector<std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>>> chan_pairs = this->sa_prz.get_channel_pairs_cross();
+  // get the channel map - get all cross spectra channel pairs from sa
+  std::vector<std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>>> chan_pairs = this->sa.generate_cross_spectra_channels();
   if (!chan_pairs.size()) {
     std::ostringstream err_str(__func__, std::ios_base::ate);
     err_str << "::no channel pairs found for coherency calculation";
@@ -358,9 +447,8 @@ void raw_spectra::coherence_raw_spectra(const size_t &n_f_smooth) {
   for (const auto &chan_pair : chan_pairs) {
     // we have a pair of channels, like <Hx, Hy>
     // we need to calculate the coherency for this pair
-    // this->do_cross_coherence_raw_spectra(std::make_pair(chan_pair.first->channel_type, chan_pair.second->channel_type), n_f_smooth);
     this->pool->detach_task([this, chan_pair, n_f_smooth]() {
-      this->do_cross_coherence_raw_spectra(std::make_pair(chan_pair.first->channel_type, chan_pair.second->channel_type), n_f_smooth);
+      this->do_cross_coherence_raw_spectra(chan_pair, n_f_smooth);
     });
   }
   // now we have all coherency spectra in this->coh
@@ -399,12 +487,12 @@ void raw_spectra::coherence_raw_spectra_prz() {
     err_str << "::no sa_prz or sa_avg spectra found, call parzen_stack_all() or smooth_stack_all() first";
     throw std::runtime_error(err_str.str());
   }
-  // get the fist vector from the map and its size
+  // get the first spectrum from the map and check its size
   if (this->sa_prz.size() > 0) {
-    auto sizes = this->sa_prz.get_size_stacked();
-    if (sizes.second != this->fft_freqs->selected_freqs.size()) {
+    auto first_spectrum = this->sa_prz.begin()->second;
+    if (first_spectrum != nullptr && first_spectrum->size() != this->fft_freqs->selected_freqs.size()) {
       std::ostringstream err_str(__func__, std::ios_base::ate);
-      err_str << "::sa_prz size " << sizes.second << " does not match fft_freqs selected size " << this->fft_freqs->selected_freqs.size();
+      err_str << "::sa_prz size " << first_spectrum->size() << " does not match fft_freqs selected size " << this->fft_freqs->selected_freqs.size();
       throw std::runtime_error(err_str.str());
     }
   }
@@ -412,19 +500,28 @@ void raw_spectra::coherence_raw_spectra_prz() {
   for (const auto &ac : this->coh_prz) {
     // we have a pair of channels, like <Hx, Hy>
     // we need to parzen the coherency for this pair
-    // this->do_coh_noise_prz(ac.first);
-    this->pool->detach_task([this, &ac]() {
-      this->do_coh_noise_prz(ac.first);
+    this->pool->detach_task([this, chan_pair = ac.first]() {
+      this->do_coh_noise_prz(chan_pair);
     });
   }
 }
-void raw_spectra::do_coh_noise_prz(const std::pair<std::string, std::string> &name) {
+void raw_spectra::do_coh_noise_prz(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) {
   // we have the stacked spectra, get
-  auto in1 = this->coh.get_spectra(name); // coherency spectra, vector of doubles
-  std::cout << std::endl;
-  auto out1 = this->coh_prz.get_spectra(name);
-  auto in2 = this->noise.get_spectra(name);
-  auto out2 = this->noise_prz.get_spectra(name);
+  std::shared_ptr<std::vector<double>> in1;
+  std::shared_ptr<std::vector<double>> out1;
+  std::shared_ptr<std::vector<double>> in2;
+  std::shared_ptr<std::vector<double>> out2;
+
+  try {
+    in1 = this->coh.get_spectra(chan_pair); // coherency spectra, vector of doubles
+    out1 = this->coh_prz.get_spectra(chan_pair);
+    in2 = this->noise.get_spectra(chan_pair);
+    out2 = this->noise_prz.get_spectra(chan_pair);
+  } catch (const std::exception &e) {
+    std::ostringstream err_str(__func__, std::ios_base::ate);
+    err_str << "::error retrieving spectra for coherence parzen: " << e.what();
+    throw std::runtime_error(err_str.str());
+  }
   // with the akima_vector_double I map in1 to out1 and in2 to out2
   bvec::akima_vector_double(this->fft_freqs->get_frequencies(), *in1, this->fft_freqs->get_selected_frequencies(), *out1);
   bvec::akima_vector_double(this->fft_freqs->get_frequencies(), *in2, this->fft_freqs->get_selected_frequencies(), *out2);

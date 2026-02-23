@@ -9,13 +9,12 @@ project(MTHotel)
 option(BUILD_RAW_CPP "Build raw C++ project" ON)
 # other options follow later
 ###  YOU NEED TO CLEAR THE CACHE AND BUILD DIRECTORY IF YOU CHANGE THE OPTIONS
-option(BUILD_QT_PROJECT "Build Qt project" OFF)
+option(BUILD_QT_PROJECT "Build Qt project" ON)
 set(QCUSTOMPLOT_USE_OPENGL TRUE)
 
 
 
 # now variables for all project; do not repeat them in subdirectories
-# CXX standard; that may be repeated as -std=c++20
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # that should be default
@@ -178,8 +177,8 @@ if(BUILD_QT_PROJECT)
     find_package(Qt6
         REQUIRED COMPONENTS Core Gui Widgets Sql Network Xml
         OPTIONAL_COMPONENTS PrintSupport
-        message(STATUS "Qt6 found: ${Qt6Core_VERSION}")
     )
+    message(STATUS "Qt6 found: ${Qt6Core_VERSION}")
     if (NOT Qt6_FOUND)
         message(FATAL_ERROR "Package Qt6 required, but not found!")
     endif()
@@ -217,4 +216,7 @@ add_subdirectory(${CPP_PROJECT_DIR}/tests)
         # if you ever link to Qt in a library or executable, use target_link_libraries() and
         # target_include_directories() instead.
 
-
+# Finalize Qt project (must be at the end of the top-level CMakeLists.txt)
+if(BUILD_QT_PROJECT)
+    qt_finalize_project()
+endif()

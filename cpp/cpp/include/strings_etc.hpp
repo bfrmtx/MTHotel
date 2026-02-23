@@ -799,7 +799,7 @@ inline std::string measdir_time(const time_t &ti) {
  * @param month The output month integer.
  * @param day The output day integer.
  */
-void date_to_numbers(const std::string &date_str, int &year, int &month, int &day) {
+inline void date_to_numbers(const std::string &date_str, int &year, int &month, int &day) {
   // date_str is expected to be in "YYYY-MM-DD" format
   std::vector<std::string> parts = mstr::split(date_str, '-');
   if (parts.size() != 3) {
@@ -818,7 +818,7 @@ void date_to_numbers(const std::string &date_str, int &year, int &month, int &da
  * @param minute The output minute integer.
  * @param second The output second integer.
  */
-void time_to_numbers(const std::string &time_str, int &hour, int &minute, int &second, double &fraction) {
+inline void time_to_numbers(const std::string &time_str, int &hour, int &minute, int &second, double &fraction) {
   // time_str is expected to be in "HH:MM:SS" format
   // check for a trailing .123 if present
   std::vector<std::string> parts = mstr::split(time_str, ':');
@@ -901,7 +901,7 @@ inline time_t iso8601_to_time_t(const std::string &iso_datetime) {
  * @param fracs The fractional seconds to include (if any).
  * @return The ISO 8601 formatted string.
  */
-std::string iso8601_time_t(const time_t &t, int iso_0_date_1_time_2 = 0, const double fracs = 0.0) {
+inline std::string iso8601_time_t(const time_t &t, int iso_0_date_1_time_2 = 0, const double fracs = 0.0) {
   std::string mydate, mytime;
   mstr::date_and_time(t, mydate, mytime); // have both date and time strings
   if (fracs >= zero_frac && fracs < 1.0) {
@@ -992,7 +992,7 @@ inline std::string iso8601_str_date_time(const std::string &date, const std::str
  * \@param month
  * \@param day
  */
-void tm_to_num_date(const std::tm *date, int &year, int &month, int &day) {
+inline void tm_to_num_date(const std::tm *date, int &year, int &month, int &day) {
   year = date->tm_year + 1900;
   month = date->tm_mon + 1;
   day = date->tm_mday;
@@ -1005,7 +1005,7 @@ void tm_to_num_date(const std::tm *date, int &year, int &month, int &day) {
  * \@param month
  * \@param day
  */
-void tm_to_num_time(const std::tm *date, int &hour, int &min, int &sec) {
+inline void tm_to_num_time(const std::tm *date, int &hour, int &min, int &sec) {
   hour = date->tm_hour;
   min = date->tm_min;
   sec = date->tm_sec;
@@ -1016,7 +1016,7 @@ void tm_to_num_time(const std::tm *date, int &hour, int &min, int &sec) {
  * \@param date
  * \@return
  */
-std::string tm_to_str_date(const std::shared_ptr<tm> &date) {
+inline std::string tm_to_str_date(const std::shared_ptr<tm> &date) {
   return std::to_string(date->tm_year + 1900) + "-" + mstr::zero_fill_field(date->tm_mon + 1, 2) + "-" + mstr::zero_fill_field(date->tm_mday, 2);
 }
 
@@ -1025,7 +1025,7 @@ std::string tm_to_str_date(const std::shared_ptr<tm> &date) {
  * \@param date
  * \@return
  */
-std::string tm_to_str_time(const std::tm *date) {
+inline std::string tm_to_str_time(const std::tm *date) {
   return mstr::zero_fill_field(date->tm_hour, 2) + ":" + mstr::zero_fill_field(date->tm_min + 1, 2) + ":" + mstr::zero_fill_field(date->tm_sec, 2);
 }
 
@@ -1039,7 +1039,7 @@ std::string tm_to_str_time(const std::tm *date) {
  * \@param ss
  * \@return
  */
-std::shared_ptr<tm> time_from_ints(const int YYYY = 0, const int MM = 0, const int DD = 0, const int hh = 0, const int mm = 0, const int ss = 0) {
+inline std::shared_ptr<tm> time_from_ints(const int YYYY = 0, const int MM = 0, const int DD = 0, const int hh = 0, const int mm = 0, const int ss = 0) {
   std::shared_ptr<tm> dt = std::make_shared<tm>();
   dt->tm_year = YYYY - 1900; // Years from 1900
   dt->tm_mon = MM - 1;       // 0-based

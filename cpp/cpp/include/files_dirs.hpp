@@ -136,6 +136,203 @@ inline void CopyRecursive(const std::filesystem::path &src, const std::filesyste
     std::cout << e.what();
   }
 }
+/*!
+ * @brief saves two OR three column binary; e.g. f and amplitude, f and complex, f, amplitude and phase
+ * @tparam T
+ * @param filename
+ * @param freqs
+ * @param amplitudes_or_complex
+ * @param extra - e.g. phase if needed, then amplitudes_or_complex should be REAL numbers
+ */
+template <typename T>
+inline void save_vector_to_bin_f(const std::filesystem::path &filename, const std::vector<double> &freqs, const std::vector<T> &amplitudes_or_complex, const std::optional<std::vector<double>> &e_g_phase = std::nullopt) {
+  // first check that sizes match
+  if (freqs.size() != amplitudes_or_complex.size()) {
+    throw std::runtime_error("save_vector_to_bin_f: size mismatch between freqs and amplitudes_or_complex");
+  }
+  if (e_g_phase.has_value() && (freqs.size() != e_g_phase->size())) {
+    throw std::runtime_error("save_vector_to_bin_f: size mismatch between freqs and extra (phase)");
+  }
+  // check if the top directory exists
+  auto top_dir = filename.parent_path();
+  if (!std::filesystem::exists(top_dir)) {
+    throw std::runtime_error("save_vector_to_bin_f: directory " + top_dir.string() + " does not exist");
+  }
+  std::ofstream ofs(filename, std::ios::binary);
+  if (!ofs.is_open()) {
+    throw std::runtime_error("save_vector_to_bin_f: cannot open file " + filename.string() + " for writing");
+  }
+  // we write the data as binary f, amplitude_or_complex, [phase] one by one
+  size_t nfreqs = freqs.size();
+  for (size_t i = 0; i < nfreqs; ++i) {
+    ofs.write(reinterpret_cast<const char *>(&freqs[i]), sizeof(double));
+    ofs.write(reinterpret_cast<const char *>(&amplitudes_or_complex[i]), sizeof(T));
+    if (e_g_phase.has_value()) {
+      ofs.write(reinterpret_cast<const char *>(&((*e_g_phase)[i])), sizeof(double));
+    }
+  }
+}
+
+template <typename T>
+inline void read_bin_f(const std::filesystem::path &filename, std::vector<double> &freqs, std::vector<T> &amplitudes_or_complex, std::optional<std::vector<double>> &e_g_phase) {
+  // check if file exists
+  if (!std::filesystem::exists(filename)) {
+    throw std::runtime_error("read_bin_f: file " + filename.string() + " does not exist");
+  }
+  std::ifstream ifs(filename, std::ios::binary);
+  if (!ifs.is_open()) {
+    throw std::runtime_error("read_bin_f: cannot open file " + filename.string() + " for reading");
+  }
+  // get file size
+  ifs.seekg(0, std::ios::end);
+  size_t file_size = ifs.tellg();
+  ifs.seekg(0, std::ios::beg);
+
+  size_t record_size = sizeof(double) + sizeof(T);
+  if (e_g_phase.has_value()) {
+    record_size += sizeof(double);
+  }
+  if (file_size % record_size != 0) {
+    throw std::runtime_error("read_bin_f: file size is not a multiple of record size in file " + filename.string());
+  }
+  size_t nrecords = file_size / record_size;
+  freqs.resize(nrecords);
+  amplitudes_or_complex.resize(nrecords);
+  if (e_g_phase.has_value()) {
+    e_g_phase->resize(nrecords);
+  }
+  for (size_t i = 0; i < nrecords; ++i) {
+    ifs.read(reinterpret_cast<char *>(&freqs[i]), sizeof(double));
+    ifs.read(reinterpret_cast<char *>(&amplitudes_or_complex[i]), sizeof(T));
+    if (e_g_phase.has_value()) {
+      ifs.read(reinterpret_cast<char *>(&((*e_g_phase)[i])), sizeof(double));
+    }
+  }
+}
+
+template <typename T>
+inline void save_vector_to_ascii_f(const std::filesystem::path &filename, const std::vector<double> &freqs, const std::vector<T> &amplitudes_or_complex, const std::optional<std::vector<double>> &e_g_phase = std::nullopt) {
+  if (freqs.size() != amplitudes_or_complex.size()) {
+    throw std::runtime_error("save_vector_to_ascii_f: size mismatch between freqs and amplitudes_or_complex");
+  }
+  if (e_g_phase.has_value() && (freqs.size() != e_g_phase->size())) {
+    throw std::runtime_error("save_vector_to_ascii_f: size mismatch between freqs and extra (phase)");
+  }
+  auto top_dir = filename.parent_path();
+  if (!std::filesystem::exists(top_dir)) {
+    throw std::runtime_error("save_vector_to_ascii_f: directory " + top_dir.string() + " does not exist");
+  }
+  std::ofstream ofs(filename);
+  if (!ofs.is_open()) {
+    throw std::runtime_error("save_vector_to_ascii_f: cannot open file " + filename.string() + " for writing");
+  }
+  ofs << std::scientific << std::setprecision(8);
+  size_t nfreqs = freqs.size();
+  for (size_t i = 0; i < nfreqs; ++i) {
+    ofs << freqs[i] << " " << amplitudes_or_complex[i];
+    if (e_g_phase.has_value()) {
+      ofs << " " << (*e_g_phase)[i];
+    }
+    ofs << "\n";
+  }
+}
+
+template <typename T>
+inline void read_ascii_f_ptr(const std::filesystem::path &filename, std::shared_ptr<std::vector<double>> &freqs, std::shared_ptr<std::vector<T>> &amplitudes_or_complex) {
+  if (!std::filesystem::exists(filename)) {
+    throw std::runtime_error("read_ascii_f_ptr: file " + filename.string() + " does not exist");
+  }
+  std::size_t reserve_me = 131072;
+  if (freqs)
+    freqs->clear();
+  else
+    freqs = std::make_shared<std::vector<double>>();
+  if (amplitudes_or_complex)
+    amplitudes_or_complex->clear();
+  else
+    amplitudes_or_complex = std::make_shared<std::vector<T>>();
+  if (!freqs || !amplitudes_or_complex) {
+    throw std::runtime_error("read_ascii_f_ptr: failed to allocate memory");
+  }
+  freqs->reserve(reserve_me);
+  amplitudes_or_complex->reserve(reserve_me);
+  std::ifstream ifs(filename);
+  if (!ifs.is_open()) {
+    throw std::runtime_error("read_ascii_f_ptr: cannot open file " + filename.string() + " for reading");
+  }
+  // before reading, we need to know if we have a two column file (T is DOUBLE) or a three column file (T is std::complex<double>), we can do this by reading the first line and counting the number of columns
+  std::string first_line;
+  if (!std::getline(ifs, first_line)) {
+    throw std::runtime_error("read_ascii_f_ptr: cannot read first line of file " + filename.string());
+  }
+  std::istringstream iss(first_line);
+  std::vector<std::string> columns;
+  std::string column;
+  while (iss >> column) { // so this will read the first line only
+    columns.push_back(column);
+  }
+  if (columns.size() == 2) {
+    // we have a two column file, so T should be double
+    if (!std::is_same<T, double>::value) {
+      throw std::runtime_error("read_ascii_f_ptr: expected two columns in file " + filename.string() + " but T is not double");
+    }
+  } else if (columns.size() == 3) {
+    // we have a three column file, so T should be std::complex<double>
+    if (!std::is_same<T, std::complex<double>>::value) {
+      throw std::runtime_error("read_ascii_f_ptr: expected three columns in file " + filename.string() + " but T is not std::complex<double>");
+    }
+  } else {
+    throw std::runtime_error("read_ascii_f_ptr: expected two or three columns in file " + filename.string() + " but got " + std::to_string(columns.size()));
+  }
+  // now we can read the file line by line and parse the columns. move the first line back to the stream
+  ifs.seekg(0);
+  double freq;
+  T amplitude;
+  while (ifs >> freq >> amplitude) {
+    freqs->push_back(freq);
+    amplitudes_or_complex->push_back(amplitude);
+  }
+  ifs.close();
+  freqs->shrink_to_fit();
+  amplitudes_or_complex->shrink_to_fit();
+}
+
+/*
+template <typename T>
+inline void read_ascii_f(const std::filesystem::path &filename, std::vector<double> &freqs, std::vector<T> &amplitudes_or_complex, std::optional<std::vector<double>> &e_g_phase = std::nullopt) {
+  if (!std::filesystem::exists(filename)) {
+    throw std::runtime_error("read_ascii_f: file " + filename.string() + " does not exist");
+  }
+  std::ifstream ifs(filename);
+  if (!ifs.is_open()) {
+    throw std::runtime_error("read_ascii_f: cannot open file " + filename.string() + " for reading");
+  }
+  freqs.clear();
+  amplitudes_or_complex.clear();
+  if (e_g_phase.has_value()) {
+    e_g_phase->clear();
+  }
+  size_t reseve_me = 131072;
+  double freq;
+  T amplitude;
+  freqs.reserve(reseve_me);
+  amplitudes_or_complex.reserve(reseve_me);
+  if (e_g_phase.has_value()) {
+    e_g_phase->reserve(reseve_me);
+  }
+  while (ifs >> freq >> amplitude) {
+    freqs.push_back(freq);
+    amplitudes_or_complex.push_back(amplitude);
+    if (e_g_phase.has_value()) {
+      double phase;
+      if (!(ifs >> phase)) {
+        throw std::runtime_error("read_ascii_f: expected phase value in file " + filename.string());
+      }
+      e_g_phase->push_back(phase);
+    }
+  }
+}
+*/
 
 /*
 // https://stackoverflow.com/questions/51431425/how-to-recursively-copy-files-and-directories
@@ -158,5 +355,6 @@ int main()
     CopyRecursive(src, target, filter);
 }
 */
+
 } // namespace fdirs
 #endif // FILES_DIRS_HPP

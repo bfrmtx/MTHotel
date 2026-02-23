@@ -14,6 +14,7 @@
 #include <complex>
 #include <cstddef>
 #include <cstdlib>
+#include <deque>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -29,6 +30,7 @@
 #include <vector>
 
 #include <fftw3.h>
+using jsn = nlohmann::ordered_json;
 
 /**
  * @file atss.h
@@ -47,8 +49,6 @@ struct stats {
   bool show_ts = true;
   bool cal_on = false;
 };
-
-using jsn = nlohmann::ordered_json;
 
 /*!
  * \brief The p_timer class allows date functions with fractions of seconds
@@ -373,6 +373,18 @@ public:
   channel() {
   }
 
+  /*!
+   * @brief sets a channel from a string like Ex, Ey, Hx, Hy, Hz as a placeholder in spectra classes.
+   * @param channel_type
+   * @param is_remote
+   * @param is_emap
+   */
+  channel(const std::string &channel_type, const bool is_remote = false, const bool is_emap = false) {
+    this->set_channel_type(channel_type);
+    this->is_remote = is_remote;
+    this->is_emap = is_emap;
+  }
+
   ~channel() {
     if (this->infile.is_open())
       this->infile.close();
@@ -467,6 +479,11 @@ public:
       std::cerr << "ATSS file does not exist: " << atss_file << std::endl;
       std::cerr << "Samples will be set to 0" << std::endl;
       this->pt.samples = 0;
+    } else {
+      this->pt.samples = static_cast<size_t>(std::filesystem::file_size(atss_file) / sizeof(double));
+      if (this->pt.samples == 0) {
+        std::cerr << "ATSS file has zero samples: " << atss_file << std::endl;
+      }
     }
 
     if (this->parse_json_filename(json_file)) {
@@ -485,7 +502,6 @@ public:
       this->pt.iso8601_to_time_t(head["datetime"]);
       this->filepath_wo_ext = json_file;
       this->filepath_wo_ext.replace_extension("");
-      this->samples(this->filepath_wo_ext);
       if (head.contains("angle"))
         this->angle = head["angle"];
       if (head.contains("tilt"))
@@ -796,6 +812,10 @@ public:
     return atsf /= this->filename(".atss");
   }
 
+  /*!
+   * @brief Get the file path without extension
+   * @return The file path without extension; you can use filename
+   */
   std::filesystem::path get_filepath_wo_ext() const {
     return this->filepath_wo_ext;
   }
@@ -829,7 +849,7 @@ public:
     return this->serial;
   }
 
-  std::string get_serial_str(const unsigned int FieldWidth) const {
+  std::string get_serial_string(const unsigned int FieldWidth) const {
     return mstr::zero_fill_field(this->serial, FieldWidth);
   }
 
@@ -837,7 +857,7 @@ public:
     this->system = mstr::simplify(system, true);
   }
 
-  std::string get_system() {
+  std::string get_system() const {
     return this->system;
   }
 
@@ -847,16 +867,36 @@ public:
     return std::string();
   }
 
-  void set_channel_type(const std::string &channel_type) {
+  std::string get_sensor_serial(const unsigned int FieldWidth) const {
+    if (this->cal != nullptr)
+      return this->cal->get_serial_string(FieldWidth);
+    return std::string();
+  }
+
+  std::string get_sensor_and_serial(const unsigned int FieldWidth) const {
+    if (this->cal != nullptr)
+      return this->cal->get_sensor_and_serial(FieldWidth);
+    return std::string();
+  }
+
+  void set_channel_type(const std::string &channel_type, const bool is_remote = false, const bool is_emap = false) {
     this->channel_type = mstr::simplify(channel_type, true);
+    this->is_remote = is_remote;
+    this->is_emap = is_emap;
   }
 
   /*!
    * @brief returns the channel type, like Ex, Hx, Vx, etc.
    * \note this is used for the filename, so it is always simplified
-   * @return
+   * @return ... Hx, RHx, Ex, EEx
    */
-  std::string get_channel_type() const {
+  std::string get_channel_type(const bool extra_indicator = false) const {
+    if (!extra_indicator)
+      return this->channel_type;
+    else if (this->is_emap)
+      return "E" + this->channel_type;
+    else if (this->is_remote)
+      return "R" + this->channel_type;
     return this->channel_type;
   }
 
@@ -980,9 +1020,9 @@ public:
   }
 
   /*!
-   * \brief filename can be used to create files
+   * \brief filename can be used to create files, use get_filepath_wo_ext if the file EXISTS
    * \param extension_wo_dot
-   * \return
+   * \return a newly constructed filename, that is not checked for existence, so you can use it to create files; if you want to check for existence, use get_filepath_wo_ext and add the extension
    */
   std::string filename(const std::string &extension_with_dot = "") const {
 
@@ -1007,6 +1047,15 @@ public:
     if (extension_with_dot.size())
       str += extension_with_dot;
     return str;
+  }
+
+  /*!
+   * @brief CONSTRUCTS a filename! better use get_filepath_wo_ext if the file exists.
+   * @param extension_with_dot
+   * @return filename
+   */
+  std::string get_filename(const std::string &extension_with_dot = "") const {
+    return this->filename(extension_with_dot);
   }
 
   void ltrim(const size_t cut_first_n_samples) {
@@ -1256,6 +1305,35 @@ public:
     file.close();
 
     return filepath;
+  }
+
+  void save(std::filesystem::path filename) {
+    std::ofstream file;
+    file.open(filename, std::fstream::out | std::fstream::trunc);
+
+    if (!file.is_open()) {
+      file.close();
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << "::can not write header, file not open " << filename;
+      throw std::runtime_error(err_str.str());
+    }
+
+    jsn head;
+    head["datetime"] = this->start_datetime();
+    head["latitude"] = this->latitude;
+    head["longitude"] = this->longitude;
+    head["elevation"] = this->elevation;
+    head["angle"] = this->angle;
+    head["tilt"] = this->tilt;
+    head["resistance"] = this->resistance;
+    head["units"] = this->units;
+    head["filter"] = this->filter;
+    head["source"] = this->source;
+    if (this->cal != nullptr)
+      head.update(this->cal->toJson_embedd());
+
+    file << std::setw(2) << head << std::endl;
+    file.close();
   }
 
   bool write_data(const std::vector<double> &data) {
@@ -1664,7 +1742,7 @@ public:
   }
 
   /*!
-   * \brief prepare_raw_spc converts the local queue to a vector spc AND scales with the window wincal
+   * \brief prepare_raw_spc converts the local queue to a vector spc AND scales with the window wincal and CALIBRATES!
    * \param fft_freqs where the fft settings are stored; YOU MUST interpolate / extend the calibration to the same length as the FFT in ADVANCE
    * \param bcal
    */
@@ -1761,9 +1839,16 @@ public:
     uintmax_t xx = 0;
 
     try {
+      if (!std::filesystem::exists(filepath)) {
+        std::cerr << "file does not exist " << filepath << std::endl;
+        return 0;
+      }
       xx = std::filesystem::file_size(filepath);
-    } catch (std::filesystem::filesystem_error &e) {
-      std::cerr << e.what() << std::endl;
+    } catch (const std::filesystem::filesystem_error &e) {
+      std::cerr << "filesystem error: " << e.what() << std::endl;
+      return 0;
+    } catch (const std::exception &e) {
+      std::cerr << "error getting file size: " << e.what() << std::endl;
       return 0;
     }
 
@@ -1837,6 +1922,23 @@ public:
 
   bool operator!=(const channel &rhs) const {
     return !(*this == rhs);
+  }
+  /*!
+   * @brief creates a vector of: sensor _ serial _ channel_number (as C_NNN)
+   * @param append_under_score if true, appends an underscore at the very end
+   * @return
+   */
+  std::deque<std::string> get_channel_tags(std::string &sample_rate_string, bool append_under_score = true) const {
+    std::deque<std::string> tags;
+    tags.emplace_back(this->get_sensor()); // sensor
+    tags.back().append("_");
+    tags.emplace_back(this->get_serial_string(4)); // serial
+    tags.back().append("_");
+    tags.emplace_back(this->get_channel_no_str(true)); // channel
+    sample_rate_string = this->get_sample_rate_str();
+    if (append_under_score)
+      tags.back().append("_");
+    return tags;
   }
 
 private:
@@ -1955,6 +2057,14 @@ ensure_channel_ptr(const std::shared_ptr<channel> &ptr, const char *ctx) {
   }
   return ptr;
 }
+
+/*
+ *
+ *
+ * ********************* C O M P A R E   C H A N N E L S   F U N C T I O N S  *********************
+ *
+ *
+ */
 
 /*!
  * @brief lexicographical sort by channel filename, Ex is before Ey, Hx before Hy before Hz and so on

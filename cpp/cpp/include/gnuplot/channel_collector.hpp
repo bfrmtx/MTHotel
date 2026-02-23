@@ -47,6 +47,10 @@ public:
    */
   channel_collector_gplt(std::shared_ptr<gnuplotter<double, double>> gplt, std::pair<std::string, std::string> spectra_type, bool use_selected = true) :
       gplt(gplt), spectra_type(spectra_type), use_selected(use_selected) {
+    // Create a channel pair where both channels have the same type (auto spectrum)
+    // We initialize chan_pair with nullptr here and will set it properly when collect() is called
+    // Initialize with null pointers for now
+    chan_pair = std::make_pair(nullptr, nullptr);
     if (spectra_type == std::make_pair<std::string, std::string>("Ex", "Ex")) {
       color = "lc rgbcolor \"yellow\"";
     } else if (spectra_type == std::make_pair<std::string, std::string>("Ey", "Ey")) {
@@ -121,6 +125,8 @@ public:
       this->chan = in_chan;
       this->freqs = in_freqs;
       this->raw_spc = in_raw_spectra;
+      // Set up the channel pair - for auto spectra, both pointers point to the same channel
+      this->chan_pair = std::make_pair(in_chan, in_chan);
       // create the label (don't care about calling it again, cost nothing)
       this->label = chan->cal->sensor + " " + chan->cal->serial2string();
 
@@ -199,6 +205,7 @@ public:
 private:
   std::string channel_type;
   std::pair<std::string, std::string> spectra_type;
+  std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> chan_pair;
   std::string color;
   std::vector<std::vector<double>> f_l;
   std::vector<std::vector<double>> data_l;
@@ -224,9 +231,9 @@ private:
     }
     // use raw_spc->get_abs_sa_prz_spectra() if use_selected is true
     if (use_selected) {
-      this->data_l.push_back(this->raw_spc->get_abs_sa_prz_spectra(this->spectra_type));
+      this->data_l.push_back(this->raw_spc->get_abs_sa_prz_spectra(this->chan_pair));
     } else {
-      this->data_l.push_back(this->raw_spc->get_abs_sa_spectra(this->spectra_type));
+      this->data_l.push_back(this->raw_spc->get_abs_sa_spectra(this->chan_pair));
     }
   }
 };

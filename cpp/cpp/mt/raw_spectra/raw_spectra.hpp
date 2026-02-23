@@ -23,13 +23,14 @@ namespace fs = std::filesystem;
 // ***************************************************** R A W   S P E C T R A ****************************************************************
 
 /*!
- * \brief The raw_spectra class, map is base class
+ * @brief The raw_spectra class, is a spc_base (my raw spectra!!) AND functionality for stacking from sa. sa_prz, sa_avg, coh
+ * @details the integrated classes are AGAIN spc_base classes, but mostly of simple vector<double> type, for example sa aka "stack all". so thr RESULTS of a processing are stored here.
  */
 class raw_spectra : public spc_base<std::vector<std::complex<double>>> {
 public:
   /*!
    * @brief raw_spectra for basic creation of the raw_spectra object, the channels (after their fft) are set later, e.g. by move_raw_spectra
-   * @details only checks the thread pool pointer
+   * @details only checks the thread pool pointer HENCE that teh tread pool mostly resides in the MAIN module.
    */
   raw_spectra(std::shared_ptr<BS::thread_pool<BS::tp::none>> &pool) {
     this->pool = pool;
@@ -77,7 +78,7 @@ public:
    */
   void smooth_stack_all();
 
-  std::pair<double, double> get_abs_sa_spectra_min_max(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const;
+  std::pair<double, double> get_abs_sa_spectra_min_max(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const;
 
   // std::vector<double> get_abs_sa_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const;
   // std::vector<double> get_abs_sa_prz_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const;
@@ -89,46 +90,43 @@ public:
    * @brief Generic function to get spectra data as a vector
    * @param data_container The spc_base container to get from (sa, sa_prz, coh, etc.)
    * @param get_freqs Function to retrieve the appropriate frequencies
-   * @param name Channel name (pair)
-   * @param is_remote Remote flag
-   * @param is_emap Emap flag
+   * @param chan_pair Channel pair to search for
    * @return std::vector<double> with the spectra data
    */
   std::vector<double> get_spectra_generic(const spc_base<double> &data_container,
                                           const std::function<std::vector<double>()> &get_freqs,
-                                          const std::pair<std::string, std::string> &name,
-                                          bool is_remote = false, bool is_emap = false) const;
+                                          const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const;
 
-  std::vector<double> get_abs_sa_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const {
-    return get_spectra_generic(this->sa, [this]() { return this->fft_freqs->get_frequencies(); }, name, is_remote, is_emap);
+  std::vector<double> get_abs_sa_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
+    return get_spectra_generic(this->sa, [this]() { return this->fft_freqs->get_frequencies(); }, chan_pair);
   }
-  std::vector<double> get_abs_sa_prz_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const {
-    return get_spectra_generic(this->sa_prz, [this]() { return this->fft_freqs->get_selected_frequencies(); }, name, is_remote, is_emap);
+  std::vector<double> get_abs_sa_prz_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
+    return get_spectra_generic(this->sa_prz, [this]() { return this->fft_freqs->get_selected_frequencies(); }, chan_pair);
   }
-  std::vector<double> get_abs_sa_avg_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const {
-    return get_spectra_generic(this->sa_avg, [this]() { return this->fft_freqs->get_frequencies(); }, name, is_remote, is_emap);
+  std::vector<double> get_abs_sa_avg_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
+    return get_spectra_generic(this->sa_avg, [this]() { return this->fft_freqs->get_frequencies(); }, chan_pair);
   }
-  std::vector<double> get_coh_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const {
-    return get_spectra_generic(this->coh, [this]() { return this->fft_freqs->get_frequencies(); }, name, is_remote, is_emap);
+  std::vector<double> get_coh_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
+    return get_spectra_generic(this->coh, [this]() { return this->fft_freqs->get_frequencies(); }, chan_pair);
   }
-  std::vector<double> get_coh_prz_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const {
-    return get_spectra_generic(this->coh_prz, [this]() { return this->fft_freqs->get_selected_frequencies(); }, name, is_remote, is_emap);
+  std::vector<double> get_coh_prz_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
+    return get_spectra_generic(this->coh_prz, [this]() { return this->fft_freqs->get_selected_frequencies(); }, chan_pair);
   }
-  std::vector<double> get_noise_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const {
-    return get_spectra_generic(this->noise, [this]() { return this->fft_freqs->get_frequencies(); }, name, is_remote, is_emap);
+  std::vector<double> get_noise_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
+    return get_spectra_generic(this->noise, [this]() { return this->fft_freqs->get_frequencies(); }, chan_pair);
   }
-  std::vector<double> get_noise_prz_spectra(const std::pair<std::string, std::string> &name, const bool is_remote = false, const bool is_emap = false) const {
-    return get_spectra_generic(this->noise_prz, [this]() { return this->fft_freqs->get_selected_frequencies(); }, name, is_remote, is_emap);
+  std::vector<double> get_noise_prz_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
+    return get_spectra_generic(this->noise_prz, [this]() { return this->fft_freqs->get_selected_frequencies(); }, chan_pair);
   }
 
   std::shared_ptr<fftw_freqs> fft_freqs;               //!< fftw_freqs object, need to know how the incoming spectra have been calculated, for ALL spectra
   std::shared_ptr<BS::thread_pool<BS::tp::none>> pool; //!< thread pool from main program
   std::vector<std::shared_ptr<channel>> channels;      //!< all channels from the raw file for reference
 
-  std::string get_sensor_name(const std::pair<std::string, std::string> &name) const;
-  std::string get_sensor_serial(const std::pair<std::string, std::string> &name) const;
-  std::string get_sensor_name_serial(const std::pair<std::string, std::string> &name, const bool cat_underscore = false) const;
-  std::string get_sampling_rate(const std::pair<std::string, std::string> &name) const;
+  std::string get_sensor_name(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const;
+  std::string get_sensor_serial(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const;
+  std::string get_sensor_name_serial(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair, const bool cat_underscore = false) const;
+  std::string get_sampling_rate(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const;
 
   void multiply_sa_spectra(const double &factor);
   // ************************************************** D U M P   S P E C T R A ****************************************************************
@@ -138,9 +136,7 @@ public:
    * @param spectra_type String identifier for the type of spectra ("", "_prz", "_avg", etc.)
    * @param get_freqs Function to retrieve the appropriate frequencies
    */
-  void dump_spectra_generic(const spc_base<double> &data_container,
-                            const std::string &spectra_type,
-                            const std::function<std::vector<double>()> &get_freqs) const;
+  void dump_spectra_generic(const spc_base<double> &data_container, const std::string &spectra_type, const std::function<std::vector<double>()> &get_freqs) const;
 
   void dump_sa_spectra() const {
     dump_spectra_generic(this->sa, "", [this]() { return this->fft_freqs->get_frequencies(); });
@@ -172,7 +168,7 @@ public:
 
   double bw = 0; // bandwidth of fft
 
-  spc_base<double> sa;     //!< stack all amplitude spectra from fft
+  spc_base<double> sa;     //!< stack all amplitude spectra from fft (map stores shared_ptr<vector<double>> per channel pair)
   spc_base<double> sa_prz; //!< stack all amplitude spectra smoothed (parzening) from fft
   spc_base<double> sa_avg; //!< stack all amplitude spectra smoothed by averaging simply over n lines around the center, must be odd!
   // coh will initialized by coherence_raw_spectra function, so by itself; but we know the spectra until that point
@@ -181,22 +177,24 @@ public:
   spc_base<double> coh_prz;   //!< coherency data interpolated to target frequencies; I call it "parzen" because this will be done e.g. after parzening
   spc_base<double> noise;     //!< noise data, derived from coherence
   spc_base<double> noise_prz; //!< noise data, derived from coherence, interpolated to target frequencies
+
+  void load_from_rundir_result(const std::string &which_spectra_type, const std::filesystem::path &top_dir);
+
 private:
-  void do_advanced_stack_auto(const std::pair<std::string, std::string> &name, const double &fraction_to_use);
-  void do_advanced_stack_cross(const std::pair<std::string, std::string> &name, const double &fraction_to_use);
-  void do_cross_coherence_raw_spectra(const std::pair<std::string, std::string> &name, const size_t &chunk_size);
-  void do_coh_noise_prz(const std::pair<std::string, std::string> &name);
+  void do_advanced_stack_auto(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair, const double &fraction_to_use);
+  void do_advanced_stack_cross(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair, const double &fraction_to_use);
+  void do_cross_coherence_raw_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair, const size_t &chunk_size);
+  void do_coh_noise_prz(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair);
 };
 
 // end class raw_spectra
 
-static std::pair<double, double> min_max_sa_spc(const std::vector<std::shared_ptr<raw_spectra>> &raws, const std::pair<std::string, std::string> &name,
-                                                const bool is_remote = false, const bool is_emap = false) {
+inline std::pair<double, double> min_max_sa_spc(const std::vector<std::shared_ptr<raw_spectra>> &raws, const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) {
 
   std::pair<double, double> result(DBL_MIN, DBL_MAX);
   std::vector<double> ampl_max_mins;
   for (const auto &raw : raws) {
-    auto mm = raw->get_abs_sa_spectra_min_max(name, is_remote, is_emap);
+    auto mm = raw->get_abs_sa_spectra_min_max(chan_pair);
     ampl_max_mins.push_back(mm.first);
     ampl_max_mins.push_back(mm.second);
   }

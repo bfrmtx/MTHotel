@@ -26,23 +26,23 @@ if [ -d "$db_dir" ]; then
 else
    echo "info: $db_dir NOT found."
 fi
-'# iterate over the python_graphs directory
-py_dir=source/python_graphs
-# call the python scripts, except for embed_images.py
-if [ -d "$py_dir" ]; then
-   echo "$py_dir found, make PYTHON GRAPHS"
-   cd $py_dir
-   scripts=$(ls *.py)
-   for i in ${=scripts}; do
-     if [ ${i} != "embed_images.py" ]; then
-       echo "-> executing " ${i}
-       python ${i}
-     fi
-   done
-   cd $base_dir
-else
-   echo "info: $py_dir NOT found."
-fi'
+# '# iterate over the python_graphs directory
+# py_dir=source/python_graphs
+# # call the python scripts, except for embed_images.py
+# if [ -d "$py_dir" ]; then
+#    echo "$py_dir found, make PYTHON GRAPHS"
+#    cd $py_dir
+#    scripts=$(ls *.py)
+#    for i in ${=scripts}; do
+#      if [ ${i} != "embed_images.py" ]; then
+#        echo "-> executing " ${i}
+#        python ${i}
+#      fi
+#    done
+#    cd $base_dir
+# else
+#    echo "info: $py_dir NOT found."
+# fi'
 MAKE="$(which make)"
 echo $(pwd)
 $MAKE html

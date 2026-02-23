@@ -1,4 +1,4 @@
-#include "ptspc_lib.h"
+#include "ptspc_lib.hpp"
 #include <algorithm>
 #include <set>
 
@@ -67,6 +67,9 @@ void ptspc_lib::get_options(const std::list<std::string> &args, const bool &has_
       it = margs.erase(it);
     } else if (*it == "-sm") { // smooth the spectra with a parzen window
       smooth = true;
+      it = margs.erase(it);
+    } else if (*it == "-aaspc") { // all auto spectra (so HxHx for same channel)
+      all_auto_spectra = true;
       it = margs.erase(it);
     } else {
       ++it;
@@ -232,7 +235,7 @@ void ptspc_lib::set_inner_outer_frequencies_prepare_spectra() {
       innerouter.set_low_high(chan->fft_freqs->auto_range(0.05, 0.5)); // cut off spectra; we need these values later
 
     if (no_cal_plot == false) { // we WANT calibration
-      std::cout << "calibration" << std::endl;
+      // std::cout << "calibration" << std::endl;
       if (use_master_cal) {
         if (master_cal == nullptr) {
           std::ostringstream err_str(__func__, std::ios_base::ate);
@@ -259,6 +262,7 @@ void ptspc_lib::set_inner_outer_frequencies_prepare_spectra() {
   idx = 0;
   for (const auto &chan : this->channels) {
     if (selected_channels[idx] == 1) {
+      std::cout << "cal " << chan->cal->sensor << " " << chan->cal->serial2string() << std::endl;
       // chan->cal->interpolate(chan->fft_freqs->get_frequencies()); we thread this
       pool->detach_task([chan]() { chan->cal->interpolate(chan->fft_freqs->get_frequencies()); });
     }
@@ -289,6 +293,78 @@ void ptspc_lib::set_inner_outer_frequencies_prepare_spectra() {
     pool->detach_task([chan, this]() { chan->prepare_raw_spc(!this->no_cal_plot, this->syscal, true); });
   }
   pool->wait(); // wait for all tasks to finish, prepare raw spectra inside channels
+}
+
+void ptspc_lib::move_raw_spectra() {
+  if (survey == nullptr) {
+    throw std::runtime_error("Survey is not initialized, use -u survey_name");
+  }
+  for (auto &run : runs) {
+    // ---> at this point the calibrated channel raw spectra are MOVED OUT into the run->raw_spc object
+    // ---> we have a complex vector of single spectra like <Hx,> <Hy,> which will be used later on
+    run->move_raw_spectra(); // fetch the raw spectra from the thread pool; move operation (fast); also initializes the ac_spectra!
+    // raw spectra also contains the channel pointer and therewith the channel name and FFT properties
+    run->get_raw_spectra()->info();
+  }
+}
+
+void ptspc_lib::prepare_auto_spectra(const bool verbose) {
+  for (auto &run : runs) {
+    auto aspc_chans = run->get_raw_spectra()->generate_auto_spectra_channels(verbose);
+    for (const auto &name : aspc_chans) {
+      run->get_raw_spectra()->sa.prepare_ac_cross_spectra(name);
+      run->get_raw_spectra()->sa_prz.prepare_ac_cross_spectra(name);
+      run->get_raw_spectra()->sa_avg.prepare_ac_cross_spectra(name);
+    }
+  }
+}
+
+void ptspc_lib::stack_spectra() {
+  for (auto &run : runs) {
+    std::cout << "stacking auto spectra for run " << run->get_name() << std::endl;
+    run->get_raw_spectra()->advanced_stack_all(median_limit);
+  }
+  pool->wait(); // wait for all tasks to finish
+  std::cout << "done" << std::endl;
+}
+void ptspc_lib::save(const fs::path &top_dir_, const std::string &sub_dir_) {
+  if (this->survey == nullptr) {
+    throw std::runtime_error("Survey is not initialized, nothing read yet");
+  }
+  fs::path top_dir = top_dir_;
+  std::string sub_dir = sub_dir_;
+
+  if (top_dir.empty()) {
+    top_dir = getenv("HOME");
+    top_dir /= "dump_spectra";
+    try {
+      if (!std::filesystem::exists(top_dir)) {
+        std::filesystem::create_directory(top_dir);
+      }
+    } catch (const std::filesystem::filesystem_error &e) {
+      std::ostringstream err_str(__func__, std::ios_base::ate);
+      err_str << "::failed to create dump directory " << top_dir << ": " << e.what();
+      throw std::runtime_error(err_str.str());
+    }
+  }
+
+  if (sub_dir.empty()) {
+    sub_dir = this->survey->get_name();
+  }
+  fs::path survey_dir = top_dir / sub_dir;
+  survey_dir = fs::absolute(survey_dir);
+  std::cout << "Saving survey data to " << survey_dir.string() << std::endl;
+
+  auto result_survey = std::make_shared<survey_tree_d>(this->survey, survey_dir.string());
+  // now we have the survey directory, we create station directories inside
+  result_survey->copy_create_structure(this->survey); // create the structure in the new survey tree
+  // Note: sa, sa_prz, sa_avg contain scalar data (double), not vectors, so we don't call save_ascii on them
+  // The spectrum data will be saved via the proper data serialization mechanism
+  for (const auto &run : runs) {
+    fs::path run_dir = survey_dir / "stations" / run->get_parent()->get_name() / run->get_name();
+    pool->detach_task([run, run_dir]() { run->get_raw_spectra()->sa.save_ascii(run_dir); });
+  }
+  this->pool->wait(); // wait for all tasks to finish
 }
 /*
 void ptspc_lib::collect_and_calibrate() {

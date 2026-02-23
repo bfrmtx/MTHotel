@@ -1,5 +1,5 @@
 #include "BS_thread_pool.hpp"
-#include "ptspc_lib.h"
+#include "ptspc_lib.hpp"
 #include "survey_tree.hpp"
 #include <filesystem>
 #include <iostream>
@@ -39,8 +39,29 @@ int main(int argc, char **argv) {
     return 1;
   }
   std::cout << "FFT preparation completed." << std::endl;
+  // prepare raw spectra will be called here.
+  // if caldata ptr is set and not null, calibration is inside prepare_raw_spectra
   try {
     ptspc->set_inner_outer_frequencies_prepare_spectra();
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << '\n';
+  }
+  try {
+    ptspc->move_raw_spectra();
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << '\n';
+  }
+  try {
+    std::cout << "Preparing auto spectra names..." << std::endl;
+    ptspc->prepare_auto_spectra(true);
+    std::cout << "stacking spectra..." << std::endl;
+    ptspc->stack_spectra();
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << '\n';
+  }
+  // finally save the data
+  try {
+    ptspc->save();
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';
   }

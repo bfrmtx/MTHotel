@@ -201,6 +201,10 @@ public:
   //   return scan(std::optional<std::vector<bool>>(channel_flags));
   // }
 
+  /*!
+   * @brief sets the parent pointer, e.g the survey_tree_d node run !
+   * @param parent_ptr
+   */
   void set_parent(std::shared_ptr<survey_tree_d> parent_ptr) {
     std::unique_lock lock(mutex_);
     parent = parent_ptr;
@@ -384,6 +388,16 @@ public:
     }
     return 0.0; // no valid channel found
   }
+
+  std::string get_sample_rate_str() const {
+    std::shared_lock lock(mutex_);
+    for (const auto &chan : channels) {
+      if (chan != nullptr) {
+        return chan->get_sample_rate_str();
+      }
+    }
+    return "N/A"; // no valid channel found
+  }
   std::string start_datetime() const {
     std::shared_lock lock(mutex_);
     for (const auto &chan : channels) {
@@ -440,6 +454,23 @@ public:
     if (!raw_spc) {
       raw_spc = std::make_shared<raw_spectra>(this->pool);
     }
+  }
+
+  void move_raw_spectra() {
+    std::unique_lock lock(mutex_);
+    if (!raw_spc) {
+      throw std::runtime_error("Raw spectra not initialized");
+    }
+    for (const auto &chan : channels) {
+      if (chan != nullptr) {
+        raw_spc->move_raw_spectra(chan);
+      }
+    }
+  }
+
+  std::shared_ptr<raw_spectra> get_raw_spectra() const {
+    std::shared_lock lock(mutex_);
+    return raw_spc;
   }
 
 private:
@@ -555,6 +586,82 @@ public:
       }
     }
   }
+
+  survey_tree_d(const std::shared_ptr<survey_tree_d> &rhs, const std::string &name_) {
+    if (rhs == nullptr) {
+      throw std::runtime_error("Cannot copy from a null survey_tree_d pointer");
+    }
+    if (rhs->type != NodeType::survey) {
+      throw std::runtime_error("Can only copy construct from a survey level node");
+    }
+    this->type = NodeType::survey; // allow for survey only
+    this->read_only = false;       // always false for copy constructor, because we create a new instance for working
+    this->basePath = fs::path{name_};
+    // path can not be the same as rhs->basePath
+    if (this->basePath == rhs->basePath) {
+      throw std::runtime_error("Cannot copy construct to the same basePath: " + this->basePath.string());
+    }
+    this->pool = rhs->pool;
+    this->verbose = rhs->verbose;
+    this->run_digits = rhs->run_digits;
+    // try to create basePath directory like we did in the main constructor
+    if (!fs::exists(this->basePath)) {
+      try {
+        fs::create_directories(this->basePath);
+      } catch (const fs::filesystem_error &e) {
+        logger << "Failed to create directory: " << this->basePath << " (" << e.what() << ")\n";
+        throw std::runtime_error("Failed to create directory: " + this->basePath.string() + " (" + e.what() + ")");
+      }
+      if (verbose) {
+        logger << "Created directory: " << this->basePath << "\n";
+      }
+    }
+    // create survey subdirectories
+    try {
+      create_survey_dirs(this->basePath, survey_dirs());
+    } catch (const std::runtime_error &e) {
+      logger << "Failed to create survey directories: " << e.what() << "\n";
+      throw std::runtime_error("Failed to create survey directories: " + std::string(e.what()));
+    }
+    // we can not copy the children here, because we need to set the parent pointers correctly
+    // so we leave it to the user to create stations and runs as needed
+  }
+  void copy_create_structure(const std::shared_ptr<survey_tree_d> &rhs) {
+    if (rhs == nullptr) {
+      throw std::runtime_error("Cannot copy from a null survey_tree_d pointer");
+    }
+    if (rhs->type != NodeType::survey) {
+      throw std::runtime_error("Can only copy structure from a survey level node");
+    }
+    // now we copy / create all child nodes (stations and runs) from rhs to this
+    this->scan(false, false); // scan without loading run data
+    for (const auto &[station_name, station_ptr] : rhs->children) {
+      // create station node
+      auto new_station_ptr = std::make_shared<survey_tree_d>(station_name, shared_from_this());
+      // add to children
+      this->children[station_name] = new_station_ptr;
+      // now copy runs
+      for (const auto &[run_name, run_ptr] : station_ptr->children) {
+        auto new_run_ptr = std::make_shared<survey_tree_d>(run_name, new_station_ptr);
+        // add to children
+        this->children[station_name]->children[run_name] = new_run_ptr;
+        // now copy run data
+        if (run_ptr->run_data) {
+          // set parent pointer for run_d instance
+          new_run_ptr->run_data->construct_parent(new_run_ptr);
+          // set basepath for run_d instance
+          new_run_ptr->run_data->set_basepath(new_run_ptr->basePath);
+          // scan channels
+          new_run_ptr->run_data->scan();
+        }
+      }
+    }
+  }
+
+  /*!
+   * @brief the delete indicates that there is NO DEFAULT CONSTRUCTOR
+   */
+  survey_tree_d() = delete; // no default constructor
   /*!
    * @brief constructor for station and run nodes
    * @param name station or run name, where run name is like "run_001"
@@ -613,18 +720,24 @@ public:
   /*!
    * @brief Get the name of the node
    * @return The name of the node
-   * @details For survey level, this is the survey name; for station level, the station name; for run level, the run name like "run_001", use get_base_path to get the full path
+   * @details For survey level, this is the survey name; for station level, the station name; for run level, the run name like "run_001", use get_basepath to get the full path
    */
   std::string get_name() const {
     std::shared_lock lock(mutex_);
     return this->basePath.filename().string();
   }
 
+  std::filesystem::path get_basepath() const {
+    std::shared_lock lock(mutex_);
+    return this->basePath;
+  }
+
   /*!
    * @brief Set the read-only status of the node
    * @param ro Read-only flag
    */
-  void set_read_only(const bool &ro) {
+  void
+  set_read_only(const bool &ro) {
     std::unique_lock lock(mutex_);
     this->read_only = ro;
   }
@@ -1230,4 +1343,27 @@ inline auto compare_is_parallel_run = [](const std::shared_ptr<survey_tree_d> &l
   return false;
 };
 
-#endif // survey_tree_d_HPP
+/*!
+ * @brief the run std::shared_ptr<survey_tree_d> node is different, but the station node std::shared_ptr<survey_tree_d> is the same.
+ */
+inline auto compare_run_d_same_station = [](const std::shared_ptr<run_d> &lhs, const std::shared_ptr<run_d> &rhs) {
+  if (!lhs || !rhs) {
+    throw std::runtime_error("Null pointer passed to compare_run_d_same_station");
+  }
+  if (lhs == rhs) {
+    throw std::runtime_error("compare_run_d_same_station called with the same run_d pointers");
+  }
+  auto lhs_parent = lhs->get_parent(); // run
+  auto rhs_parent = rhs->get_parent(); // run
+  if (!lhs_parent || !rhs_parent) {
+    throw std::runtime_error("Null parent pointer in compare_run_d_same_station");
+  }
+  lhs_parent = lhs_parent->get_parent(); // station
+  rhs_parent = rhs_parent->get_parent(); // station
+  if (!lhs_parent || !rhs_parent) {
+    throw std::runtime_error("Null station parent pointer in compare_run_d_same_station");
+  }
+  return lhs_parent == rhs_parent;
+};
+
+#endif // SURVEY_TREE_HPP
