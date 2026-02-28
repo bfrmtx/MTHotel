@@ -155,7 +155,7 @@ public:
       this->ats_file->prepare_read_data();
       do {
         if (!samples_read) {
-          std::cout << "reading " << chan->get_atss_filepath() << " LSB : " << lsb << std::endl;
+          std::cout << "converted " << chan->get_atss_filepath() << " old LSB : " << lsb << std::endl;
         }
         dbls.resize(ats_file->ats_read_int_doubles(ints));
         // break if 0 is returned, that we have if EOF reached
@@ -535,6 +535,8 @@ public:
       std::cout << "Options:\n";
       std::cout << "  -s <survey_path>       Path to the input ATS survey directory.\n";
       std::cout << "  -u <survey_tree_path>  Path to the output survey tree directory.\n";
+      std::cout << " --- or for a single directory ----:\n";
+      std::cout << "  -i <in_directory> -o <out_directory>\n";
       std::cout << "  -v                     Enable verbose output.\n";
       std::cout << "  -no_e                  Disable E channel processing.\n";
       std::cout << "  -h, --help             Show this help message and exit.\n";

@@ -27,6 +27,11 @@ int main(int argc, char **argv) {
       // create output directory if it does not exist
       if (!std::filesystem::exists(out_dir)) {
         std::filesystem::create_directories(out_dir);
+        std::cout << "Created output directory: " << out_dir << std::endl;
+      }
+      if (!std::filesystem::is_directory(out_dir) || !std::filesystem::exists(out_dir)) {
+        std::cerr << "Output path is not a directory / or could not be created: " << out_dir << std::endl;
+        return EXIT_FAILURE;
       }
       // append the lowest level directory name from in_dir to out_dir to create a new subdirectory
       out_dir /= in_dir.filename();
@@ -34,11 +39,19 @@ int main(int argc, char **argv) {
       if (!std::filesystem::exists(out_dir)) {
         std::filesystem::create_directories(out_dir);
       }
+      if (!std::filesystem::is_directory(out_dir) || !std::filesystem::exists(out_dir)) {
+        std::cerr << "Output path is not a directory / or could not be created: " << out_dir << std::endl;
+        return EXIT_FAILURE;
+      }
 
       if (options.start_run > 0) {
         out_dir /= mstr::run2string(options.start_run, run_digits);
         if (!std::filesystem::exists(out_dir)) {
           std::filesystem::create_directories(out_dir);
+        }
+        if (!std::filesystem::is_directory(out_dir) || !std::filesystem::exists(out_dir)) {
+          std::cerr << "Output path is not a directory / or could not be created: " << out_dir << std::endl;
+          return EXIT_FAILURE;
         }
       }
 
