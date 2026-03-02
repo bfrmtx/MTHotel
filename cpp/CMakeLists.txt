@@ -11,6 +11,9 @@ option(BUILD_RAW_CPP "Build raw C++ project" ON)
 ###  YOU NEED TO CLEAR THE CACHE AND BUILD DIRECTORY IF YOU CHANGE THE OPTIONS
 option(BUILD_QT_PROJECT "Build Qt project" ON)
 set(QCUSTOMPLOT_USE_OPENGL TRUE)
+#
+# optionally use homebrew
+option (USE_HOMEBREW "Use Homebrew on MacOS" ON)
 
 
 
@@ -67,22 +70,31 @@ IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT WIN32)
     IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
         message ("debug build ---------------------")
         # Qt uses int instead of size_t but I show it here
-        add_compile_options(-std=c++23 -march=native -pthread -g -O0 -Wsign-compare -Wall -Wextra -pedantic  -Wno-unused-parameter)
+        add_compile_options(-std=c++23 -march=native -pthread -glldb -fstandalone-debug -Wsign-compare -Wall -Wextra -pedantic  -Wno-unused-parameter)
         set(CMAKE_VERBOSE_MAKEFILE ON)
     ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
     IF(CMAKE_BUILD_TYPE MATCHES RELEASE)
         message ("release build ---------------------")
         # no sign compare is for Qt, containers are not strictly C++ compliant
-        add_compile_options(-std=c++23 -march=native -pthread -O2 -Wno-unused-parameter -Wno-sign-compare)
+        add_compile_options(-std=c++23 -march=native -pthread -O2 -DNDEBUG -Wno-unused-parameter -Wno-sign-compare)
     ENDIF(CMAKE_BUILD_TYPE MATCHES RELEASE)
     IF(APPLE)
         message ("MacOS build adding sqlite from homebrew")
         ########## SQLITE and others may need extra instructions; Linux does not have this problems ######
-        include_directories(/opt/homebrew/opt/sqlite/include)
         include_directories(/usr/local/include)
         link_directories(/usr/local/lib)
-        add_definitions(-DSQLite3_INCLUDE_DIRS=/opt/homebrew/opt/sqlite/include)
-        add_definitions(-DSQLite3_LIBRARIES=/opt/homebrew/opt/sqlite/lib/libsqlite3.dylib)
+        if (USE_HOMEBREW)
+            # homebrew's sqlite
+            include_directories(/opt/homebrew/opt/sqlite/include)
+            link_directories(/opt/homebrew/opt/sqlite/lib)
+            add_definitions(-DSQLite3_INCLUDE_DIRS=/opt/homebrew/opt/sqlite/include)
+            add_definitions(-DSQLite3_LIBRARIES=/opt/homebrew/opt/sqlite/lib/libsqlite3.dylib)
+            # and homebrew's fftw
+            include_directories(/opt/homebrew/opt/fftw/include)
+            link_directories(/opt/homebrew/opt/fftw/lib)
+            add_definitions(-DFFTW_INCLUDE_DIRS=/opt/homebrew/opt/fftw/include)
+            add_definitions(-DFFTW_LIBRARIES=/opt/homebrew/opt/fftw/lib/libfftw3.dylib)
+        endif(USE_HOMEBREW)
         # Add your MacOS specific commands here
         # refer also to the FFTW cmake file!
     ENDIF(APPLE)
@@ -130,7 +142,7 @@ IF(WIN32)
         ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
         IF(CMAKE_BUILD_TYPE MATCHES RELEASE)
             message ("release build ---------------------")
-            add_compile_options(-DNDEBUG -O2 -pthread -Wno-unused-parameter -Wno-sign-compare)
+            add_compile_options(-DNDEBUG -O2 -pthread -march=x86-64-v3 -Wno-unused-parameter -Wno-sign-compare)
         ENDIF(CMAKE_BUILD_TYPE MATCHES RELEASE)
     else()
         message("Unknown Windows compiler")

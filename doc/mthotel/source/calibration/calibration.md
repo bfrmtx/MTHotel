@@ -187,7 +187,7 @@ $F_{on}(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1}
 #### Chopper off
 $F_{off}(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3}  \cdot \frac{1}{1+P_4} $
 
-
+<hr style="height:1px;border-width:0;color:gray;background-color:gray">
 
 ### MFS-07e
 $P_{1} = i \cdot \frac{1}{32 Hz}, \enspace P_{2} = i \cdot \frac{1}{45150 Hz} \enspace$
@@ -198,6 +198,8 @@ $F_{on}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1}
 
 #### Chopper off
 $F_{off}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3}  \cdot \frac{1}{1+P_4} $
+
+<hr style="height:1px;border-width:0;color:gray;background-color:gray">
 
 
 ### MFS-12e
@@ -213,7 +215,47 @@ The transfer function is a mix of both modes:<br>
 $F(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4} $
 
 
+<hr style="height:1px;border-width:0;color:gray;background-color:gray">
 
+### MFS-14e
+
+tdb.
+
+## SHFT coils
+
+### SHFT-02e
+
+$P_{1} = i \cdot \frac{f}{300,000 Hz}$
+
+$F(f) = \frac{ mV}{nT} = 50 \enspace \frac{mV}{nT} \cdot \frac{1}{1 + P_1} $
+
+### SHFT-03e
+
+## Fluxgates
+
+Fluxgate magnetometers from Bartington Instruments just need to be scaled.
+
+### FGS-02e
+Fluxgate with 75,000 nT range, Geomag-01.
+
+ $F(f) = \frac{ mV}{nT} = 7.5 \cdot 10^{-4} \enspace \frac{mV}{nT} $
+
+### FGS-03e
+Fluxgate with 100,000 nT range, Bartington Mag-03.
+
+$F(f) = \frac{ mV}{nT} = 1 \cdot 10^{-4} \enspace \frac{mV}{nT} $
+
+### FGS-04e
+Fluxgate with 100,000 nT range, Bartington Mag-13 MCL (MC = cylindrical core, L = low noise). <br>
+That is a newer version of the FGS-03e, with a better noise performance. <br>
+
+$F(f) = \frac{ mV}{nT} = 1 \cdot 10^{-4} \enspace \frac{mV}{nT} $
+
+### FGS-05e
+Fluxgate with 75,000 nT range, Bartington (never sold)<br>
+You may get an out of drift here.
+
+$F(f) = \frac{ mV}{nT} = 1.43 \cdot 10^{-4} \enspace \frac{mV}{nT} $
 
 
 [^about_p4]: $P_{4}$ is tuned during calibration; so 23897 (for MFS-06e) is not fixed; however $P_{4}$  

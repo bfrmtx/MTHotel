@@ -14,6 +14,7 @@
 /*!
  * @file cal_synthetic.h
  * @brief  Synthetic transfer functions; not normalized; complex<double> ; mV as unit
+ * @details  after FFT you divide the FFT by the transfer function to get the correct amplitude.
  */
 
 inline std::vector<std::complex<double>> gen_trf_mfs06e(const std::vector<double> &freqs, const ChopperStatus &chopper) {
@@ -50,7 +51,7 @@ inline std::vector<std::complex<double>> gen_trf_mfs12e(const std::vector<double
   for (const auto &f : freqs) {
     std::complex<double> p1 = (f / 16.0) * im;
     std::complex<double> p2 = (f / 9645.0) * im;
-    std::complex<double> p4 = (f / 42287.0) * im;
+    std::complex<double> p4 = (f / 50048.0) * im;
     // old  value 0.8 for V -> 800 mV
     // so at 0.1 Hz the old value 0.2 V / (nT *Hz) -> 20 mV / nT @ 0.1 Hz
     cal[i++] = 800.0 * ((p1 / (1. + p1)) * (1. / (1. + p2)) * (1. / (1. + p4)));
@@ -117,6 +118,15 @@ inline std::vector<std::complex<double>> gen_trf_fgs02(const std::vector<double>
 
 // bartington mag-03, low noise, 100 000 nT DEFAULT !
 inline std::vector<std::complex<double>> gen_trf_fgs03e(const std::vector<double> &freqs) {
+  std::vector<std::complex<double>> cal(freqs.size());
+  for (size_t i = 0; i < freqs.size(); ++i) {
+    cal[i] = std::complex<double>(1.0000E-01, 0.0);
+  }
+  return cal;
+}
+
+// bartington mag-03, low noise, 100 000 nT DEFAULT !
+inline std::vector<std::complex<double>> gen_trf_fgs04e(const std::vector<double> &freqs) {
   std::vector<std::complex<double>> cal(freqs.size());
   for (size_t i = 0; i < freqs.size(); ++i) {
     cal[i] = std::complex<double>(1.0000E-01, 0.0);

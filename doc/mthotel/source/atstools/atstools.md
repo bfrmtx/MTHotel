@@ -3,9 +3,19 @@
 ```{index} Software; atstools
 ```
 
+
 Contains a set of tools for converting **old ats format into new atss** format.
 
-For changing data from ats or *procmt* [^myref] to the new atss format only two steps are needed.
+## ats2atss
+
+Fro simply converting old ats files inside a directory into atss files, the following command can be used:
+
+```bash
+ats2atss -i /survey/Northern_Mining_old/ts/Sarıçam/meas_2009-08-20_13-22-03/ -o /survey/Northern_Mining/stations/Sarıçam/run_003/
+```
+This is a "quick and dirty" solution. The output directory is created if it does not exist.
+
+For changing complete data sets from ats or *procmt* [^myref] to the new atss format only two steps are needed.
 
 ## create old survey
 
@@ -38,10 +48,11 @@ L1_S3
 │   └── 084_V01_C04_R001_THz_BL_32H.ats
 
 ... and so on
+```
+
+```bash
 
 ```
-Due to the (possible) complexity of conversion, a "single file" conversion is not yet supported. However, creating and copying 
-old data is a question of a minute.
 
 
 ## tojson clone

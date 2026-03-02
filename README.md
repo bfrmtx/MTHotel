@@ -49,11 +49,15 @@ Some fluxgates (FGS-03e and FGS-04e support temperature reading) log the the tem
 
 ## Compile
 
-The cpp section require **C++ 23** (std::filesystem and jthreads); Cmake 3.20 and above. Both, clang and gcc shall work: clang is on Linux/MacOS, gcc on Windows / MinGW.
+The cpp section require **C++ 23** (std::filesystem and jthreads); Cmake 3.31 and above. Both, clang and gcc shall work: clang is on Linux/MacOS, gcc on Windows / MinGW.
 
-Presently (2022) the C++ 20 standard is new - at the end of the project it will be standard. Especially the jthreads (auto joined threads are of interest).
+Presently (2025) the C++ 23 standard is new - at the end of the project it will be standard.
 
-**BOOST** conatins many functions which will be used (e.g. math).
+**BOOST** contains many functions which will be used (e.g. math).
+
+**SQLITE** is used for the database, which is used for the calibration data and meta data. It is a single header library, but I have added it as a submodule to the project.
+
+**FFTW3** is used for the Fourier transform, which is needed for the processing of the data. It is a well-known library, but I have added it as a submodule to the project. 
 
 ## OMG - Open Source!
 
