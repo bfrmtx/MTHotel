@@ -1,0 +1,29 @@
+/* Define the regular font style */
+@font-face {
+  font-family: 'Source Sans Pro';
+  src: url('SourceSansPro-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Define the bold font style */
+@font-face {
+  font-family: 'Source Sans Pro';
+  src: url('SourceSansPro-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Source Sans Pro';
+  src: url('SourceSansPro-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Apply the local font to your webpage */
+
+body {
+  background-color: #f7f8f8; /* Replace with your color */
+  font-family: 'Source Sans Pro', sans-serif;
+}

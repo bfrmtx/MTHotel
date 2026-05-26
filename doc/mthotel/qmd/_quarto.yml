@@ -1,0 +1,38 @@
+project:
+  type: website
+  output-dir: ../html
+  resources:
+    - media/**
+website:
+  title: "MTHotel / MTH5"
+  favicon: logo/favicon.ico
+  sidebar:
+    style: docked
+    logo: logo/metronix_Logo.png
+    logo-alt: Metronix logo
+    search: true
+    contents:
+      - href: index.qmd
+        text: "MTHotel / MTH5"
+      - section: "Contents"
+        contents:
+          - href: atss/atss.qmd
+          - href: HDF5-Tree/HDF5-Tree.qmd
+          - href: atstools/atstools.qmd
+          - href: chcal/chcal.qmd
+          - href: fft/fft.qmd
+          - href: calibration/calibration.qmd
+          - href: downloads/downloads.qmd
+          - href: developers/developers.qmd
+          - href: developers/cpp.qmd
+          - href: 11_by_three_is_three/11_by_three_is_three.qmd
+          - href: appendix/appendix.qmd
+
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: cosmo
+    css: _css/hdf5.css
+    mermaid:
+      theme: default
