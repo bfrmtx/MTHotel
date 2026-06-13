@@ -30,4 +30,6 @@ CMakeLists.txt.user
 qtcsettings.cmake
 qt6/
 doc/mthotel/build/
+doc/mthotel/html
+sync_to_server.zsh
 

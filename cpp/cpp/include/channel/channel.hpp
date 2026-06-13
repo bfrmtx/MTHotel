@@ -385,11 +385,241 @@ public:
     this->is_emap = is_emap;
   }
 
+  /*!
+   * @brief copy constructor
+   * @param rhs is a shared pointer to a channel.
+   */
+  channel(const channel &rhs) : filepath_wo_ext(rhs.filepath_wo_ext), pt(rhs.pt), latitude(rhs.latitude), longitude(rhs.longitude), elevation(rhs.elevation), angle(rhs.angle),
+                                tilt(rhs.tilt), resistance(rhs.resistance), filter(rhs.filter), units(rhs.units), id(rhs.id), source(rhs.source), serial(rhs.serial),
+                                system(rhs.system), channel_no(rhs.channel_no), channel_type(rhs.channel_type), board(rhs.board), radio_filter(rhs.radio_filter),
+                                low_pas_filter(rhs.low_pas_filter), high_pas_filter(rhs.high_pas_filter), input_divider(rhs.input_divider), gain_1(rhs.gain_1), gain_2(rhs.gain_2),
+                                mode(rhs.mode), tmp_station(rhs.tmp_station), tmp_lsb(rhs.tmp_lsb), tmp_origin(rhs.tmp_origin), tmp_xml(rhs.tmp_xml), ts_slice(rhs.ts_slice),
+                                ts_slice_padded(rhs.ts_slice_padded), ts_chunk(rhs.ts_chunk), spc_slice(rhs.spc_slice), ampl_slice(rhs.ampl_slice), ts_slice_inv(rhs.ts_slice_inv),
+                                sample_vector(rhs.sample_vector), read_count(rhs.read_count), qspc(rhs.qspc), spc(rhs.spc), caldata(rhs.caldata), caldata_f(rhs.caldata_f),
+                                bw(rhs.bw), is_remote(rhs.is_remote), is_emap(rhs.is_emap), read_pos(rhs.read_pos) {
+    if (rhs.cal != nullptr)
+      this->cal = std::make_shared<calibration>(rhs.cal);
+    if (rhs.fft_freqs != nullptr)
+      this->fft_freqs = std::make_shared<fftw_freqs>(rhs.fft_freqs);
+
+    this->plan = nullptr;
+    this->plan_inv = nullptr;
+    if ((rhs.plan != nullptr) && (this->fft_freqs != nullptr)) {
+      const bool force_padded = (!rhs.ts_slice_padded.empty() && (this->fft_freqs->get_wl() == this->fft_freqs->get_rl()));
+      this->set_fftw_plan(force_padded);
+    }
+    if ((rhs.plan_inv != nullptr) && (this->fft_freqs != nullptr)) {
+      this->set_inv_fftw_plan();
+    }
+  }
+
+  /*!
+   * @brief move constructor
+   * @param rhs
+   */
+  channel(channel &&rhs) noexcept
+      : filepath_wo_ext(std::move(rhs.filepath_wo_ext)), pt(std::move(rhs.pt)), cal(std::move(rhs.cal)), latitude(rhs.latitude), longitude(rhs.longitude),
+        elevation(rhs.elevation), angle(rhs.angle), tilt(rhs.tilt), resistance(rhs.resistance), filter(std::move(rhs.filter)), units(std::move(rhs.units)),
+        id(std::move(rhs.id)), source(std::move(rhs.source)), serial(rhs.serial), system(std::move(rhs.system)), channel_no(rhs.channel_no),
+        channel_type(std::move(rhs.channel_type)), board(rhs.board), radio_filter(rhs.radio_filter), low_pas_filter(rhs.low_pas_filter),
+        high_pas_filter(rhs.high_pas_filter), input_divider(rhs.input_divider), gain_1(rhs.gain_1), gain_2(rhs.gain_2), mode(rhs.mode),
+        tmp_station(std::move(rhs.tmp_station)), tmp_lsb(rhs.tmp_lsb), tmp_origin(std::move(rhs.tmp_origin)), tmp_xml(std::move(rhs.tmp_xml)),
+        ts_slice(std::move(rhs.ts_slice)), ts_slice_padded(std::move(rhs.ts_slice_padded)), ts_chunk(std::move(rhs.ts_chunk)),
+        spc_slice(std::move(rhs.spc_slice)), ampl_slice(std::move(rhs.ampl_slice)), ts_slice_inv(std::move(rhs.ts_slice_inv)),
+        sample_vector(std::move(rhs.sample_vector)), read_count(rhs.read_count), qspc(std::move(rhs.qspc)), spc(std::move(rhs.spc)),
+        caldata(std::move(rhs.caldata)), caldata_f(std::move(rhs.caldata_f)), bw(rhs.bw), infile(std::move(rhs.infile)), outfile(std::move(rhs.outfile)),
+        plan(rhs.plan), plan_inv(rhs.plan_inv), fft_freqs(std::move(rhs.fft_freqs)), is_remote(rhs.is_remote), is_emap(rhs.is_emap),
+        read_pos(rhs.read_pos) {
+    rhs.latitude = 0.0;
+    rhs.longitude = 0.0;
+    rhs.elevation = 0.0;
+    rhs.angle = 0.0;
+    rhs.tilt = 0.0;
+    rhs.resistance = 0.0;
+    rhs.serial = 0;
+    rhs.channel_no = 0;
+    rhs.board = ADU::off;
+    rhs.radio_filter = ADU::off;
+    rhs.low_pas_filter = ADU::off;
+    rhs.high_pas_filter = ADU::off;
+    rhs.input_divider = ADU::off;
+    rhs.gain_1 = ADU::off;
+    rhs.gain_2 = ADU::off;
+    rhs.mode = ADU::off;
+    rhs.tmp_lsb = 1.0;
+    rhs.read_count = 0;
+    rhs.bw = 0.0;
+    rhs.plan = nullptr;
+    rhs.plan_inv = nullptr;
+    rhs.is_remote = false;
+    rhs.is_emap = false;
+    rhs.read_pos = {0, 0};
+  }
+
+  channel &operator=(const channel &rhs) {
+    if (this == &rhs)
+      return *this;
+
+    this->close_runtime_resources();
+
+    this->filepath_wo_ext = rhs.filepath_wo_ext;
+    this->pt = rhs.pt;
+    if (rhs.cal != nullptr)
+      this->cal = std::make_shared<calibration>(rhs.cal);
+    else
+      this->cal.reset();
+
+    this->latitude = rhs.latitude;
+    this->longitude = rhs.longitude;
+    this->elevation = rhs.elevation;
+    this->angle = rhs.angle;
+    this->tilt = rhs.tilt;
+    this->resistance = rhs.resistance;
+    this->filter = rhs.filter;
+    this->units = rhs.units;
+    this->id = rhs.id;
+    this->source = rhs.source;
+    this->serial = rhs.serial;
+    this->system = rhs.system;
+    this->channel_no = rhs.channel_no;
+    this->channel_type = rhs.channel_type;
+    this->board = rhs.board;
+    this->radio_filter = rhs.radio_filter;
+    this->low_pas_filter = rhs.low_pas_filter;
+    this->high_pas_filter = rhs.high_pas_filter;
+    this->input_divider = rhs.input_divider;
+    this->gain_1 = rhs.gain_1;
+    this->gain_2 = rhs.gain_2;
+    this->mode = rhs.mode;
+
+    this->tmp_station = rhs.tmp_station;
+    this->tmp_lsb = rhs.tmp_lsb;
+    this->tmp_origin = rhs.tmp_origin;
+    this->tmp_xml = rhs.tmp_xml;
+
+    this->ts_slice = rhs.ts_slice;
+    this->ts_slice_padded = rhs.ts_slice_padded;
+    this->ts_chunk = rhs.ts_chunk;
+    this->spc_slice = rhs.spc_slice;
+    this->ampl_slice = rhs.ampl_slice;
+    this->ts_slice_inv = rhs.ts_slice_inv;
+    this->sample_vector = rhs.sample_vector;
+    this->read_count = rhs.read_count;
+    this->qspc = rhs.qspc;
+    this->spc = rhs.spc;
+    this->caldata = rhs.caldata;
+    this->caldata_f = rhs.caldata_f;
+    this->bw = rhs.bw;
+
+    if (rhs.fft_freqs != nullptr)
+      this->fft_freqs = std::make_shared<fftw_freqs>(rhs.fft_freqs);
+    else
+      this->fft_freqs.reset();
+
+    this->is_remote = rhs.is_remote;
+    this->is_emap = rhs.is_emap;
+    this->read_pos = rhs.read_pos;
+
+    if ((rhs.plan != nullptr) && (this->fft_freqs != nullptr)) {
+      const bool force_padded = (!rhs.ts_slice_padded.empty() && (this->fft_freqs->get_wl() == this->fft_freqs->get_rl()));
+      this->set_fftw_plan(force_padded);
+    }
+    if ((rhs.plan_inv != nullptr) && (this->fft_freqs != nullptr)) {
+      this->set_inv_fftw_plan();
+    }
+
+    return *this;
+  }
+
+  channel &operator=(channel &&rhs) noexcept {
+    if (this == &rhs)
+      return *this;
+
+    this->close_runtime_resources();
+
+    this->filepath_wo_ext = std::move(rhs.filepath_wo_ext);
+    this->pt = std::move(rhs.pt);
+    this->cal = std::move(rhs.cal);
+    this->latitude = rhs.latitude;
+    this->longitude = rhs.longitude;
+    this->elevation = rhs.elevation;
+    this->angle = rhs.angle;
+    this->tilt = rhs.tilt;
+    this->resistance = rhs.resistance;
+    this->filter = std::move(rhs.filter);
+    this->units = std::move(rhs.units);
+    this->id = std::move(rhs.id);
+    this->source = std::move(rhs.source);
+    this->serial = rhs.serial;
+    this->system = std::move(rhs.system);
+    this->channel_no = rhs.channel_no;
+    this->channel_type = std::move(rhs.channel_type);
+    this->board = rhs.board;
+    this->radio_filter = rhs.radio_filter;
+    this->low_pas_filter = rhs.low_pas_filter;
+    this->high_pas_filter = rhs.high_pas_filter;
+    this->input_divider = rhs.input_divider;
+    this->gain_1 = rhs.gain_1;
+    this->gain_2 = rhs.gain_2;
+    this->mode = rhs.mode;
+
+    this->tmp_station = std::move(rhs.tmp_station);
+    this->tmp_lsb = rhs.tmp_lsb;
+    this->tmp_origin = std::move(rhs.tmp_origin);
+    this->tmp_xml = std::move(rhs.tmp_xml);
+
+    this->ts_slice = std::move(rhs.ts_slice);
+    this->ts_slice_padded = std::move(rhs.ts_slice_padded);
+    this->ts_chunk = std::move(rhs.ts_chunk);
+    this->spc_slice = std::move(rhs.spc_slice);
+    this->ampl_slice = std::move(rhs.ampl_slice);
+    this->ts_slice_inv = std::move(rhs.ts_slice_inv);
+    this->sample_vector = std::move(rhs.sample_vector);
+    this->read_count = rhs.read_count;
+    this->qspc = std::move(rhs.qspc);
+    this->spc = std::move(rhs.spc);
+    this->caldata = std::move(rhs.caldata);
+    this->caldata_f = std::move(rhs.caldata_f);
+    this->bw = rhs.bw;
+    this->infile = std::move(rhs.infile);
+    this->outfile = std::move(rhs.outfile);
+    this->plan = rhs.plan;
+    this->plan_inv = rhs.plan_inv;
+    this->fft_freqs = std::move(rhs.fft_freqs);
+    this->is_remote = rhs.is_remote;
+    this->is_emap = rhs.is_emap;
+    this->read_pos = rhs.read_pos;
+
+    rhs.latitude = 0.0;
+    rhs.longitude = 0.0;
+    rhs.elevation = 0.0;
+    rhs.angle = 0.0;
+    rhs.tilt = 0.0;
+    rhs.resistance = 0.0;
+    rhs.serial = 0;
+    rhs.channel_no = 0;
+    rhs.board = ADU::off;
+    rhs.radio_filter = ADU::off;
+    rhs.low_pas_filter = ADU::off;
+    rhs.high_pas_filter = ADU::off;
+    rhs.input_divider = ADU::off;
+    rhs.gain_1 = ADU::off;
+    rhs.gain_2 = ADU::off;
+    rhs.mode = ADU::off;
+    rhs.tmp_lsb = 1.0;
+    rhs.read_count = 0;
+    rhs.bw = 0.0;
+    rhs.plan = nullptr;
+    rhs.plan_inv = nullptr;
+    rhs.is_remote = false;
+    rhs.is_emap = false;
+    rhs.read_pos = {0, 0};
+
+    return *this;
+  }
+
   ~channel() {
-    if (this->infile.is_open())
-      this->infile.close();
-    if (this->outfile.is_open())
-      this->outfile.close();
+    this->close_runtime_resources();
     if (this->fft_freqs != nullptr)
       this->fft_freqs.reset();
   }
@@ -435,6 +665,7 @@ public:
       this->tilt = rhs->tilt;
       this->resistance = rhs->resistance;
       this->units = rhs->units;
+      this->id = rhs->id;
       this->filter = rhs->filter;
       this->source = rhs->source;
       this->serial = rhs->serial;
@@ -510,6 +741,8 @@ public:
         this->resistance = head["resistance"];
       if (head.contains("units"))
         this->units = head["units"];
+      if (head.contains("id"))
+        this->id = head["id"];
       if (head.contains("filter"))
         this->filter = head["filter"];
       if (head.contains("source"))
@@ -1171,6 +1404,7 @@ public:
   double resistance = 0.0;  //!< e.g. contact resistance of the electrodes
   std::string filter;       //!< comma separated string; system board name and filter like ADB-LF_LF-RF-1_LF-LP-4Hz which is the LF board with Radio Filter 1 and 4Hz low pass switched on
   std::string units = "mV"; //!< for ADUs it will be mV H or whatever or scaled E mV/km
+  std::string id = "";      //!< optional id for the channel or station, like "deposit L1 S22"
   std::string source = "";  //!< empty or indicate as, ns, ca, cp, tx or what ever
 
   // not content of JSON -  these are the elements of the filename, generated on the fly
@@ -1212,12 +1446,27 @@ public:
   double bw = 0.0;                                    //!< bandwidth of FFT
   std::ifstream infile;                               //!< read binary data
   std::ofstream outfile;                              //!< write binary data
-  fftw_plan plan;                                     //!< forward fftw plan (default)
-  fftw_plan plan_inv;                                 //!< inverse fftw plan
+  fftw_plan plan = nullptr;                           //!< forward fftw plan (default)
+  fftw_plan plan_inv = nullptr;                       //!< inverse fftw plan
   std::shared_ptr<fftw_freqs> fft_freqs;              //!< frequencies for FFT SHARE this pointer with other channels from the SAME RUN!
   bool is_remote = false;                             //!< set this to true if the data is remote or you want this data to be treated as remote
   bool is_emap = false;                               //!< set this to true if the data is from an EAMP station
   std::pair<int64_t, int64_t> read_pos{0, 0};         //!< sample position in the file, so 0 and 1024 for rl = 1024
+
+  void close_runtime_resources() {
+    if (this->infile.is_open())
+      this->infile.close();
+    if (this->outfile.is_open())
+      this->outfile.close();
+    if (this->plan != nullptr) {
+      fftw_destroy_plan(this->plan);
+      this->plan = nullptr;
+    }
+    if (this->plan_inv != nullptr) {
+      fftw_destroy_plan(this->plan_inv);
+      this->plan_inv = nullptr;
+    }
+  }
 
   void init_fftw(std::shared_ptr<fftw_freqs> in_fft_freqs = nullptr, bool force_padded = false, const size_t &wl = 0, const size_t &rl = 0) {
     // in this case we have an fft created already - re use it
@@ -1275,6 +1524,7 @@ public:
     head["tilt"] = this->tilt;
     head["resistance"] = this->resistance;
     head["units"] = this->units;
+    head["id"] = this->id;
     head["filter"] = this->filter;
     head["source"] = this->source;
     if (jsn_cal != nullptr)
@@ -1327,6 +1577,7 @@ public:
     head["tilt"] = this->tilt;
     head["resistance"] = this->resistance;
     head["units"] = this->units;
+    head["id"] = this->id;
     head["filter"] = this->filter;
     head["source"] = this->source;
     if (this->cal != nullptr)
@@ -1901,6 +2152,7 @@ public:
     if (units != rhs.units) {
       return false;
     }
+    // id is not compared, too vague and can be empty
     if (source != rhs.source) {
       return false;
     }
@@ -2022,6 +2274,10 @@ private:
       throw std::runtime_error(std::string(__func__) + " :: no read length available");
     if (this->fft_freqs->get_wl() == 0)
       throw std::runtime_error(std::string(__func__) + " :: no window length available");
+    if (this->plan != nullptr) {
+      fftw_destroy_plan(this->plan);
+      this->plan = nullptr;
+    }
     this->ts_slice.resize(this->fft_freqs->get_rl());  // need this always for reading rl of data
     this->spc_slice.resize(this->fft_freqs->get_fl()); //!< get frequency lines, e.g. wl/2 +1 : rl 1024 -> 513
     if ((this->fft_freqs->get_rl() == this->fft_freqs->get_wl() && !force_padded)) {
@@ -2043,6 +2299,10 @@ private:
       throw std::runtime_error(std::string(__func__) + " :: no read length available");
     if (this->fft_freqs->get_wl() == 0)
       throw std::runtime_error(std::string(__func__) + " :: no window length available");
+    if (this->plan_inv != nullptr) {
+      fftw_destroy_plan(this->plan_inv);
+      this->plan_inv = nullptr;
+    }
     this->ts_slice_inv.resize(this->fft_freqs->get_wl(), 0.0);
     this->plan_inv = fftw_plan_dft_c2r_1d(this->fft_freqs->get_wl(), reinterpret_cast<fftw_complex *>(&this->spc_slice[0]), &this->ts_slice_inv[0], FFTW_ESTIMATE);
   }

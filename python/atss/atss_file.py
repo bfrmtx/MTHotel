@@ -1,122 +1,10 @@
-import os
-import json
-import copy
-import numpy as np
-from matplotlib import pyplot as plt
-#
-# start with calibration data
-# which will be embedded in the header
-def calibration():
-    # contains the items needed for calibration data
-    # the JSON ONLY!! contains the used calibration
-    # so you have either the HF (chopper off) or LF (chopper on) data here but not both
-    cal = {
-        'sensor': "",                # MFS-06e ... SHFT-02e (that also indicates the manufacturer, right?)
-        'serial': 0,                 # number 1, 2 ... not negative
-        'chopper': 0,                # 0 == off or unkown, 1 == on
-        'units_frequency': "Hz",     # x-axis of your calibration in Hz (never seconds )
-        'units_amplitude': "mV/nT",  # default; same unit as time series and no normalization (old mtx format)
-        'units_phase': "degrees",    # degrees 0... 360
-        'datetime': "1970-01-01T00:00:00",   # date of calibration (1970-01-01 indicates no date available)
-        'Operator': "",              # the person who has made the calibration (capital letter because operator is a keyword in C++)
-        'f': [0.0],                  # frequencies in units as above, array of doubles
-        'a': [0.0],                  # amplitudes  in units as above, array of doubles
-        'p': [0.0],                  # phases      in units as above, array of doubles
-    }
-    return cal
-
-# ##################################################################################################################
-
-# the atss files are two files; one for the header.json and one for the data.atss
-# both have the same name, but different extensions
-# the header.json contains the metadata and the data.atss contains the time series data
-# data.atss is a binary file, containing double precision floating point numbers
-# that is equivalent to a numpy array of type np.float64 
-
-# ##################################################################################################################
-# 099_ADU-07e_C004_THz_32Hz .atss or .json for sample rates >= 1Hz
-# 099_ADU-07e_C004_THz_8s .atss or .json for sample rates < 1 Hz (aka periods)
-# tags are separated by "_"
-# a tag can NOT contain a "_" because that is the separator!
-# DO NOT USE UNDERSCORE IN TAGS!!!
-# a system like ADU_02 is FORBIDDEN; use ADU-02 instead
-def file_tags():
-    # file name is part of the data - will NOT be repeated in header
-    # order of the dictionary is file name!
-    # 
-    file = {
-        'serial': 0,            # such as 1234 (no negative numbers please) for the system
-        'system': "",           # such as ADU-08e, XYZ (a manufacturer is not needed because the system indicates it)
-        'channel_no': 0,        # channel number - you can integrate EAMP stations as channels if the have the SAME!! timings
-        'channel_type': "",     # type such as Ex, Ey, Hx, Hy, Hz or currents like Jx, Jy, Jz or Pitch, Roll, Yaw or x, y, z or T for temperature
-        'sample_rate': 0.0,     # contains sample_rate. Unit: Hz (samples per second) - "Hz" or "s" will be appended while writing in real time
-        # if file name contains 4s it is 0.25Hz; if it contains 256Hz it is 256Hz
-        # the FILENAME contains a UNIT for better readability; you MUST have 256Hz (sample rate 256) OR 4s (sample rate 0.25);
-        # a "." in the FILENAME is possible on modern systems, 16.6666Hz is possible
-        # the suffix .json or .atss is NOT part of the filename, append it while writing
-    }
-    return file
-
-
-
-# ##################################################################################################################
-def header():
-    # contains items needed for a complete channel description together with calibration data
-    # does NOT contain values from file name
-    header = {
-        # the Z suffix is mostly not supported by C/C++/Python/PHP and others
-        'datetime' : "1970-01-01T00:00:00.0",  # ISO 8601 datetime in UTC
-        'latitude': 0.0,        # decimal degree such as 52.2443
-        'longitude': 0.0,       # decimal degree such as 10.5594
-        'elevation': 0.0,       # elevation in meter
-        'azimuth': 0.0,         # orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
-        'tilt': 0.0,            # azimuth positive down - in case it had been measured
-        'resistance': 0.0,      # resistance of the sensor in Ohm or contact resistance of electrode in Ohm
-        'units': "mV",          # for ADUs it will be mV H or other -  or scaled E mV/km (the logger will do this while recording)
-        'filter': "",           # comma separated list of filters such as "ADB-LF,LF-RF-4" or "ADB-HF,HF-RF-1"
-        'source': "",           # empty or indicate as, ns, ca, cp, tx or what ever; some users need this
-    }
-    return header
-
-# ##################################################################################################################
-
-# finally a channel combines all the above
-
-def channel():
-    f = file_tags()                            # file tags are part of the file name, NOT in json header
-    h = header()
-    channel = f | h                            # merge dictionaries      
-    channel['sensor_calibration'] = calibration()    # needed at least for the sensor name and serial
-    return channel
 
 # ##################################################################################################################
 # helper function to convert the sample rate to a string ending with Hz or s, you can give the precision
 # avoid 265.0001Hz, 256.98 -> 257Hz or 4.0001 -> 4s rounding errors
 # precision is the number of digits after the comma, default is 0, you get only full Hertz or seconds
 # ATTENTION: the railway frequency is 16.6666Hz, you get 17 Hz then; take precision = 2 to get 16.67Hz
-def sample_rate_to_string(sample_rate, precision=0):
-    if sample_rate == 0.0:
-        return "failed__zero_sample_rate"
-    
-    if precision == 0:
-        if sample_rate > 0.5:                   # assumed to be an rounding error
-            fd = sample_rate - int(sample_rate)  # get the decimal part
-            fi = int(sample_rate)                # get the integer part
-            if fd > 0.9:
-                fi = fi + 1
-            return str(fi) + "Hz"
-        else:
-            fd = 1.0/sample_rate - int(1.0/sample_rate)   # get the decimal part
-            fi = int(1.0/sample_rate)                     # get the integer part
-            if fd > 0.5:
-                fi = fi + 1
-            return str(fi) + "s"
-    else:
-        if (sample_rate > 0.999):  # you may want to correct the rounding error manually, I set to Hz
-            return "{:.{prec}f}Hz".format(sample_rate, prec=precision)
-        else:
-            return "{:.{prec}f}s".format(1.0/sample_rate, prec=precision)
-        
+     
 # ##################################################################################################################
 # returns a filename WITHOUT extension
 # prepend_dir is the directory where the file is stored - a convenience function
@@ -158,13 +46,13 @@ def write_header(channel, file_name):
     for item in file_items:
         temp_channel.pop(item)                           # remove the header items and write json
     # write the json header file
-    with open(atss_basename(file_name) + ".json", 'w') as f:
+    with open(atss_json_name(file_name), 'w') as f:
         f.write(json.dumps(temp_channel, indent=2, sort_keys=False, ensure_ascii=False))
         f.close()
 # ##################################################################################################################
 # the data array is a numpy array of type np.float64 and written as binary file
 def write_data(data_array, file_name):
-    with open(atss_basename(file_name) + ".atss", 'wb') as f:
+    with open(atss_atss_name(file_name), 'wb') as f:
         # Convert the data array to bytes
         data_bytes = data_array.tobytes()
         # Write the bytes to the binary file
@@ -203,7 +91,7 @@ def read_header(file_name):
             tag = tag[:-2]
             chan["sample_rate"] = float(tag)
 
-    with open(atss_basename(file_name) + ".json", 'r') as f:
+    with open(atss_json_name(file_name), 'r') as f:
         header = json.load(f)
         f.close()
     # merge the header with the file name
@@ -214,10 +102,10 @@ def read_header(file_name):
 # read the data file
 # run exists_both before to check if the files exist first
 def read_data(file_name, start=0, wl=0):
-    samples = os.path.getsize(atss_basename(file_name) + ".atss") / 8
+    samples = os.path.getsize(atss_atss_name(file_name)) / 8
     if start + wl > samples:
         raise ValueError(f"start + wl > samples")
-    with open(atss_basename(file_name) + ".atss", 'rb') as f:
+    with open(atss_atss_name(file_name), 'rb') as f:
         # Read the binary data
         f.seek(start * 8)
         if wl == 0:
@@ -233,12 +121,19 @@ def read_data(file_name, start=0, wl=0):
 
 #remove .json or .atss from the file name
 def atss_basename(file_name):
+    file_name = os.fspath(file_name)
     if file_name.endswith('.atss'):
         return file_name[:-5]
     elif file_name.endswith('.json'):
         return file_name[:-5]
     else:
         return file_name
+
+def atss_json_name(file_name):
+    return atss_basename(file_name) + ".json"
+
+def atss_atss_name(file_name):
+    return atss_basename(file_name) + ".atss"
     
 # ##################################################################################################################
 
@@ -259,41 +154,39 @@ def samples(file_name_or_channel):
         # It's a file name
         file_name = file_name_or_channel
     
-    samples = os.path.getsize(atss_basename(file_name) + ".atss") / 8
+    samples = os.path.getsize(atss_atss_name(file_name)) / 8
     return int(samples)
 
 # ##################################################################################################################
 
 def stop_date_time(file_name):
-   nsamples = samples(file_name)
-   # get the sample_rate from the file name
-   channel = read_header(file_name)
-   # get the sample rate, the read_header function returns ensures that the sample rate is in Hz
-   sample_rate = channel["sample_rate"]
+    nsamples = samples(file_name)
+    channel = read_header(file_name)
+    sample_rate = channel["sample_rate"]
     # get the start date time ISO 8601 like "1970-01-01T00:00:00.0"
-   start_date_time = channel["datetime"]
+    start_date_time = channel["datetime"]
     # calculate the stop date time
-   stop_date_time = np.datetime64(start_date_time) + np.timedelta64(int(nsamples / sample_rate), 's')
-   return stop_date_time
+    stop_date_time = np.datetime64(start_date_time) + np.timedelta64(int(nsamples / sample_rate), 's')
+    return stop_date_time
 
 def duration(file_name):
     # get the start date time ISO 8601 like "1970-01-01T00:00:00.0"
     start_date_time = read_header(file_name)["datetime"]
     # get the stop date time ISO 8601 like "1970-01-01T00:00:00.0"
-    stop_date_time = stop_date_time(file_name)
+    stop_date_time_in = stop_date_time(file_name)
     # calculate the duration
-    duration = stop_date_time - np.datetime64(start_date_time)
+    duration = stop_date_time_in - np.datetime64(start_date_time)
     # return the duration in HH:MM:SS
     return str(duration)
    
 # check if atss and json exist, and return the samples    
 def exits_both(file_name):
-    sfile_name = atss_basename(file_name) + ".json"
+    sfile_name = atss_json_name(file_name)
     # if not exist, terminate with FileNotFoundError
     if not os.path.exists(sfile_name):
         raise FileNotFoundError(f"File {sfile_name} not found")
     #
-    sfile_name = atss_basename(file_name) + ".atss"
+    sfile_name = atss_atss_name(file_name)
     # if not exist, terminate with FileNotFoundError
     if not os.path.exists(sfile_name):
         raise FileNotFoundError(f"File {sfile_name} not found")
@@ -306,8 +199,9 @@ def cal_mfs_06e(spc, file_name, wl):
     # file_name is the file name of the channel, we take the sample rate from the header
     #
     # get the channel from the file
-    if (not os.path.exists(file_name + ".json")):
-        raise FileNotFoundError(f"File {file_name}.json not found")
+    file_name = atss_basename(file_name)
+    if (not os.path.exists(atss_json_name(file_name))):
+        raise FileNotFoundError(f"File {atss_json_name(file_name)} not found")
     channel = read_header(file_name)
     fs = channel['sample_rate']
     chopper = channel['sensor_calibration']['chopper']

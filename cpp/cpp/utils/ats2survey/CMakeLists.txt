@@ -15,6 +15,7 @@ add_executable(ats2survey main.cpp)
 target_link_libraries (${PROJECT_NAME}
     PRIVATE tinyxml2
     PRIVATE sqlite3
+    PRIVATE fftw3
     PRIVATE read_cal_xml
 )
 # Install the ats2survey executable

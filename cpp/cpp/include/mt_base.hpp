@@ -556,4 +556,58 @@ inline bool create_survey_dirs(const std::filesystem::path survey, const std::ve
   return true;
 }
 
+inline std::string old_to_new_sensor_name(const std::string &old_name) {
+  // old is MFS06, MFS06e, SHFT03, new is MFS-06, MFS-06e, SHFT-03
+  // we have always 3 or 4 letters followed by digits and optional e, we insert a dash after the letters and upper case the letters
+  // the optional e must be lower case
+  std::string new_name;
+  new_name.reserve(old_name.size() + 1); // reserve space for new name, +1 for the dash
+  size_t i = 0;
+  while (i < old_name.size() && std::isalpha(old_name[i])) {
+    new_name += std::toupper(old_name[i]);
+    i++;
+  }
+  if (i < old_name.size() && std::isdigit(old_name[i])) {
+    new_name += '-';
+    while (i < old_name.size() && (std::isdigit(old_name[i]) || std::isalpha(old_name[i]))) {
+      new_name += old_name[i];
+      i++;
+    }
+  }
+  // check if we have an optional e EXISTS, if so force it to be lower case
+  if (new_name.size() > 0 && new_name.back() == 'E') {
+    new_name.back() = 'e';
+  }
+  return new_name;
+}
+
+inline std::string new_to_old_sensor_name(const std::string &new_name) {
+  // the old sensor name is the new name without the dash, and upper case letters, lower case e at the end if exists
+  std::string old_name;
+  // old name has max. 6 characters, we can not exceed that.
+  size_t max_len = 6;
+  old_name.reserve(new_name.size()); // reserve space for old name, max 6 characters we take care later
+  size_t i = 0;
+  while (i < new_name.size() && std::isalpha(new_name[i])) {
+    old_name += std::toupper(new_name[i]);
+    i++;
+  }
+  if (i < new_name.size() && new_name[i] == '-') {
+    i++; // skip the dash
+    while (i < new_name.size() && (std::isdigit(new_name[i]) || std::isalpha(new_name[i]))) {
+      old_name += new_name[i];
+      i++;
+    }
+  }
+  // check if we have an optional e EXISTS, if so force it to be lower case
+  if (old_name.size() > 0 && old_name.back() == 'E') {
+    old_name.back() = 'e';
+  }
+  // check if we exceed max length, if so truncate
+  if (old_name.size() > max_len) {
+    old_name = old_name.substr(0, max_len);
+  }
+  return old_name;
+}
+
 #endif

@@ -40,7 +40,9 @@ __all__ = [
     'extract_log_messages',
     'write_html_table_logs',
     'mysql_to_sqlite',
+    'extract_log_messages_aduX'
 ]
+
 
 # ============================================================================
 # Data Models
@@ -745,6 +747,71 @@ def extract_log_messages(log_db_file, error_msg_db_file):
       log_conn.close()
     if 'error_msg_conn' in locals():
       error_msg_conn.close()
+
+def extract_log_messages_aduX(log_db_file, error_msg_db_file):
+  """Extract log messages for ADU-Xnew device"""
+  # first we try to extract the MainIndex, SubIndex, Priority, Component from the
+  # error_msg_db_file (database)
+  try:
+    error_msg_conn = sqlite3.connect(error_msg_db_file)
+    error_msg_cursor = error_msg_conn.cursor()
+
+    # Query to get the relevant entries for ADU-Xnew
+    error_query = """
+      SELECT DISTINCT MainIndex, SubIndex, Priority, Component FROM error_messages
+    """
+    error_msg_cursor.execute(error_query)
+    error_entries = error_msg_cursor.fetchall()
+
+    # Create a set of tuples for quick lookup
+    error_set = set((entry[0], entry[1], entry[2], entry[3]) for entry in error_entries)
+    # Map single character priority codes to full names
+    priority_map = {'e': 'exception', 'w': 'warning', 'i': 'info', 'c': 'critical'}
+    error_set = set((entry[0], entry[1], priority_map.get(entry[2], entry[2]), entry[3]) for entry in error_entries)
+    # and close the error message connection
+    error_msg_conn.close()  
+    # now we extract the log messages from the log_db_file and check if they match the error entries
+    log_conn = sqlite3.connect(log_db_file)
+    log_cursor = log_conn.cursor()
+    log_query = """
+      SELECT date_time, priority, main_index, sub_index, message
+      FROM log
+    """
+    log_cursor.execute(log_query)
+    logs = log_cursor.fetchall()
+    results = []
+    for log in logs:
+      date_time, priority, main_index, sub_index, message = log
+      # we need to find the component for this log message, we can get it from the error_set by matching main_index, sub_index, priority
+      component = 'N/A'
+      for entry in error_set:
+        if entry[0] == main_index and entry[1] == sub_index:
+          component = entry[3]
+          priority_new = entry[2]
+          break
+      results.append({
+        'timestamp': date_time,
+        'priority': priority_new,
+        'component': component,
+        'mainindex': main_index,
+        'subindex': sub_index,
+        'message': message,
+        'description': 'N/A'
+      })
+    # and close the log connection
+    log_conn.close()
+    return results
+  except sqlite3.Error as e:
+    print(f"SQLite error: {e}")
+    return None
+  finally:
+    if 'error_msg_conn' in locals() and error_msg_conn:
+      error_msg_conn.close()
+    if 'log_conn' in locals() and log_conn:
+      log_conn.close()
+  
+
+
 
 def write_html_table_logs(results, output_file):
   """Write the results to an HTML table file."""

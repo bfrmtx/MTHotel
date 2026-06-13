@@ -5,6 +5,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from . import atss_file as atss
 
+
+def _set_window_title(fig, title):
+    manager = getattr(getattr(fig, "canvas", None), "manager", None)
+    if manager is not None and hasattr(manager, "set_window_title"):
+        manager.set_window_title(str(title))
+
 # a simple time series plot from an array of atss data files; marker is an index array where to put a dot
 def plot_time_series_quick(atss_files_in, start, wl, title=None, xlabel=None, ylabel=None, legend=None, save=None, marker=None):
     atss_files = []
@@ -95,9 +101,9 @@ def plot_time_series_quick(atss_files_in, start, wl, title=None, xlabel=None, yl
 
     fig = plt.gcf()
     if (len(atss_files) == 1):
-        fig.canvas.manager.set_window_title(atss_files[0])
+        _set_window_title(fig, atss_files[0])
     else:
-        fig.canvas.manager.set_window_title(atss_files[0] + ' etc.')
+        _set_window_title(fig, f"{atss_files[0]} etc.")
     # show the plot
     plt.show()
 
@@ -126,11 +132,11 @@ def plot_calibration_quick(file_name):
 
 
     fig = plt.gcf()
-    fig.canvas.manager.set_window_title(file_name)
+    _set_window_title(fig, file_name)
     # show the plot
     plt.show()
 
-def plot_fft_quick(file_name, start, wl, cdown = 0.006, cup = 0.75, window = "hanning"):
+def plot_fft_quick(file_name, start, wl, cdown = 0.006, cup = 0.75, window = "hanning", title=None):
     # check if the file exists
     atss.exits_both(file_name)
     # create a channel as dictionary
@@ -169,7 +175,10 @@ def plot_fft_quick(file_name, start, wl, cdown = 0.006, cup = 0.75, window = "ha
     #ampl_freq = ampl_freq[1:]
     fig, ax = plt.subplots()
     ax.plot(ampl_freq, ampl_spec)
-    ax.set_title('Amplitude Density Raw Spectrum')
+    if title is not None:
+        ax.set_title(title)
+    else:
+        ax.set_title('Amplitude Density Raw Spectrum')
     ax.set_xlabel('f [Hz]')
     ax.set_ylabel('mV/sqrt(Hz)')
     # log log
@@ -178,7 +187,7 @@ def plot_fft_quick(file_name, start, wl, cdown = 0.006, cup = 0.75, window = "ha
     # set the file name plot title of the window (not the plot title)
     # set window title
     fig = plt.gcf()
-    fig.canvas.manager.set_window_title(file_name)
+    _set_window_title(fig, file_name)
     # show the plot
     plt.show()
 
@@ -202,7 +211,7 @@ def plot_fft_inverse_quick(file_name, start, wl, theo = True):
     ax.set_xlabel('samples [n]')
     ax.set_ylabel('nT')
     fig = plt.gcf()
-    fig.canvas.manager.set_window_title(file_name)
+    _set_window_title(fig, file_name)
     #
     if (theo):
         # generate a theoretical calibration
@@ -315,7 +324,29 @@ def plot_time_series_diff(atss_file_in_1, atss_file_in_2, start, wl, title=None,
         plt.savefig(save)
 
     fig = plt.gcf()
-    fig.canvas.manager.set_window_title(f"{atss_files[0]} vs {atss_files[1]}")
+    _set_window_title(fig, f"{atss_files[0]} vs {atss_files[1]}")
     
     # show the plot
     plt.show()
+
+# decimation filter. data: array of doubles, coeffs: array of doubles for convolution, decimation_factor: integer, aka shift factor
+#returns the decimated data
+def decimate(data, coeffs, decimation_factor):
+    if decimation_factor <= 0:
+        raise ValueError('decimation_factor must be > 0')
+    if len(coeffs) == 0:
+        raise ValueError('coeffs must not be empty')
+
+    decimated = []
+    idx = 0
+    window_size = len(coeffs)
+
+    # Process data until EOF: read one window, convolve, store one output sample,
+    # then jump ahead by decimation_factor.
+    while idx + window_size <= len(data):
+        window = data[idx:idx + window_size]
+        y = np.convolve(window, coeffs, mode='valid')[0]
+        decimated.append(y)
+        idx += decimation_factor
+
+    return np.asarray(decimated)

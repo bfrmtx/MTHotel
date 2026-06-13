@@ -4,6 +4,9 @@
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
 #endif
+#if !defined(_WIN32)
+#include <unistd.h>
+#endif
 
 #include <climits>
 #include <cstdint>

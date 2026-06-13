@@ -9,4 +9,6 @@ include_directories(${CMAKE_SOURCE_DIR}/cpp/pt/ptspc_lib)
 # Add test source file(s)
 add_executable(test_survey_create test_survey_create.cpp)
 
+target_link_libraries(test_survey_create PRIVATE fftw3)
+
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

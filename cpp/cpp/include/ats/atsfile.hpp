@@ -252,6 +252,8 @@ public:
    * @details so the logic is to FIRST check read is ok at the beginning of the loop
    * @param data Reference to a vector<T> to store the samples, which control the size of the read block.
    * @details a local counter is incremented to count the total number of samples read.
+   * @details if the returned (input) vector is smaller than in the calling code, we have the last chunk of data; so for FIR filtering, the calling code must discard the last chunk of data, because it is smaller than the filter length;
+   * @throws std::runtime_error if the ATS header has not been read successfully, if the file is not open for reading, or if an unsupported type is used.
    * @return false if EOF is reached or fails, true otherwise.
    */
   template <typename T>
@@ -271,13 +273,15 @@ public:
     // now be push_back the data, no read count is needed, we have data.size()
     // we read one by one, because we may approach EOF of fail read
     size_t read_count = 0;
-    while (read_count < ints_doubles.size() && !this->ats_data_in_file.eof() && this->ats_data_in_file.good()) {
+    while (read_count < ints_doubles.size() && this->ats_data_in_file.good()) {
       int32_t sample;
       this->ats_data_in_file.read(reinterpret_cast<char *>(&sample), sizeof(int32_t));
-      if (this->ats_data_in_file.eof()) {
-        return 0; // EOF reached, no samples read
+      // read chunks
+      // a full sample is sizeof(int32_t) bytes; a short read means EOF (or a truncated file)
+      if (this->ats_data_in_file.gcount() < static_cast<std::streamsize>(sizeof(int32_t))) {
+        break; // EOF reached: stop, but keep the samples already collected in this (last) chunk
       }
-      if (!this->ats_data_in_file.good()) {
+      if (this->ats_data_in_file.bad()) {
         throw std::runtime_error("Failed to read sample from file: " + this->ats_filename.string());
       }
       // convert to double if needed

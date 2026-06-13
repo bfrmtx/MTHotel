@@ -152,7 +152,7 @@ public:
     bool check = false;
 
     try {
-      this->ats_file->prepare_read_data();
+      this->ats_file->prepare_read_data(); // opens the file, skips the header and seeks to the start of the data
       do {
         if (!samples_read) {
           std::cout << "converted " << chan->get_atss_filepath() << " old LSB : " << lsb << std::endl;
@@ -168,15 +168,15 @@ public:
         if (check) {
           check = false;
           for (size_t nx = 0; nx < 5; nx++) {
-            std::cout << ints[nx] << " <-> " << dbls[nx] << " "
-                      << "lsb:" << lsb << std::endl;
+            std::cout << ints[nx] << " <-> " << dbls[nx] << " " << "lsb:" << lsb << std::endl;
           }
         }
 
         chan->write_data(dbls);
       } while (dbls.size() && chan->outfile_is_good());
       chan->close_outfile();
-
+      auto outfilename = chan->get_atss_filepath();
+      size_t outfilesize = std::filesystem::file_size(outfilename);
       std::cout << chan->filename(".json") << "  " << samples_read << " <-> " << chan->samples() << std::endl;
     } catch (const std::runtime_error &error) {
       std::cerr << error.what() << std::endl;
