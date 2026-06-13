@@ -9,7 +9,7 @@ base_dir = Path(__file__).resolve().parent if "__file__" in globals() else Path.
 if str(base_dir) not in sys.path:
     sys.path.insert(0, str(base_dir))
 
-import atsslib.atsslib as atsslib_module
+import atss.atsslib as atsslib_module
 atsslib_module = importlib.reload(atsslib_module)
 
 channel = atsslib_module.channel

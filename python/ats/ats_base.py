@@ -460,7 +460,7 @@ def system_channel():
 def channel_form_oldheader(oldheader):
     # copy the mimimum neccessary parts to the new header
     # most of the old header is not needed for processing
-    from .json_header import channel, pos_to_tilt
+    from atss.json_header import channel, pos_to_tilt
     chan = channel()
     dt = datetime.fromtimestamp(oldheader['start'], timezone.utc)  # utc is important
     chan['date'] = dt.strftime("%Y-%m-%d")

@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys
 import os
-import atsslib.atsslib as atsslib
+import atss.atsslib as atsslib
 import ats
 
 channel = atsslib.channel

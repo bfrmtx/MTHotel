@@ -5,7 +5,7 @@ base_dir = Path(__file__).resolve().parent
 if str(base_dir) not in sys.path:
 	sys.path.insert(0, str(base_dir))
 
-from atsslib.atsslib import channel, resolve_file_path
+from atss.atsslib import channel, resolve_file_path
 
 
 def main() -> None:
