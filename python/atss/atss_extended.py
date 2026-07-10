@@ -1,3 +1,4 @@
+import math
 import os
 import json
 import copy
@@ -329,24 +330,3 @@ def plot_time_series_diff(atss_file_in_1, atss_file_in_2, start, wl, title=None,
     # show the plot
     plt.show()
 
-# decimation filter. data: array of doubles, coeffs: array of doubles for convolution, decimation_factor: integer, aka shift factor
-#returns the decimated data
-def decimate(data, coeffs, decimation_factor):
-    if decimation_factor <= 0:
-        raise ValueError('decimation_factor must be > 0')
-    if len(coeffs) == 0:
-        raise ValueError('coeffs must not be empty')
-
-    decimated = []
-    idx = 0
-    window_size = len(coeffs)
-
-    # Process data until EOF: read one window, convolve, store one output sample,
-    # then jump ahead by decimation_factor.
-    while idx + window_size <= len(data):
-        window = data[idx:idx + window_size]
-        y = np.convolve(window, coeffs, mode='valid')[0]
-        decimated.append(y)
-        idx += decimation_factor
-
-    return np.asarray(decimated)

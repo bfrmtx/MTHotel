@@ -2,10 +2,12 @@
 
 __version__ = "0.1.0"
 __author__ = "Bernhard Friedrichs"
+from datetime import datetime, timedelta
 from pathlib import Path
 import json
 import operator
 import copy
+import math
 from typing import cast
 
 import numpy as np
@@ -328,7 +330,7 @@ class channel:
             return "invalid_duration"
 
         stop_dt = start_dt + timedelta(seconds=duration_sec)
-        return stop_dt.isoformat()
+        return stop_dt.isoformat(sep="T", timespec="seconds")
     
     def timing_info(self) -> str:
         """Return a human-readable string of the timing information."""
@@ -405,29 +407,19 @@ class channel:
             new_chan.set_new_base_path(new_base_path)
 
         return new_chan
+    
+    def add_second_to_start_time(self, seconds: int) -> None:
+        """Add a number of seconds to the start time in the header."""
+        if self.header["datetime"] == "1970-01-01T00:00:00.0":
+            return  # Do not modify unknown start time
 
-    def filter_shift(self, filter_coefficients: np.ndarray, old_channel: "channel") -> int:
-        """calculate the next full second start time from the filter delay
-        apply this on the NEW channel AFTER set change_sampling_rate!!
-        modifications are in place, so the original channel is not changed, but the new channel is modified to have the correct start time and duration after filtering. no return.
-        """
-        # Round up half the filter length so e.g. 71 -> ceil(35.5) -> 36 samples.
-        delay_samples: int = (len(filter_coefficients) + 1) // 2
-        sampling_rate = old_channel.tags["sampling_rate"]
-        # in this example 512 Hz, 36 samples delay we shift by 477 samples
-        shift = int(sampling_rate - delay_samples)
-        print(f"Filter delay: {delay_samples} samples at {sampling_rate} Hz, shifting by {shift} samples to align to next full second.")
-        # we get a new start time. we use the old start time and add the shift in seconds to it.
-        # "2026-05-21T10:04:36" we get
-        old_start_time = old_channel.header["datetime"]
-        from datetime import datetime, timedelta
-        old_start_dt = datetime.fromisoformat(old_start_time)
-        new_start_dt = old_start_dt + timedelta(seconds=shift / sampling_rate)
-        new_start_time = new_start_dt.isoformat()
-        # we set the new start time in the new channel
-        self.header["datetime"] = new_start_time
-        return shift
+        try:
+            start_dt = datetime.fromisoformat(self.header["datetime"])
+        except ValueError:
+            return  # Do not modify invalid start time
 
+        new_start_dt = start_dt + timedelta(seconds=seconds)
+        self.header["datetime"] = new_start_dt.isoformat(sep="T", timespec="seconds")
 
     def decimate(self, filter_coefficients: np.ndarray, factor: int, out_path: str | Path) -> "channel":
         """Decimate the data by applying a FIR filter with downsampling.
@@ -445,8 +437,10 @@ class channel:
         if coeffs.ndim != 1:
             raise ValueError("filter_coefficients must be a 1D vector of doubles.")
 
+        # this returns a new channel with the updated sampling rate and so on ...
         new_chan = self.change_sampling_rate(self.tags["sampling_rate"] / factor)
-        shift = new_chan.filter_shift(coeffs, self)
+        sample_shift, add_secs = self.skip_samples_from_filter(len(coeffs))
+        new_chan.add_second_to_start_time(add_secs)
         new_chan.set_new_base_path(out_path)
 
         new_chan.write_header()  # Update JSON metadata for the new sampling rate.
@@ -454,9 +448,9 @@ class channel:
         if new_chan.atss_path is not None and new_chan.atss_path.exists():
             new_chan.atss_path.unlink()
 
-        print(f"Decimating with factor {factor}, filter length {len(coeffs)}, shift {shift} samples.")
+        print(f"Decimating with factor {factor}, filter length {len(coeffs)}, shift {sample_shift} samples.")
 
-        idx = shift  # Start index for reading input data, accounting for filter delay.
+        idx = sample_shift  # Start index for reading input data, accounting for filter delay.
         window_size = len(coeffs)
         buffer_size = 4096  # number of output samples per write chunk
         buffer = np.empty(buffer_size, dtype=np.float64)
@@ -498,7 +492,98 @@ class channel:
         mode = "ab" if append else "wb"
         with open(self.atss_path, mode) as f:
             vec.tofile(f)
+
+    def skip_samples_from_filter(self, filter_len) -> tuple[int, int]:
+        """Compute how many samples to skip to shift the filtered data to a full second.
+        Parameters
+        this is called inside the old channel, so the SOURCE channel
+        and returns for usage in the NEW (filtered) TARGET channel
+        ----------
+        filter_len : int
+            FIR filter length ("filter_length"), wich is ALWAYS ODD
+
+        Returns
+        -------
+        tuple[int, int]
+            samples_to_skip: number of samples to skip at the start.
+            add_secs_to_start_time: number of seconds to add to the start time.
+        """
+        # example for 128 Hz and 32 x filter, (471 -1) // 2 = 235 samples delay
+        # fracs = 1.8359375 = 235 / 128 .. that also can be 4.34 ... more than 1s
+        sampling_rate = self.tags["sampling_rate"]
+        fracs = ((float(filter_len - 1)) * 0.5) / sampling_rate
+
+        # delay can be more than 1s; split into integer (fulldelay) and fractional (miss) part
+        fulldelay = math.floor(fracs)  # in the example 1
+        miss = fracs - fulldelay       # in the example 0.8359375
+        add_secs_to_start_time = int(0)
+        # 21 = 128 - (128 * 0.8359375) = 128 - 107 = 21 samples to skip
+        samples_to_skip = int(sampling_rate - miss * sampling_rate)
+
+        # miss is in the sub sample ?
+        # if miss is very small (almost zero), we assume a rounding error
+        if abs(samples_to_skip - int(sampling_rate)) <= 1:
+            samples_to_skip = 0
+
+        # allow rounding error
+        if (sampling_rate <= 1.001):
+            # for very low sampling rates, we can not skip samples, but we can add seconds to the start time
+            add_secs_to_start_time = int(math.ceil(fracs))  # 2 seconds to add to the start time, if it would be < 1 Hz
+        else:
+            add_secs_to_start_time = int(fulldelay)  # in the example 1 second to add to the start time
+            if samples_to_skip > 0:
+                add_secs_to_start_time += 1  # samples_to_skip is valide, we add another second
+        # in the example we skip 21, read 235 samples and therewith reach the 256th sample, which is at 2 seconds. ... and sure, we also read the full filter length       
+        return samples_to_skip, add_secs_to_start_time
         
+    def rm_seconds_from_start(self, seconds: int) -> None:
+        """Remove a number of seconds from the start time in the header.
+        and cut the data accordingly, that means remove the corresponding number of samples from the start of the data and update the .atss file. 
+        """
+        if seconds < 0:
+            raise ValueError("seconds must be non-negative.")
+
+        if self.header["datetime"] == "1970-01-01T00:00:00.0":
+            return  # Do not modify unknown start time
+
+        try:
+            start_dt = datetime.fromisoformat(self.header["datetime"])
+        except ValueError:
+            return  # Do not modify invalid start time
+
+        # Removing data from the beginning shifts the effective start time later.
+        new_start_dt = start_dt + timedelta(seconds=seconds)
+        self.header["datetime"] = new_start_dt.isoformat(sep="T", timespec="seconds")
+        self.write_header()  # Update JSON metadata with the new start time.
+        # Now we need to cut the data accordingly
+        if self.atss_path is None:
+            raise ValueError("ATSS path is not set.")
+        if self.tags["sampling_rate"] <= 0:
+            raise ValueError("Invalid sampling rate in tags.")
+        sampling_rate = float(self.tags["sampling_rate"])
+        if sampling_rate < 1.0:
+            # For low-rate channels (period-based), remove only full period-sized segments.
+            period_seconds_f = 1.0 / sampling_rate
+            period_seconds = int(period_seconds_f)
+            if (period_seconds_f - period_seconds) > 0.5:
+                period_seconds += 1
+            period_seconds = max(1, period_seconds)
+
+            if seconds % period_seconds != 0:
+                raise ValueError(
+                    f"For sampling_rate={sampling_rate}, seconds must be a multiple of {period_seconds}."
+                )
+            samples_to_remove = seconds // period_seconds
+        else:
+            samples_to_remove = int(seconds * sampling_rate)
+        if samples_to_remove <= 0:
+            return  # No samples to remove
+        # Read the existing data, remove the samples, and write back the remaining data.
+        data = self.read_all_data()
+        if samples_to_remove >= len(data):
+            raise ValueError("Cannot remove more samples than exist in the data.")
+        remaining_data = data[samples_to_remove:]
+        self.write_data(remaining_data, append=False)  # Overwrite with remaining data
          
 # #################################END CHANNEL #########################################################
 

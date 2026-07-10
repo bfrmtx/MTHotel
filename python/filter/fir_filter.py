@@ -2,12 +2,12 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 import sqlite3
-# check if filter.sql3 exists, else exit
+# check if fir_filter.db exists, else exit
 import os
-if not os.path.exists('filter.sql3'):
-    print("filter.sql3 not found. Please make sure the database file is in the current directory.")
+if not os.path.exists('filter/fir_filter.db'):
+    print("fir_filter.db not found. Please make sure the database file is in the current directory.")
     exit(1)
-conn = sqlite3.connect('filter.sql3')
+conn = sqlite3.connect('filter/fir_filter.db')
 cursor = conn.cursor()
 # show all tables in the database
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")

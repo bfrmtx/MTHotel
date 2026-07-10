@@ -2,13 +2,13 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 import sqlite3
-# check if filter.db exists, else exit
+# check if fir_filter.db exists, else exit
 import os
 script_dir = os.path.dirname(os.path.abspath(__file__))
-db_path = os.path.join(script_dir, 'filter.db')
+db_path = os.path.join(script_dir, 'fir_filter.db')
 
 if not os.path.exists(db_path):
-    print(f"filter.db not found at: {db_path}")
+    print(f"fir_filter.db not found at: {db_path}")
     print("Please make sure the database file is in the same directory as this script.")
     exit(1)
 conn = sqlite3.connect(db_path)

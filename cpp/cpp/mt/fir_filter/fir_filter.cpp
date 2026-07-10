@@ -97,10 +97,6 @@ void fir_filter::filter() {
 }
 
 void fir_filter::shift_to_new_start_time(const bool &shift_to_full_seconds) {
-  // example for 128 Hz and 32 x filter
-  // fracs = 1.8398s delay = 471 * 0.5 = 235 / 128.
-  // 1.83984375 * 128 = 235.5 samples -> round up
-  // return 2
 
   if (!this->coeff.size()) {
     std::ostringstream err_str((std::string("fir_filter::") + __func__), std::ios_base::ate);
@@ -113,43 +109,52 @@ void fir_filter::shift_to_new_start_time(const bool &shift_to_full_seconds) {
     throw std::runtime_error(err_str.str());
   }
 
+  throw std::runtime_error("fir_filter::shift_to_new_start_time: not implemented yet");
+  // you need to skip samples
+  /*! @todo : implement shift to new start time by skipping samples and shifting the start time of the output channel
+   */
+  // example for 128 Hz and 32 x filter, (471 - 1) // 2 = 235 samples delay
+  //  fracs = 1.8359375 = 235 / 128 ..that also can be 4.34 ... more than 1s
   size_t hlen = (this->coeff.size() - 1) / 2;                          // half length of the filter -1; we can't use half samples
-  double delay_time = double(hlen) / this->in_chan->get_sample_rate(); // time needed for 1/2 filter length
+  double delay_time = double(hlen) / this->in_chan->get_sample_rate(); // time needed for 1/2 filter length = 1.8359375 seconds for 128 Hz and 32 x filter
 
+  // probably never used, because we support only full start seconds in the JSON header.
   if (!shift_to_full_seconds) {
     double fullsecs;
     auto fracs = modf(delay_time, &fullsecs);
-    this->full_secs = int64_t(fullsecs);
-    this->frac_secs = fracs;
+    this->full_secs = int64_t(fullsecs); // 1 second for 128 Hz and 32 x filter
+    this->frac_secs = fracs;             // 0.8359375 for 128 Hz and 32 x filter
     this->out_chan->pt.add_secs(fullsecs, fracs);
     return;
   }
 
   // if it is 1.1 -> we need 2 seconds
-  double shift_time = (ceil(delay_time));
+  double shift_time = (ceil(delay_time)); // 1.8359375 -> 2.0 seconds for 128 Hz and 32 x filter
 
-  double fill_in_time = shift_time - delay_time;
-  this->samples_skip = size_t(fill_in_time * this->in_chan->get_sample_rate());
-  this->samples_delay = size_t(delay_time * this->in_chan->get_sample_rate());
+  double fill_in_time = shift_time - delay_time;                                // 0.1640625 seconds
+  this->samples_skip = size_t(fill_in_time * this->in_chan->get_sample_rate()); // 21 samples for 128 Hz and 32 x filter
+  this->samples_delay = size_t(delay_time * this->in_chan->get_sample_rate());  // 235 samples for 128 Hz and 32 x filter
   size_t samples_control = samples_skip + samples_delay;
 
+  // 21 + 235 = 256 = 2s; shift_time (ceil function) * sample_rate = 2.0 * 128 = 256.
   if ((samples_skip + samples_delay) != size_t(shift_time * this->in_chan->get_sample_rate())) {
     std::ostringstream err_str((std::string("fir_filter::") + __func__), std::ios_base::ate);
     err_str << " filter can not calculate full seconds start time, integer parts ";
     throw std::runtime_error(err_str.str());
   }
-  size_t samples_at_new_start_time = size_t(shift_time * this->in_chan->get_sample_rate());
+  size_t samples_at_new_start_time = size_t(shift_time * this->in_chan->get_sample_rate()); // 256 samples
 
   double fullsecs;
   auto fracs = modf((double(samples_at_new_start_time) / this->in_chan->get_sample_rate()), &fullsecs);
 
+  // if the fractional part is more than treat_as_null, then we have a problem with the calculation of the full seconds start time
   if (std::abs(fracs) > treat_as_null) {
     std::ostringstream err_str((std::string("fir_filter::") + __func__), std::ios_base::ate);
     err_str << " filter can not calculate full seconds start time sec calc";
     throw std::runtime_error(err_str.str());
   }
   // copy finally to class members
-  this->full_secs = int64_t(shift_time);
+  this->full_secs = int64_t(shift_time); // 2 seconds for 128 Hz and 32 x filter
   // set the start time of the output channel in the json file
   this->out_chan->pt.tt += int64_t(this->full_secs);
 }
