@@ -9,11 +9,11 @@
 read_cal::read_cal() {
   std::filesystem::path dbfile;
 
-  dbfile = working_dir_data("info.sql3");
+  dbfile = working_dir_data("info.db");
 
   if (!std::filesystem::exists(dbfile)) {
     std::stringstream err_str;
-    err_str << __func__ << ":: no database loaded, e.g info.sql3 missing";
+    err_str << __func__ << ":: no database loaded, e.g info.db missing";
     err_str << ":: read_cal() missing sql database " << dbfile;
     throw std::runtime_error(err_str.str());
   }
@@ -47,7 +47,7 @@ std::shared_ptr<calibration> read_cal::read_std_mtx_txt(const fs::path &filename
   auto cal = std::make_shared<calibration>();
   if (!this->dbloaded) {
     std::ostringstream err_str(__func__, std::ios_base::ate);
-    err_str << ":: no database loaded, e.g info.sql3 missing";
+    err_str << ":: no database loaded, e.g info.db missing";
     throw std::runtime_error(err_str.str());
   }
   if (!fs::exists(filename)) {

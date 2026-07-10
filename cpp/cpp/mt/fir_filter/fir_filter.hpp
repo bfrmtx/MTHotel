@@ -8,7 +8,7 @@
 #include "channel.hpp"
 #include "sqlite_handler.hpp"
 
-#define db_sql_file "filter.sql3"
+#define db_sql_file "filter.db"
 
 class fir_filter {
 public:

@@ -99,7 +99,7 @@ std::filesystem::path working_dir_data(const std::string filename) {
     }
   }
 
-  // procmt we have procmt/bin procmt/data and so on - want maybe data info.sql3 or cal MFS.txt
+  // procmt we have procmt/bin procmt/data and so on - want maybe data info.db or cal MFS.txt
 
   result /= filename;
   if (!std::filesystem::exists(result)) {

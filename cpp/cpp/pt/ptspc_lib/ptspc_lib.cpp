@@ -11,8 +11,8 @@ ptspc_lib::ptspc_lib(std::shared_ptr<BS::thread_pool<BS::tp::none>> pool_in) {
   ptspc_path = ptspc_path.parent_path().parent_path();
   // cd to doc
   ptspc_path = ptspc_path / "data";
-  fs::path sqlfile = ptspc_path / "info.sql3";
-  fs::path master_cal_db = ptspc_path / "master_calibration.sql3";
+  fs::path sqlfile = ptspc_path / "info.db";
+  fs::path master_cal_db = ptspc_path / "master_calibration.db";
 
   // Check if the SQL file exists and throw an error if it does not
 
@@ -547,8 +547,8 @@ ptspc_lib::ptspc_lib(std::shared_ptr<survey_tree> survey,
   ptspc_path = ptspc_path.parent_path().parent_path();
   // cd to doc
   ptspc_path = ptspc_path / "data";
-  fs::path sqlfile = ptspc_path / "info.sql3";
-  fs::path master_cal_db = ptspc_path / "master_calibration.sql3";
+  fs::path sqlfile = ptspc_path / "info.db";
+  fs::path master_cal_db = ptspc_path / "master_calibration.db";
 
   // Check if the SQL file exists and throw an error if it does not
 
