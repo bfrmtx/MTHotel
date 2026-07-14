@@ -7,13 +7,11 @@
 #include <utility>
 #include <vector>
 
-/*!
- * \brief The atmm class represents a selection; sample start and end, like 0 and 1024 for example. to be used as for i = start; i < end; i++
- */
+/// \brief The atmm class represents a selection; sample start and end, like 0 and 1024 for example. to be used as for i = start; i < end; i++
 
 class atmm {
 public:
-  std::vector<std::pair<uint64_t, uint64_t>> atmm_data; //!< atmm data, start sample, end sample
+  std::vector<std::pair<uint64_t, uint64_t>> atmm_data; ///< atmm data, start sample, end sample
   atmm() = default;
   void read_data(const std::filesystem::path &atmmfile, const size_t n) {
 

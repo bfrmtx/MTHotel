@@ -199,26 +199,24 @@ public:
 template <class T, class S>
 class gnuplotter {
 public:
-  /*!
-   * \brief gnuplotter
-   * \param err_str returns the error in initialization; you should return EXIT_FAILURE in main
-   * \param outfile_ writes a gnuplot script (with binary data) to script file; open with gnuplot -persist sprectra.bgp for example
-   *
-   * make a script file
-   *   auto gplt_mm = std::make_unique<gnuplotter<double, double>>(init_err_mm, "/tmp/x.bgp");
-   *   gplt_mm->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
-   *
-   *   later you can use it as gnuplot -persist /tmp/x.bgp
-   *
-   * make a plot on screen - leave the filename empty
-   *    auto gplt_mm = std::make_unique<gnuplotter<double, double>>(init_err_mm);
-   *    gplt_mm->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
-   *
-   * make a plot into file - leave the filename empty but use the output option
-   *    auto gplt_mm = std::make_unique<gnuplotter<double, double>>(init_err_mm);
-   *    gplt_mm->cmd << "set terminal svg size 2048,1600 enhanced" << std::endl;
-   *    gplt_mm->cmd << "set output '/tmp/spectra.svg'" << std::endl;
-   */
+  /// \brief gnuplotter
+  /// \param err_str returns the error in initialization; you should return EXIT_FAILURE in main
+  /// \param outfile_ writes a gnuplot script (with binary data) to script file; open with gnuplot -persist sprectra.bgp for example
+  ///
+  /// make a script file
+  ///   auto gplt_mm = std::make_unique<gnuplotter<double, double>>(init_err_mm, "/tmp/x.bgp");
+  ///   gplt_mm->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
+  ///
+  ///   later you can use it as gnuplot -persist /tmp/x.bgp
+  ///
+  /// make a plot on screen - leave the filename empty
+  ///    auto gplt_mm = std::make_unique<gnuplotter<double, double>>(init_err_mm);
+  ///    gplt_mm->cmd << "set terminal qt size 2048,1600 enhanced" << std::endl;
+  ///
+  /// make a plot into file - leave the filename empty but use the output option
+  ///    auto gplt_mm = std::make_unique<gnuplotter<double, double>>(init_err_mm);
+  ///    gplt_mm->cmd << "set terminal svg size 2048,1600 enhanced" << std::endl;
+  ///    gplt_mm->cmd << "set output '/tmp/spectra.svg'" << std::endl;
   gnuplotter(std::string &err_str, const std::string outfile_ = "") {
 
     try {
@@ -320,12 +318,10 @@ public:
     this->cmd = std::ostringstream();
   }
 
-  /*!
-   * @brief set xrange - simply return if both values are 0 - that is the default
-   * @param xmin
-   * @param xmax
-   * @return false if nothing done, else throw exception
-   */
+  /// @brief set xrange - simply return if both values are 0 - that is the default
+  /// @param xmin
+  /// @param xmax
+  /// @return false if nothing done, else throw exception
   bool set_x_range(const double &xmin, const double &xmax) {
     if ((xmin == xmax) && (xmin == 0))
       return false;
@@ -339,11 +335,9 @@ public:
     return true;
   }
 
-  /*!
-   * @brief set xrange - simply return if both values are 0 - that is the default
-   * @param min_max
-   * @return false if nothing done, else throw exception
-   */
+  /// @brief set xrange - simply return if both values are 0 - that is the default
+  /// @param min_max
+  /// @return false if nothing done, else throw exception
   bool set_x_range(const std::pair<double, double> &min_max) {
     if ((min_max.first == min_max.second) && (min_max.first == 0))
       return false;
@@ -357,12 +351,10 @@ public:
     return true;
   }
 
-  /*!
-   * @brief set yrange - simply return if both values are 0 - that is the default
-   * @param ymin
-   * @param ymax
-   * @return false if nothing done, else throw exception
-   */
+  /// @brief set yrange - simply return if both values are 0 - that is the default
+  /// @param ymin
+  /// @param ymax
+  /// @return false if nothing done, else throw exception
 
   bool set_y_range(const std::pair<double, double> &min_max) {
     if ((min_max.first == min_max.second) && (min_max.first == 0))
@@ -378,12 +370,10 @@ public:
     return true;
   }
 
-  /*!
-   * @brief set yrange - simply return if both values are 0 - that is the default
-   * @param ymin
-   * @param ymax
-   * @return false if nothing done, else throw exception
-   */
+  /// @brief set yrange - simply return if both values are 0 - that is the default
+  /// @param ymin
+  /// @param ymax
+  /// @return false if nothing done, else throw exception
   bool set_y_range(const double &ymin, const double &ymax) {
     if ((ymin == ymax) && (ymin == 0))
       return false;
@@ -652,11 +642,9 @@ private:
 
   // copy from my library - this plotter may wants to be copied without dependencies
 
-  /*!
-   * \brief rtrim remove trailing empty spaces from a string
-   * \param s
-   * \return
-   */
+  /// \brief rtrim remove trailing empty spaces from a string
+  /// \param s
+  /// \return
   std::string rtrim(const std::string &s) {
     std::string ws(" \t\f\v\n\r");
     auto found = s.find_last_not_of(ws);
@@ -666,11 +654,9 @@ private:
     return s;
   }
 
-  /*!
-   * \brief ltrim remove leading empty spaces from a string
-   * \param s
-   * \return
-   */
+  /// \brief ltrim remove leading empty spaces from a string
+  /// \param s
+  /// \return
   std::string ltrim(const std::string &s) {
     std::string ws(" \t\f\v\n\r");
     auto found = s.find_first_not_of(ws);
@@ -680,11 +666,9 @@ private:
     return std::string();
   }
 
-  /*!
-   * \brief trim trims a string on both ends
-   * \param s
-   * \return
-   */
+  /// \brief trim trims a string on both ends
+  /// \param s
+  /// \return
   std::string trim(const std::string &s) {
     std::string str(rtrim(s));
     return ltrim(str);

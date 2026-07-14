@@ -17,11 +17,9 @@
 #include "statmaps.hpp"
 #include "vector_math.hpp" // template base functions for vector
 
-/*!
- * \brief The math_vector class contains vector functions for doubles
- *
- *
- */
+/// \brief The math_vector class contains vector functions for doubles
+///
+///
 
 class math_vector {
 public:
@@ -29,20 +27,18 @@ public:
 
   ~math_vector();
 
-  /*!
-   * \brief vector_size_if_min check for minimum sizes, especially for a selection vector
-   * \param xcbeg
-   * \param xcend
-   * \param selected_cbeg
-   * \param selected_cend
-   * \param min_valid_elements
-   * \param control <br>
-   *  0: x.size = true.size, trues and sizes >=  min_valid_elements <br>
-   *  1: x.size = true.size, sizes >=  min_valid_elements, DON'T count trues <br>
-   *  2: x.size = sizes >=  min_valid_elements, DON'T check select and DON'T count trues <br>
-   *
-   * \return true or false
-   */
+  /// \brief vector_size_if_min check for minimum sizes, especially for a selection vector
+  /// \param xcbeg
+  /// \param xcend
+  /// \param selected_cbeg
+  /// \param selected_cend
+  /// \param min_valid_elements
+  /// \param control <br>
+  ///  0: x.size = true.size, trues and sizes >=  min_valid_elements <br>
+  ///  1: x.size = true.size, sizes >=  min_valid_elements, DON'T count trues <br>
+  ///  2: x.size = sizes >=  min_valid_elements, DON'T check select and DON'T count trues <br>
+  ///
+  /// \return true or false
   bool vector_size_if_min(std::vector<double>::const_iterator xcbeg, std::vector<double>::const_iterator xcend,
                           std::vector<bool>::const_iterator selected_cbeg, std::vector<bool>::const_iterator selected_cend,
                           const size_t min_valid_elements = 4, const int control = 0);
@@ -51,22 +47,20 @@ public:
                                std::vector<bool>::const_iterator selected_cbeg, std::vector<bool>::const_iterator selected_cend,
                                const size_t min_valid_elements = 4, const int control = 0);
 
-  /*!
-   * \brief vector_sizes_if_min for minimum sizes, especially for a selection vector; this version always checks x.size = y.size
-   * \param xcbeg
-   * \param xcend
-   * \param ycbeg
-   * \param ycend
-   * \param selected_cbeg
-   * \param selected_cend
-   * \param min_valid_elements
-   * \param control <br>
-   *  0: x.size = true.size, trues and sizes >=  min_valid_elements <br>
-   *  1: x.size = true.size, sizes >=  min_valid_elements, DON'T count trues <br>
-   *  2: x.size = sizes >=  min_valid_elements, DON'T check select and DON'T count trues <br>
-   *
-   * \return true or false
-   */
+  /// \brief vector_sizes_if_min for minimum sizes, especially for a selection vector; this version always checks x.size = y.size
+  /// \param xcbeg
+  /// \param xcend
+  /// \param ycbeg
+  /// \param ycend
+  /// \param selected_cbeg
+  /// \param selected_cend
+  /// \param min_valid_elements
+  /// \param control <br>
+  ///  0: x.size = true.size, trues and sizes >=  min_valid_elements <br>
+  ///  1: x.size = true.size, sizes >=  min_valid_elements, DON'T count trues <br>
+  ///  2: x.size = sizes >=  min_valid_elements, DON'T check select and DON'T count trues <br>
+  ///
+  /// \return true or false
 
   bool vector_sizes_if_min(std::vector<double>::const_iterator xcbeg, std::vector<double>::const_iterator xcend,
                            std::vector<double>::const_iterator ycbeg, std::vector<double>::const_iterator ycend,
@@ -77,19 +71,15 @@ public:
                   std::vector<bool>::const_iterator selected_cbeg, std::vector<bool>::const_iterator selected_cend,
                   const size_t min_valid_elements = 4, const int control = 0);
 
-  /*!
-   *  mk_variance_data contains all data to transport from statistiks using
-   * variance
-   * \return map initialized with DBL_MAX
-   */
+  ///  mk_variance_data contains all data to transport from statistiks using
+  /// variance
+  /// \return map initialized with DBL_MAX
   statmap mk_variance_data(bool make_y = false);
 
-  /*!
-   * \brief mk_regression_data combines tow variance data and adds regresssion template such as slope etc
-   * \param xdata variance data (deep copy)
-   * \param ydata varaiance data (deep copy)
-   * \return a statmap
-   */
+  /// \brief mk_regression_data combines tow variance data and adds regresssion template such as slope etc
+  /// \param xdata variance data (deep copy)
+  /// \param ydata varaiance data (deep copy)
+  /// \return a statmap
 
   statmap mk_regression_data(const statmap &x_variance_data, const statmap &y_variance_data, bool &is_ok);
 };
@@ -210,9 +200,8 @@ public:
 
   ~regplot_data();
 
-  /*! \brief mkplot_slope refer to regplot::mkplot_slope_if()
-   *
-   */
+  /// \brief mkplot_slope refer to regplot::mkplot_slope_if()
+  ///
   bool mkplot_slope(std::vector<double>::const_iterator xcbeg, std::vector<double>::const_iterator xcend,
                     std::vector<double> &x, std::vector<double> &y,
                     const statmap &regression_data,
@@ -221,28 +210,26 @@ public:
                     const double center_x = 0.0, const double center_y = 0.0,
                     const int slope_type_0s_1u_2l = 0, const double extra_offsety = 0.0);
 
-  /*!
-   * \brief mkplot_slope_if
-   * \param xcbeg                 data x vector begin
-   * \param xcend                 data x vector end
-   * \param x                     newly created plot vector x
-   * \param y                     newly created plot vector y
-   * \param selected_cbeg         selection vector begin (true == slected for plot)
-   * \param selected_cend         selection vector end   (true == slected for plot)
-   * \param regression_data       data needed for calculating y from x
-   * \param ntimes_size           plot vector will have higher resolution (6 means from 8 input plotvecor will 48); selection vector will be ignored; if -1 slope will have two points for a straight line
-   * \param newmin                if ntimes_size we can lot with new min (w/o selection vector)
-   * \param newmax                if ntimes_size we can lot with new max (w/o selection vector)
-   * \param center_x              middle of slope from where we draw; e.g. mean x or 0;
-   * \param center_y              middle of slope from where we draw; e.g. mean y or abscissa;
-   * \param slope_type_0s_1u_2l   0: slope y = mx + b; one by one (w w/o selected) or ntimes_size<br>
-   * 1: slope with lower confidence ref. 2)<br>
-   * 2: slope with upper confidence (e.g. with center_x = mean x and center_y = mean y OR 0, abscissa),<br>
-   * 3: slope with lower confidence including the confidence interval of the mean (line does NOT run through the center but above/below the center) <br>
-   * 4: slope with upper ...
-   * \param extra_offsety adds a distance to the slope - this increases the confidence intervall if you say so; center x/y NOT to be added (ignored)
-   * \return
-   */
+  /// \brief mkplot_slope_if
+  /// \param xcbeg                 data x vector begin
+  /// \param xcend                 data x vector end
+  /// \param x                     newly created plot vector x
+  /// \param y                     newly created plot vector y
+  /// \param selected_cbeg         selection vector begin (true == slected for plot)
+  /// \param selected_cend         selection vector end   (true == slected for plot)
+  /// \param regression_data       data needed for calculating y from x
+  /// \param ntimes_size           plot vector will have higher resolution (6 means from 8 input plotvecor will 48); selection vector will be ignored; if -1 slope will have two points for a straight line
+  /// \param newmin                if ntimes_size we can lot with new min (w/o selection vector)
+  /// \param newmax                if ntimes_size we can lot with new max (w/o selection vector)
+  /// \param center_x              middle of slope from where we draw; e.g. mean x or 0;
+  /// \param center_y              middle of slope from where we draw; e.g. mean y or abscissa;
+  /// \param slope_type_0s_1u_2l   0: slope y = mx + b; one by one (w w/o selected) or ntimes_size<br>
+  /// 1: slope with lower confidence ref. 2)<br>
+  /// 2: slope with upper confidence (e.g. with center_x = mean x and center_y = mean y OR 0, abscissa),<br>
+  /// 3: slope with lower confidence including the confidence interval of the mean (line does NOT run through the center but above/below the center) <br>
+  /// 4: slope with upper ...
+  /// \param extra_offsety adds a distance to the slope - this increases the confidence intervall if you say so; center x/y NOT to be added (ignored)
+  /// \return
 
   bool mkplot_slope_if(std::vector<double>::const_iterator xcbeg, std::vector<double>::const_iterator xcend,
                        std::vector<double> &x, std::vector<double> &y,
@@ -274,7 +261,7 @@ public:
   ~two_pass_variance();
 
   size_t n = 0;
-  double d_n = 0.0; //!< count as double
+  double d_n = 0.0; ///< count as double
   double d_sum = 0.0;
   double d_mean = 0.0;
   double d_variance_population = 0.0;
@@ -347,9 +334,9 @@ public:
 
   double test_against_other_slope(const double &other_slope, statmap &result);
 
-  double S_xy; //!< (covaiance * n) of this sample
-  size_t n;    //!< total elements
-  double d_n;  //!< above as double
+  double S_xy; ///< (covaiance * n) of this sample
+  size_t n;    ///< total elements
+  double d_n;  ///< above as double
 
   double d_covariance;
   double d_correlation;
@@ -364,7 +351,7 @@ public:
   two_pass_variance x;
   two_pass_variance y;
 
-  statmap regression_data; //!< contains all recursion results
+  statmap regression_data; ///< contains all recursion results
 
 private:
   bool calc_all();
@@ -377,7 +364,7 @@ public:
   ~two_pass_variance_cplx();
 
   size_t n = 0;
-  double d_n = 0.0; //!< count as double
+  double d_n = 0.0; ///< count as double
   std::complex<double> d_sum = 0.0;
   std::complex<double> d_mean = 0.0;
   std::complex<double> d_variance_population = 0.0;

@@ -12,11 +12,9 @@
 #include <string>
 #include <vector>
 
-/**
- * @file sqlite_handler.h
- * contains a most simple C++ interface without comfort - but does work with vectors
- *
- */
+/// @file sqlite_handler.h
+/// contains a most simple C++ interface without comfort - but does work with vectors
+///
 /*
 
 int sqlite3_exec(
@@ -41,14 +39,12 @@ int sqlite3_exec(
 
 //}
 
-/*!
- * \brief sqlite_handler_str_callback
- * \param ptr std::vector<std::vector<std::string>> aka a table of strings
- * \param argc
- * \param argv
- * \param col_name
- * \return
- */
+/// \brief sqlite_handler_str_callback
+/// \param ptr std::vector<std::vector<std::string>> aka a table of strings
+/// \param argc
+/// \param argv
+/// \param col_name
+/// \return
 inline int sqlite_handler_str_callback(void *ptr, int argc, char **argv, char **col_name) {
 
   std::vector<std::vector<std::string>> *table = static_cast<std::vector<std::vector<std::string>> *>(ptr);
@@ -72,14 +68,12 @@ inline int sqlite_handler_str_callback_single_column(void *ptr, int argc, char *
   return SQLITE_OK;
 }
 
-/*!
- * \brief sqlite_handler_scolumn_double_callback
- * \param ptr std::vector<double> with results only - as we use for frequencies
- * \param argc
- * \param argv
- * \param col_name
- * \return
- */
+/// \brief sqlite_handler_scolumn_double_callback
+/// \param ptr std::vector<double> with results only - as we use for frequencies
+/// \param argc
+/// \param argv
+/// \param col_name
+/// \return
 inline int sqlite_handler_scolumn_double_callback(void *ptr, int argc, char **argv, char **col_name) {
 
   std::vector<double> *vec = static_cast<std::vector<double> *>(ptr);
@@ -106,14 +100,12 @@ inline int sqlite_handler_scolumn_double_callback(void *ptr, int argc, char **ar
   return SQLITE_OK;
 }
 
-/*!
- * \brief sqlite_handler_scolumn_three_doubles_column_callback
- * \param ptr std::vector<std::vector<double>> with results only - as we use for frequencies, amplitudes, phases for example
- * \param argc
- * \param argv
- * \param col_name
- * \return
- */
+/// \brief sqlite_handler_scolumn_three_doubles_column_callback
+/// \param ptr std::vector<std::vector<double>> with results only - as we use for frequencies, amplitudes, phases for example
+/// \param argc
+/// \param argv
+/// \param col_name
+/// \return
 inline int sqlite_handler_scolumn_three_doubles_column_callback(void *ptr, int argc, char **argv, char **col_name) {
 
   std::vector<std::vector<double>> *vec = static_cast<std::vector<std::vector<double>> *>(ptr);
@@ -174,14 +166,12 @@ inline int sqlite_handler_scolumn_two_doubles_column_callback(void *ptr, int arg
   return SQLITE_OK;
 }
 
-/*!
- * \brief sqlite_handler_scolumn_int64_t_callback
- * \param ptr std::vector<int64_t> with results only - as we use for what?
- * \param argc
- * \param argv
- * \param col_name
- * \return
- */
+/// \brief sqlite_handler_scolumn_int64_t_callback
+/// \param ptr std::vector<int64_t> with results only - as we use for what?
+/// \param argc
+/// \param argv
+/// \param col_name
+/// \return
 inline int sqlite_handler_scolumn_int64_t_callback(void *ptr, int argc, char **argv, char **col_name) {
 
   std::vector<int64_t> *vec = static_cast<std::vector<int64_t> *>(ptr);
@@ -204,14 +194,12 @@ inline int sqlite_handler_scolumn_int64_t_callback(void *ptr, int argc, char **a
   return SQLITE_OK;
 }
 
-/*!
- * \brief sqlite_handler_scolumn_uint64_t_callback
- * \param ptr std::vector<uint64_t> with results only - as we use for indices
- * \param argc
- * \param argv
- * \param col_name
- * \return
- */
+/// \brief sqlite_handler_scolumn_uint64_t_callback
+/// \param ptr std::vector<uint64_t> with results only - as we use for indices
+/// \param argc
+/// \param argv
+/// \param col_name
+/// \return
 inline int sqlite_handler_scolumn_uint64_t_callback(void *ptr, int argc, char **argv, char **col_name) {
 
   std::vector<uint64_t> *vec = static_cast<std::vector<uint64_t> *>(ptr);
@@ -238,22 +226,16 @@ inline int sqlite_handler_scolumn_uint64_t_callback(void *ptr, int argc, char **
 // sqlite3_open_v2("database.db", &db, SQLITE_OPEN_READWRITE, NULL );
 // sqlite3_open_v2("database.db", &db, SQLITE_OPEN_READONLY, NULL );
 
-/*!
- * \brief The sqlite_handler class - trivial C++ interface
- */
+/// \brief The sqlite_handler class - trivial C++ interface
 
 class sqlite_handler {
 public:
-  /*!
-   * \brief sqlite_handler constructor
-   */
+  /// \brief sqlite_handler constructor
   sqlite_handler(const std::filesystem::path &db_name) {
     this->db_name = db_name;
   };
 
-  /*!
-   * \brief sqlite_handler destructor
-   */
+  /// \brief sqlite_handler destructor
   ~sqlite_handler() {
     if (this->DB != nullptr)
       sqlite3_close_v2(DB);
@@ -488,10 +470,10 @@ public:
     sqlite3_exec(this->DB, "VACUUM", 0, 0, 0);
   }
 
-  sqlite3 *DB = nullptr;         //!< the database
-  int exit = SQLITE_ERROR;       //!< sqlite return open value
-  int open_mode = -1;            //!< SQLITE_OPEN_READONLY 1, SQLITE_OPEN_READWRITE 2, SQLITE_OPEN_CREATE 4
-  std::filesystem::path db_name; //!< database file
+  sqlite3 *DB = nullptr;         ///< the database
+  int exit = SQLITE_ERROR;       ///< sqlite return open value
+  int open_mode = -1;            ///< SQLITE_OPEN_READONLY 1, SQLITE_OPEN_READWRITE 2, SQLITE_OPEN_CREATE 4
+  std::filesystem::path db_name; ///< database file
 };
 
 #endif // SQLITE_HANDLER_HPP

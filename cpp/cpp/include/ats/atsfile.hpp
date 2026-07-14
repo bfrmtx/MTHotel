@@ -1,63 +1,61 @@
 #ifndef ATSFILE_HPP
 #define ATSFILE_HPP
 
-/*!
- * @file atsfile.hpp reads a binary ats file which consists of a header and data (int32_t) values.
- * the old survey structure (Northern_Mining), where the file normally resides looks like this:
- * .
- *└── Northern_Mining
- *    ├── cal
- *    │   └── MFS06E0005.txt
- *    ├── config
- *    ├── db
- *    ├── doc
- *    ├── dump
- *    ├── edi
- *    ├── filters
- *    ├── jle
- *    ├── jobs
- *    ├── log
- *    ├── processings
- *    ├── shell
- *    ├── tmp
- *    └── ts
- *        ├── Kocatepe
- *        │   ├── meas_2009-08-20_13-22-00
- *        │   │   ├── 085_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
- *        │   │   ├── 085_V01_C00_R001_TEx_BL_128H.ats
- *        │   │   ├── 085_V01_C01_R001_TEy_BL_128H.ats
- *        │   │   ├── 085_V01_C02_R001_THx_BL_128H.ats
- *        │   │   ├── 085_V01_C03_R001_THy_BL_128H.ats
- *        │   │   └── 085_V01_C04_R001_THz_BL_128H.ats
- *        │   └── meas_2009-08-21_07-01-00
- *        │       ├── 085_2009-08-21_07-01-00_2009-08-21_07-06-00_R001_2048H.xml
- *        │       ├── 085_V01_C00_R001_TEx_BL_2048H.ats
- *        │       ├── 085_V01_C01_R001_TEy_BL_2048H.ats
- *        │       ├── 085_V01_C02_R001_THx_BL_2048H.ats
- *        │       ├── 085_V01_C03_R001_THy_BL_2048H.ats
- *        │       └── 085_V01_C04_R001_THz_BL_2048H.ats
- *        └── Sarıçam
- *            ├── meas_2009-08-20_13-22-00
- *            │   ├── 084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
- *            │   ├── 084_V01_C00_R001_TEx_BL_128H.ats
- *            │   ├── 084_V01_C01_R001_TEy_BL_128H.ats
- *            │   ├── 084_V01_C02_R001_THx_BL_128H.ats
- *            │   ├── 084_V01_C03_R001_THy_BL_128H.ats
- *            │   └── 084_V01_C04_R001_THz_BL_128H.ats
- *            └── meas_2009-08-21_07-01-00
- *                ├── 084_2009-08-21_07-01-00_2009-08-21_07-06-00_R001_2048H.xml
- *                ├── 084_V01_C00_R001_TEx_BL_2048H.ats
- *                ├── 084_V01_C01_R001_TEy_BL_2048H.ats
- *                ├── 084_V01_C02_R001_THx_BL_2048H.ats
- *                ├── 084_V01_C03_R001_THy_BL_2048H.ats
- *                └── 084_V01_C04_R001_THz_BL_2048H.ats
- *
- * @details the file name is serial_version_channel_type_sample_rate.ats nnn_V01_Cnn_Rnnn_Tcc_B[L, H, B]_<sample_rate>[H, s].ats
- * sample rate: s indicates seconds, H Hertz, B indicates LF, HF or BB board
- *
- * The serial_start_date_time_stop_date_time_sample_rate.xml  file contains the calibration data of the sensor. Sensor and xmlfile name are in the ats file header.
- * The meas_date_time directory is a container for the ATS files. The container can hold one or more sets of xml and ats files.
- */
+/// @file atsfile.hpp reads a binary ats file which consists of a header and data (int32_t) values.
+/// the old survey structure (Northern_Mining), where the file normally resides looks like this:
+/// .
+/// └── Northern_Mining
+///    ├── cal
+///    │   └── MFS06E0005.txt
+///    ├── config
+///    ├── db
+///    ├── doc
+///    ├── dump
+///    ├── edi
+///    ├── filters
+///    ├── jle
+///    ├── jobs
+///    ├── log
+///    ├── processings
+///    ├── shell
+///    ├── tmp
+///    └── ts
+///        ├── Kocatepe
+///        │   ├── meas_2009-08-20_13-22-00
+///        │   │   ├── 085_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
+///        │   │   ├── 085_V01_C00_R001_TEx_BL_128H.ats
+///        │   │   ├── 085_V01_C01_R001_TEy_BL_128H.ats
+///        │   │   ├── 085_V01_C02_R001_THx_BL_128H.ats
+///        │   │   ├── 085_V01_C03_R001_THy_BL_128H.ats
+///        │   │   └── 085_V01_C04_R001_THz_BL_128H.ats
+///        │   └── meas_2009-08-21_07-01-00
+///        │       ├── 085_2009-08-21_07-01-00_2009-08-21_07-06-00_R001_2048H.xml
+///        │       ├── 085_V01_C00_R001_TEx_BL_2048H.ats
+///        │       ├── 085_V01_C01_R001_TEy_BL_2048H.ats
+///        │       ├── 085_V01_C02_R001_THx_BL_2048H.ats
+///        │       ├── 085_V01_C03_R001_THy_BL_2048H.ats
+///        │       └── 085_V01_C04_R001_THz_BL_2048H.ats
+///        └── Sarıçam
+///            ├── meas_2009-08-20_13-22-00
+///            │   ├── 084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
+///            │   ├── 084_V01_C00_R001_TEx_BL_128H.ats
+///            │   ├── 084_V01_C01_R001_TEy_BL_128H.ats
+///            │   ├── 084_V01_C02_R001_THx_BL_128H.ats
+///            │   ├── 084_V01_C03_R001_THy_BL_128H.ats
+///            │   └── 084_V01_C04_R001_THz_BL_128H.ats
+///            └── meas_2009-08-21_07-01-00
+///                ├── 084_2009-08-21_07-01-00_2009-08-21_07-06-00_R001_2048H.xml
+///                ├── 084_V01_C00_R001_TEx_BL_2048H.ats
+///                ├── 084_V01_C01_R001_TEy_BL_2048H.ats
+///                ├── 084_V01_C02_R001_THx_BL_2048H.ats
+///                ├── 084_V01_C03_R001_THy_BL_2048H.ats
+///                └── 084_V01_C04_R001_THz_BL_2048H.ats
+///
+/// @details the file name is serial_version_channel_type_sample_rate.ats nnn_V01_Cnn_Rnnn_Tcc_B[L, H, B]_<sample_rate>[H, s].ats
+/// sample rate: s indicates seconds, H Hertz, B indicates LF, HF or BB board
+///
+/// The serial_start_date_time_stop_date_time_sample_rate.xml  file contains the calibration data of the sensor. Sensor and xmlfile name are in the ats file header.
+/// The meas_date_time directory is a container for the ATS files. The container can hold one or more sets of xml and ats files.
 
 #include <chrono>
 #include <filesystem>
@@ -84,11 +82,9 @@
 //
 //
 
-/*!
- * \brief The ats_sys_names; in the binary header the SystemType is stored like ADU08 (without - ) and likely without e at the end.
- * \details The ats_sys_names map is used to convert the SystemType from the binary header, so case insensitive comparison so ADU08e <-> adu08 --> ADU-08e
- * \note The ats_sys_names map is used to convert the System
- */
+/// \brief The ats_sys_names; in the binary header the SystemType is stored like ADU08 (without - ) and likely without e at the end.
+/// \details The ats_sys_names map is used to convert the SystemType from the binary header, so case insensitive comparison so ADU08e <-> adu08 --> ADU-08e
+/// \note The ats_sys_names map is used to convert the System
 inline std::unordered_map<std::string, std::string> ats_sys_names = {
     {"adu06", "ADU-06"},
     {"adu07", "ADU-07e"},
@@ -103,9 +99,7 @@ inline std::unordered_map<std::string, std::string> ats_sys_names = {
     {"adu11e", "ADU-11e"},
     {"adu12e", "ADU-12e"}};
 
-/*!
- * \brief The ats_sys_types, used in GMS Version
- */
+/// \brief The ats_sys_types, used in GMS Version
 inline std::unordered_map<std::string, int> ats_sys_types = {
     {"ADU-06", 0},
     {"ADU-07e", 0},
@@ -115,9 +109,7 @@ inline std::unordered_map<std::string, int> ats_sys_types = {
     {"ADU-11e", 5},
     {"ADU-12e", 6}};
 
-/*!
- * \brief The ats_sys_family, used in GMS Version
- */
+/// \brief The ats_sys_family, used in GMS Version
 inline std::unordered_map<std::string, int> ats_sys_family = {
     {"ADU-06", 6},
     {"ADU-07e", 7},
@@ -133,13 +125,11 @@ inline std::unordered_map<std::string, int> ats_sys_family = {
 //
 //
 //
-/*!
- * @brief Class for handling ATS files This class will ONLY EXIST as std::shared_ptr<atsfile> !
- */
+/// @brief Class for handling ATS files This class will ONLY EXIST as std::shared_ptr<atsfile> !
 class atsfile {
 public:
-  atsfile() = default;                               //!< empty constructor
-  atsfile(const std::filesystem::path &ats_filename) //!< constructor with filename
+  atsfile() = default;                               ///< empty constructor
+  atsfile(const std::filesystem::path &ats_filename) ///< constructor with filename
       :
       ats_filename(ats_filename) {
     if (!std::filesystem::exists(ats_filename)) {
@@ -148,12 +138,10 @@ public:
     this->read_atsheader();
   }
 
-  /*!
-   * @brief Copy constructor for std::shared_ptr<atsfile>
-   * @details This constructor allows creating a new atsfile object from an existing one, not incrementing the reference count.
-   * @param rhs The other atsfile object
-   * @return
-   */
+  /// @brief Copy constructor for std::shared_ptr<atsfile>
+  /// @details This constructor allows creating a new atsfile object from an existing one, not incrementing the reference count.
+  /// @param rhs The other atsfile object
+  /// @return
   atsfile(const std::shared_ptr<atsfile> &rhs) {
     this->ats_filename = rhs->ats_filename;
     this->atsheader_bin = rhs->atsheader_bin;
@@ -162,19 +150,15 @@ public:
     this->is_ok = rhs->is_ok;  // keep the status of the header
   }
 
-  /*!
-   * @brief make sure that files are closed
-   */
+  /// @brief make sure that files are closed
   ~atsfile() {
     this->ats_data_in_file.close();
     this->ats_data_out_file.close();
   }
 
-  /*!
-   * @brief calculate the least significant bit (lsb) for a virtual 32 bit ADC (analog to digital converter)
-   * @param ddata vector of double values, which we may want to put into the ats format.
-   * @return lsbval in mV calculated from the data vector
-   */
+  /// @brief calculate the least significant bit (lsb) for a virtual 32 bit ADC (analog to digital converter)
+  /// @param ddata vector of double values, which we may want to put into the ats format.
+  /// @return lsbval in mV calculated from the data vector
   double calc_lsb_from_dbl_vec_mV(const std::vector<double> &ddata) {
     double lsb = 0.0;
     auto minmax = minmax_element(ddata.cbegin(), ddata.cend());
@@ -184,14 +168,12 @@ public:
     return this->atsheader_bin.lsbval;
   }
 
-  /*!
-   * @brief Set the ATS filename ONLY
-   * @param ats_filename The new ATS filename
-   * @param exists_check Bypass file existence check, e.g. when creating a new file
-   * @throws std::runtime_error if the file does not exist and exists_check is true
-   * @details This function sets the ATS filename and reads the ATS header from the file
-   * @note replaces old set_new_filename(...) function with exists_check = false to be called
-   */
+  /// @brief Set the ATS filename ONLY
+  /// @param ats_filename The new ATS filename
+  /// @param exists_check Bypass file existence check, e.g. when creating a new file
+  /// @throws std::runtime_error if the file does not exist and exists_check is true
+  /// @details This function sets the ATS filename and reads the ATS header from the file
+  /// @note replaces old set_new_filename(...) function with exists_check = false to be called
   void set_ats_filename(const std::filesystem::path &ats_filename, const bool exists_check = false) {
     if (exists_check && !std::filesystem::exists(ats_filename)) {
       throw std::runtime_error("File does not exist: " + ats_filename.string());
@@ -203,12 +185,10 @@ public:
     this->ats_filename = ats_filename;
   }
 
-  /*!
-   * @brief Prepare the ATS file for reading data
-   * @details resets the global read count, opens the file for reading, and seeks to the start of the data.
-   * @throws std::runtime_error if the ATS header has not been read successfully or if the file cannot be opened
-   * @return true if preparation was successful, false otherwise
-   */
+  /// @brief Prepare the ATS file for reading data
+  /// @details resets the global read count, opens the file for reading, and seeks to the start of the data.
+  /// @throws std::runtime_error if the ATS header has not been read successfully or if the file cannot be opened
+  /// @return true if preparation was successful, false otherwise
   bool prepare_read_data() {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -226,11 +206,9 @@ public:
     return true;
   }
 
-  /*!
-   * @brief Go to a specific ATS sample in the file
-   * @param sample_no The sample number to seek to
-   * @return True if successful, false otherwise
-   */
+  /// @brief Go to a specific ATS sample in the file
+  /// @param sample_no The sample number to seek to
+  /// @return True if successful, false otherwise
   bool go_to_ats_sample(const size_t sample_no) {
     if (!this->ats_data_in_file.is_open()) {
       throw std::runtime_error("ATS file is not open for reading.");
@@ -247,15 +225,13 @@ public:
     return true;
   }
 
-  /**
-   * @brief Read a vector of int32_t or double samples from the ATS file. returns 0 if no samples were read.
-   * @details so the logic is to FIRST check read is ok at the beginning of the loop
-   * @param data Reference to a vector<T> to store the samples, which control the size of the read block.
-   * @details a local counter is incremented to count the total number of samples read.
-   * @details if the returned (input) vector is smaller than in the calling code, we have the last chunk of data; so for FIR filtering, the calling code must discard the last chunk of data, because it is smaller than the filter length;
-   * @throws std::runtime_error if the ATS header has not been read successfully, if the file is not open for reading, or if an unsupported type is used.
-   * @return false if EOF is reached or fails, true otherwise.
-   */
+  /// @brief Read a vector of int32_t or double samples from the ATS file. returns 0 if no samples were read.
+  /// @details so the logic is to FIRST check read is ok at the beginning of the loop
+  /// @param data Reference to a vector<T> to store the samples, which control the size of the read block.
+  /// @details a local counter is incremented to count the total number of samples read.
+  /// @details if the returned (input) vector is smaller than in the calling code, we have the last chunk of data; so for FIR filtering, the calling code must discard the last chunk of data, because it is smaller than the filter length;
+  /// @throws std::runtime_error if the ATS header has not been read successfully, if the file is not open for reading, or if an unsupported type is used.
+  /// @return false if EOF is reached or fails, true otherwise.
   template <typename T>
   size_t ats_read_int_doubles(std::vector<T> &ints_doubles) {
     if (!is_ok) {
@@ -311,12 +287,10 @@ public:
     return ints_doubles.size(); // return the number of samples read
   }
 
-  /*!
-   * @brief open the ATS file for writing data
-   * @details and reset the write count
-   * @throws std::runtime_error if the ATS header has not been read successfully or if
-   * @return
-   */
+  /// @brief open the ATS file for writing data
+  /// @details and reset the write count
+  /// @throws std::runtime_error if the ATS header has not been read successfully or if
+  /// @return
   bool prepare_write_data() {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -333,14 +307,12 @@ public:
     this->ats_write_count = 0; // reset write count
     return true;
   }
-  /*!
-   * @brief Write the ATS data to the file
-   * @tparam T
-   * @param lsbval if T is double, the lsbval is used to convert the double to int32_t
-   * @details if given, and same as in header, not used when writing int32_t
-   * @param ints_doubles data to write, can be int32_t or double
-   * @return total number of samples written (ats_write_count)
-   */
+  /// @brief Write the ATS data to the file
+  /// @tparam T
+  /// @param lsbval if T is double, the lsbval is used to convert the double to int32_t
+  /// @details if given, and same as in header, not used when writing int32_t
+  /// @param ints_doubles data to write, can be int32_t or double
+  /// @return total number of samples written (ats_write_count)
   template <typename T>
   size_t ats_write_ints_doubles(const double &lsbval, const std::vector<T> &ints_doubles) {
     if (!this->ats_data_out_file.is_open()) {
@@ -381,12 +353,10 @@ public:
     return this->ats_write_count;
   }
 
-  /*!
-   * @brief Write zero int32_t samples to the ATS file. Can be needed when concatenating files
-   * @param n Number of samples to write
-   * @param close_after_write If true, close the file after writing
-   * @return Total number of samples written (ats_write_count)
-   */
+  /// @brief Write zero int32_t samples to the ATS file. Can be needed when concatenating files
+  /// @param n Number of samples to write
+  /// @param close_after_write If true, close the file after writing
+  /// @return Total number of samples written (ats_write_count)
   size_t write_zero_ints(const size_t &n, const bool close_after_write = false) {
     if (!this->ats_data_out_file.is_open()) {
       throw std::runtime_error("ATS file is not open for writing.");
@@ -418,12 +388,10 @@ public:
     this->atsheader_bin_to_atsheader();
   }
 
-  /*!
-   * @brief Write the ATS header to the file
-   * @details This function writes the ATS header to the file, creating a new file if `new_file` is true.
-   * @throws std::runtime_error if the file cannot be opened or written to
-   * @param new_file
-   */
+  /// @brief Write the ATS header to the file
+  /// @details This function writes the ATS header to the file, creating a new file if `new_file` is true.
+  /// @throws std::runtime_error if the file cannot be opened or written to
+  /// @param new_file
   void write_atsheader(const bool new_file = true) {
     if (!is_ok && !new_file) {
       throw std::runtime_error("ATS header not read / created successfully.");
@@ -448,10 +416,8 @@ public:
     is_ok = true; // Mark the header as successfully written / read
   }
 
-  /*!
-   * @brief Write the ATS header to a JSON file, so we can keep the COMPLETE metadata
-   * @param outdir_only The output directory for the JSON file, file will be named <ats_filename>.json
-   */
+  /// @brief Write the ATS header to a JSON file, so we can keep the COMPLETE metadata
+  /// @param outdir_only The output directory for the JSON file, file will be named <ats_filename>.json
   void write_ats_json_header(const std::filesystem::path &outdir_only) const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -494,10 +460,8 @@ public:
     return sz;
   }
 
-  /*!
-   * @brief get the start date and time of the ATS file as string in ISO 8601 format
-   * @return start date T time of the ATS file as a string in ISO 8601 format
-   */
+  /// @brief get the start date and time of the ATS file as string in ISO 8601 format
+  /// @return start date T time of the ATS file as a string in ISO 8601 format
   std::string ats_start_date_time() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -520,11 +484,9 @@ public:
     return mstr::iso8601_time_t(utc, 2, 0); // 2 returns the time only, no fractional seconds
   }
 
-  /*!
-   * @brief Get the start time of the ATS file as seconds since 1970
-   * @return The start time as a int64_t
-   * @throws std::runtime_error if the ATS header has not been read successfully
-   */
+  /// @brief Get the start time of the ATS file as seconds since 1970
+  /// @return The start time as a int64_t
+  /// @throws std::runtime_error if the ATS header has not been read successfully
   int64_t ats_start_secs_since_1970() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -532,13 +494,11 @@ public:
     return static_cast<int64_t>(this->atsheader_bin.start);
   }
 
-  /*!
-   * @brief stop time in seconds since 1970, no fractional seconds; a following ats file may start at next second
-   * @details The stop time is calculated as the start time plus the number of samples divided by the sample rate.
-   * This gives the stop time in seconds since 1970
-   * @return stop time in seconds since 1970, no fractional seconds
-   * @throws std::runtime_error if the ATS header has not been read successfully
-   */
+  /// @brief stop time in seconds since 1970, no fractional seconds; a following ats file may start at next second
+  /// @details The stop time is calculated as the start time plus the number of samples divided by the sample rate.
+  /// This gives the stop time in seconds since 1970
+  /// @return stop time in seconds since 1970, no fractional seconds
+  /// @throws std::runtime_error if the ATS header has not been read successfully
   int64_t ats_stop_secs_since_1970() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -551,10 +511,8 @@ public:
     return static_cast<int64_t>(intpart);
   }
 
-  /*!
-   * @brief Get the stop date of the ATS file
-   * @return The stop date as a string
-   */
+  /// @brief Get the stop date of the ATS file
+  /// @return The stop date as a string
   std::string ats_stop_date() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -581,10 +539,8 @@ public:
     return mstr::iso8601_time_t(utc, 2, 0); // 2 returns the time only, no fractional seconds
   }
 
-  /*!
-   * @brief create a default header for a given channel type; all fields are set to 0, except for the channel type specific fields
-   * @param channel_type
-   */
+  /// @brief create a default header for a given channel type; all fields are set to 0, except for the channel type specific fields
+  /// @param channel_type
   void create_default_header(const std::string channel_type) {
     this->atsheader["header_length"] = static_cast<int64_t>(1024);
     this->atsheader["header_version"] = static_cast<int64_t>(80);
@@ -718,10 +674,8 @@ public:
     this->atsheader["SiteNameEMAP"] = "";
   }
 
-  /*!
-   * @brief XmlHeader is stored in the header
-   * @return xmlfilename
-   */
+  /// @brief XmlHeader is stored in the header
+  /// @return xmlfilename
   std::filesystem::path gen_xmlfilename() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -768,12 +722,10 @@ public:
     // return the full path
     return xmlfilepath / xmlfile;
   }
-  /*!
-   * @brief Generate the XML filename as a string, using gen_xmlfilename
-   * @param name_only If true, return only the filename, otherwise return the full path
-   * @return The XML filename as a std::string
-   * @throws std::runtime_error if the ATS header has not been read successfully
-   */
+  /// @brief Generate the XML filename as a string, using gen_xmlfilename
+  /// @param name_only If true, return only the filename, otherwise return the full path
+  /// @return The XML filename as a std::string
+  /// @throws std::runtime_error if the ATS header has not been read successfully
   std::string gen_xmlfilename_str(bool name_only = true) const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -784,11 +736,9 @@ public:
     return gen_xmlfilename().filename().string(); // return only the filename
   }
 
-  /*!
-   * @brief Get the XML path from the ATS header, so we can use it for reading (calibration) data
-   * @return The XML path as a std::filesystem::path
-   * @throws std::runtime_error if the ATS header has not been read successfully
-   */
+  /// @brief Get the XML path from the ATS header, so we can use it for reading (calibration) data
+  /// @return The XML path as a std::filesystem::path
+  /// @throws std::runtime_error if the ATS header has not been read successfully
   std::filesystem::path get_xmlpath() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -798,10 +748,8 @@ public:
     return ats_path / this->atsheader["XmlHeader"].get<std::filesystem::path>();
   }
 
-  /*!
-   * @brief return the ATS filename as a std::filesystem::path; member is private^
-   * @return file path of the ATS file
-   */
+  /// @brief return the ATS filename as a std::filesystem::path; member is private^
+  /// @return file path of the ATS file
   std::filesystem::path get_ats_path() const {
     return std::filesystem::canonical(this->ats_filename);
   }
@@ -813,10 +761,8 @@ public:
     this->ats_filename /= fname;
   }
 
-  /*!
-   * @brief Get the site name from the ATS filename; file is in ts/site_name/meas_date_time/xxx.ats
-   * @return The site_name as a std::string
-   */
+  /// @brief Get the site name from the ATS filename; file is in ts/site_name/meas_date_time/xxx.ats
+  /// @return The site_name as a std::string
   std::string site_name_ats() const {
     return this->ats_filename.parent_path().parent_path().filename().string();
   }
@@ -846,10 +792,8 @@ public:
     return atsfile;
   }
 
-  /*!
-   * @brief Get the ATS header as a JSON object
-   * @return The ATS header as a nlohmann::ordered_json object
-   */
+  /// @brief Get the ATS header as a JSON object
+  /// @return The ATS header as a nlohmann::ordered_json object
   nlohmann::ordered_json get_ats_header() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -865,10 +809,8 @@ public:
     return (this->atsheader_bin.iLat_ms / 1000.) / 3600.;
   }
 
-  /*!
-   * @brief set_double_lat
-   * @param d ISO 6709, North latitude is positive, decimal fractions
-   */
+  /// @brief set_double_lat
+  /// @param d ISO 6709, North latitude is positive, decimal fractions
   void set_lat(const double &d) {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -883,10 +825,8 @@ public:
     return (this->atsheader_bin.iLong_ms / 1000.) / 3600.;
   }
 
-  /*!
-   * @brief set_double_lon
-   * @param d ISO 6709, East longitude is positive, decimal fractions
-   */
+  /// @brief set_double_lon
+  /// @param d ISO 6709, East longitude is positive, decimal fractions
   void set_lon(const double &d) {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -894,10 +834,8 @@ public:
     this->atsheader_bin.iLong_ms = static_cast<int32_t>(d * 3600000.);
   }
 
-  /*!
-   * @brief get_elev elevation in meter
-   * @return
-   */
+  /// @brief get_elev elevation in meter
+  /// @return
   double get_elev() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -919,10 +857,8 @@ public:
     this->atsheader_bin.iElev_cm = static_cast<int32_t>(d * 100.);
   }
 
-  /*!
-   * @brief pos2length calculate dipole length
-   * @return
-   */
+  /// @brief pos2length calculate dipole length
+  /// @return
   double pos2length() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -938,10 +874,8 @@ public:
     return diplength;
   }
 
-  /*!
-   * @brief pos2angle calculate angle for North to East
-   * @return
-   */
+  /// @brief pos2angle calculate angle for North to East
+  /// @return
   double pos2angle() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -993,11 +927,9 @@ public:
 
     return ang;
   }
-  /*!
-   * \brief get_filter
-   * \param init like "ADB" - we may other board names in future, use it together with system type
-   * \return comma separated string,like ADB-LF,LF-RF-2; so the board type and the filters
-   */
+  /// \brief get_filter
+  /// \param init like "ADB" - we may other board names in future, use it together with system type
+  /// \return comma separated string,like ADB-LF,LF-RF-2; so the board type and the filters
   std::string get_ats_filter(const std::string init) const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -1033,11 +965,9 @@ public:
     return filter;
   }
 
-  /*!
-   * @brief electric channels can scale; I want mV/km
-   * @details we however can NOT scale E[xyz] if length is 0! that would give us a division by zero
-   * @return
-   */
+  /// @brief electric channels can scale; I want mV/km
+  /// @details we however can NOT scale E[xyz] if length is 0! that would give us a division by zero
+  /// @return
   bool can_and_want_scale() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -1061,10 +991,8 @@ public:
     return false;
   }
 
-  /*!
-   * @brief pos2tilt calculate tilt angle from position in 3D space
-   * @return tilt angle; 90 = positive downwards, 0 = horizontal
-   */
+  /// @brief pos2tilt calculate tilt angle from position in 3D space
+  /// @return tilt angle; 90 = positive downwards, 0 = horizontal
   double pos2tilt() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -1082,7 +1010,7 @@ public:
     if (tz < 0.001)
       return 0.0; // no z component
 
-    //! @todo that is maybe wrong
+    /// @todo that is maybe wrong
     double ang = 90.0 - acos(tz / diplength) * 180.0 / M_PI;
     if ((ang < 0.01) && (ang > 359.99))
       return 0.;
@@ -1092,11 +1020,9 @@ public:
     return ang;
   }
 
-  /*!
-   * @brief convert dipole angle and length to position
-   * @param length
-   * @param angle_north_to_east in degrees, 0 = North, 90 = East, 180 = South, 270 = West
-   */
+  /// @brief convert dipole angle and length to position
+  /// @param length
+  /// @param angle_north_to_east in degrees, 0 = North, 90 = East, 180 = South, 270 = West
   void dip2pos(const double &length, const double &angle_north_to_east) {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -1110,12 +1036,10 @@ public:
     this->atsheader["y2"] = ty;
   }
 
-  /*!
-   * @brief convert dipole length and tilt angle to z position
-   * @details tilt angle is the angle from horizontal to vertical, so 90 degrees is vertical downwards
-   * @param length
-   * @param tilt in degrees, 90 = vertical downwards, 0 = horizontal
-   */
+  /// @brief convert dipole length and tilt angle to z position
+  /// @details tilt angle is the angle from horizontal to vertical, so 90 degrees is vertical downwards
+  /// @param length
+  /// @param tilt in degrees, 90 = vertical downwards, 0 = horizontal
   void dip2z(const double &length, const double &tilt) {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -1125,11 +1049,9 @@ public:
     this->atsheader["z2"] = tz;
   }
 
-  /*!
-   * @brief needed when we want to write into subdirectory, where this file wants to be written
-   * @details the measdir is the directory where the ATS file is stored, and has the start meas_date_time as name
-   * @return
-   */
+  /// @brief needed when we want to write into subdirectory, where this file wants to be written
+  /// @details the measdir is the directory where the ATS file is stored, and has the start meas_date_time as name
+  /// @return
   std::string measdir() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -1137,10 +1059,8 @@ public:
     return mstr::measdir_time(static_cast<int64_t>(this->atsheader_bin.start));
   }
 
-  /*!
-   * @brief Get the chopper status from the ATS header, on is LF mode, off is HF mode
-   * @return ChopperStatus indicating the current chopper status
-   */
+  /// @brief Get the chopper status from the ATS header, on is LF mode, off is HF mode
+  /// @return ChopperStatus indicating the current chopper status
   ChopperStatus get_ats_chopper() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -1150,10 +1070,8 @@ public:
     return ChopperStatus::off;
   }
 
-  /*!
-   * @brief Get the run number from the ATS filename
-   * @return int64_t indicating the run number
-   */
+  /// @brief Get the run number from the ATS filename
+  /// @return int64_t indicating the run number
   int64_t get_ats_run() const {
     if (!this->ats_filename.string().size())
       return 0;
@@ -1174,10 +1092,8 @@ public:
     return irun;
   }
 
-  /*!
-   * @brief Convert LF filter settings to a vector of integers
-   * @return Vector of integers representing the LF filter settings
-   */
+  /// @brief Convert LF filter settings to a vector of integers
+  /// @return Vector of integers representing the LF filter settings
   std::vector<uint8_t> LFFilter_to_ints() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -1190,10 +1106,8 @@ public:
     return filters;
   }
 
-  /*!
-   * @brief Convert HF filter settings to a vector of integers
-   * @return Vector of integers representing the HF filter settings
-   */
+  /// @brief Convert HF filter settings to a vector of integers
+  /// @return Vector of integers representing the HF filter settings
   std::vector<uint8_t> HFFilter_to_ints() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -1206,12 +1120,10 @@ public:
     return filters;
   }
 
-  /*!
-   * @brief Set the filter bank object
-   * @details This function sets the filter bank for the ATS file based on the ADU.
-   * @param ADUin The ADU string, e.g. "ADU-07e" or "ADU-08e"
-   * @return size_t successfully created filters
-   */
+  /// @brief Set the filter bank object
+  /// @details This function sets the filter bank for the ATS file based on the ADU.
+  /// @param ADUin The ADU string, e.g. "ADU-07e" or "ADU-08e"
+  /// @return size_t successfully created filters
 
   size_t set_filter_bank(const std::string &ADUin) {
     std::string ADU(ADUin);
@@ -1226,28 +1138,28 @@ public:
     this->HF_Filters.clear();
 
     if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))
-      this->LF_Filters["LF-RF-1"] = ADU::LF_RF_1; //! 0x01 ADU07/8 LF-RF-1 filter on LF board with capacitor 22pF
+      this->LF_Filters["LF-RF-1"] = ADU::LF_RF_1; ///< 0x01 ADU07/8 LF-RF-1 filter on LF board with capacitor 22pF
     if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))
-      this->LF_Filters["LF-RF-2"] = ADU::LF_RF_2; //! 0x02 ADU07/8 LF-RF-2 filter on LF board with capacitor 122pF
+      this->LF_Filters["LF-RF-2"] = ADU::LF_RF_2; ///< 0x02 ADU07/8 LF-RF-2 filter on LF board with capacitor 122pF
     if ((ADU == "ADU-07e"))
-      this->LF_Filters["LF-RF-3"] = ADU::LF_RF_3; //! 0x04 ADU07   LF-RF-3 filter on LF board with capacitor 242pF
+      this->LF_Filters["LF-RF-3"] = ADU::LF_RF_3; ///< 0x04 ADU07   LF-RF-3 filter on LF board with capacitor 242pF
     if ((ADU == "ADU-07e"))
-      this->LF_Filters["LF-RF-4"] = ADU::LF_RF_4; //! 0x08 ADU07   LF-RF-4 filter on LF board with capacitor 342pF
+      this->LF_Filters["LF-RF-4"] = ADU::LF_RF_4; ///< 0x08 ADU07   LF-RF-4 filter on LF board with capacitor 342pF
     if ((ADU == "ADU-07e") || (ADU == "ADU-08e"))
-      this->LF_Filters["LF-LP-4Hz"] = ADU::LF_LP_4Hz; //! 0x10 ADU07/8 LF-LP-4Hz filter on LF board with 4 Hz Lowpass characteristic
+      this->LF_Filters["LF-LP-4Hz"] = ADU::LF_LP_4Hz; ///< 0x10 ADU07/8 LF-LP-4Hz filter on LF board with 4 Hz Lowpass characteristic
 
     if ((ADU == "ADU-07e"))
-      this->LF_Filters["MF-RF-1"] = ADU::MF_RF_1; //! 0x40 ADU07   MF-RF-1 filter on MF board with capacitor 470nF
+      this->LF_Filters["MF-RF-1"] = ADU::MF_RF_1; ///< 0x40 ADU07   MF-RF-1 filter on MF board with capacitor 470nF
     if ((ADU == "ADU-07e"))
-      this->LF_Filters["MF-RF-2"] = ADU::MF_RF_2; //! 0x20 ADU07   MF-RF-2 filter on MF board with capacitor 4.7nF
+      this->LF_Filters["MF-RF-2"] = ADU::MF_RF_2; ///< 0x20 ADU07   MF-RF-2 filter on MF board with capacitor 4.7nF
 
     // HF Path
     // 1 Hz has been dropped for 08, was default for 07
     if ((ADU == "ADU-07e"))
-      this->HF_Filters["HF-HP-1Hz"] = ADU::HF_HP_1Hz; //! 0x01 ADU07   HF-HP-1Hz 1Hz filter enable for HF board
+      this->HF_Filters["HF-HP-1Hz"] = ADU::HF_HP_1Hz; ///< 0x01 ADU07   HF-HP-1Hz 1Hz filter enable for HF board
     // 500Hz is the HP for 08 default
     if ((ADU == "ADU-08e"))
-      this->HF_Filters["HF-HP-500Hz"] = ADU::HF_HP_500Hz; //! 0x02 ADU08   HF-HP-500Hz 500Hz filter enable for HF board
+      this->HF_Filters["HF-HP-500Hz"] = ADU::HF_HP_500Hz; ///< 0x02 ADU08   HF-HP-500Hz 500Hz filter enable for HF board
 
     return this->LF_Filters.size() + this->HF_Filters.size();
 
@@ -1255,16 +1167,14 @@ public:
     // for HF filter may be visible above 8000 Hz
   }
 
-  /*!
-   * @brief return the LF filter strings as a comma separated string
-   * @return comma separated string of LF filter names
-   */
+  /// @brief return the LF filter strings as a comma separated string
+  /// @return comma separated string of LF filter names
   std::string get_lf_filter_strings() const {
     std::string sfilter;
     std::vector<uint8_t> filters(this->LFFilter_to_ints());
 
     // the atsheader uses only the FIRST int for up to ADU-08e
-    //!< @todo check for ADU-10e,11e,12e
+    ///< @todo check for ADU-10e,11e,12e
     std::map<ADU, std::string> rfilters;
     for (const auto &it : this->LF_Filters) {
       rfilters[it.second] = it.first;
@@ -1280,16 +1190,14 @@ public:
     return sfilter;
   }
 
-  /*!
-   * @brief return the HF filter strings as a comma separated string
-   * @return comma separated string of HF filter names
-   */
+  /// @brief return the HF filter strings as a comma separated string
+  /// @return comma separated string of HF filter names
   std::string get_hf_filter_strings() const {
     std::string sfilter;
     std::vector<uint8_t> filters(this->HFFilter_to_ints());
 
     // the atsheader uses only the FIRST int
-    //!< @todo check for ADU-10e,11e,12e
+    ///< @todo check for ADU-10e,11e,12e
     std::map<ADU, std::string> rfilters;
     for (const auto &it : this->HF_Filters) {
       rfilters[it.second] = it.first;
@@ -1305,11 +1213,9 @@ public:
     return sfilter;
   }
 
-  /*!
-   * \brief set_hf_filter_int, so we get the ATS header binary representation
-   * \details This function sets the HF filters in the ATS header binary representation.
-   * \param cs_string comma separated list of filters
-   */
+  /// \brief set_hf_filter_int, so we get the ATS header binary representation
+  /// \details This function sets the HF filters in the ATS header binary representation.
+  /// \param cs_string comma separated list of filters
   void set_hf_filter_int(const std::string &cs_string) {
     if (cs_string.empty()) {
       throw std::runtime_error("set_hf_filter_int: cs_string is empty.");
@@ -1328,12 +1234,10 @@ public:
     }
   }
 
-  /*!
-   * @brief set_lf_filter_int, so we get the ATS header binary representation
-   * @details This function sets the LF filters in the ATS header binary representation.
-   * @details The LF filters are set as a bitfield in the ATS header binary representation
-   * @param cs_string comma separated list of filters, e.g. "LF-RF-1,LF-RF-2,LF-LP-4Hz"
-   */
+  /// @brief set_lf_filter_int, so we get the ATS header binary representation
+  /// @details This function sets the LF filters in the ATS header binary representation.
+  /// @details The LF filters are set as a bitfield in the ATS header binary representation
+  /// @param cs_string comma separated list of filters, e.g. "LF-RF-1,LF-RF-2,LF-LP-4Hz"
   void set_lf_filter_int(const std::string &cs_string) {
     if (cs_string.empty()) {
       throw std::runtime_error("set_lf_filter_int: cs_string is empty.");
@@ -1353,23 +1257,21 @@ public:
     }
   }
   // keep public becaus of lambda comparison functions
-  nlohmann::ordered_json atsheader; //!< JSON representation of the header, keeps insertion order; this the working header, so I call it atsheader
-  ATSHeader_80 atsheader_bin;       //!< ATS header structure, e.g. 1024 bytes
+  nlohmann::ordered_json atsheader; ///< JSON representation of the header, keeps insertion order; this the working header, so I call it atsheader
+  ATSHeader_80 atsheader_bin;       ///< ATS header structure, e.g. 1024 bytes
 
 private:
   std::filesystem::path ats_filename;
-  size_t ats_write_count = 0;      //!< count samples written to file, needed when finally re-write the header
-  size_t ats_read_count = 0;       //!< count samples read from file, needed when finally re-write the header
-  std::ifstream ats_data_in_file;  //!< input file stream for reading data
-  std::ofstream ats_data_out_file; //!< output file stream for writing data
-  bool is_ok = false;              //!< indicates that the header was read successfully
+  size_t ats_write_count = 0;      ///< count samples written to file, needed when finally re-write the header
+  size_t ats_read_count = 0;       ///< count samples read from file, needed when finally re-write the header
+  std::ifstream ats_data_in_file;  ///< input file stream for reading data
+  std::ofstream ats_data_out_file; ///< output file stream for writing data
+  bool is_ok = false;              ///< indicates that the header was read successfully
   std::unordered_map<std::string, ADU> LF_Filters;
   std::unordered_map<std::string, ADU> HF_Filters;
 
-  /*!
-   * @brief converts the internal ATS header binary representation to a JSON object
-   * @details some values will be corrected, like ADU08 to ADU-08e; we use official names like in the manuals
-   */
+  /// @brief converts the internal ATS header binary representation to a JSON object
+  /// @details some values will be corrected, like ADU08 to ADU-08e; we use official names like in the manuals
   void atsheader_bin_to_atsheader() {
     this->atsheader["header_length"] = static_cast<int64_t>(this->atsheader_bin.header_length);
     this->atsheader["header_version"] = static_cast<int64_t>(this->atsheader_bin.header_version);
@@ -1506,10 +1408,8 @@ private:
     this->atsheader["SiteNameEMAP"] = mstr::clean_bc_str(this->atsheader_bin.comments.SiteNameEMAP, 112);
   }
 
-  /*!
-   * @brief converts the internal ATS header binary representation to a JSON object
-   * @details  some values will be converted, like filter names, sensor type, etc.
-   */
+  /// @brief converts the internal ATS header binary representation to a JSON object
+  /// @details  some values will be converted, like filter names, sensor type, etc.
   void atsheader_to_atsheader_bin() {
     // make a clean & empty struct
     memset(&this->atsheader_bin, 0, sizeof(this->atsheader_bin));
@@ -1640,25 +1540,21 @@ private:
 // *****************
 // ***************************************** C O M P A R I S O N S *****************************************
 
-/*!
- * @brief compare the channel types of two atsfile shared_ptrs; like both having "Ex" or "Ey"
- * @param lhs first shared_ptr<atsfile>
- * @param rhs second shared_ptr<atsfile>
- * @return true if channel types are equal, false otherwise
- * @example std::find_if(atsfiles.begin(), atsfiles.end(), compare_ats_channel_type(lhs, rhs));
- * @example std::sort(atsfiles.begin(), atsfiles.end(), compare_ats_channel_type); (alphabetical order by channel type)
- * @example std::copy_if(atsfiles.begin(), atsfiles.end(), std::back_inserter(filtered), compare_ats_channel_type(lhs, rhs)); will copy all atsfiles with the same channel type into filtered
- */
+/// @brief compare the channel types of two atsfile shared_ptrs; like both having "Ex" or "Ey"
+/// @param lhs first shared_ptr<atsfile>
+/// @param rhs second shared_ptr<atsfile>
+/// @return true if channel types are equal, false otherwise
+/// @example std::find_if(atsfiles.begin(), atsfiles.end(), compare_ats_channel_type(lhs, rhs));
+/// @example std::sort(atsfiles.begin(), atsfiles.end(), compare_ats_channel_type); (alphabetical order by channel type)
+/// @example std::copy_if(atsfiles.begin(), atsfiles.end(), std::back_inserter(filtered), compare_ats_channel_type(lhs, rhs)); will copy all atsfiles with the same channel type into filtered
 auto compare_ats_channel_type = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   return (std::string(lhs->atsheader_bin.channel_type, sizeof(lhs->atsheader_bin.channel_type)) == std::string(rhs->atsheader_bin.channel_type, sizeof(rhs->atsheader_bin.channel_type)));
 };
 
-/*!
- * @brief compare position of the sensors in two atsfile shared_ptrs
- * @param lhs first shared_ptr<atsfile>
- * @param rhs second shared_ptr<atsfile>
- * @return true if positions are equal, false otherwise
- */
+/// @brief compare position of the sensors in two atsfile shared_ptrs
+/// @param lhs first shared_ptr<atsfile>
+/// @param rhs second shared_ptr<atsfile>
+/// @return true if positions are equal, false otherwise
 auto compare_ats_pos = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   float limit = 0.05; // that 5 cm is the limit for comparison
   if (std::abs(lhs->atsheader_bin.x1 - rhs->atsheader_bin.x1) > limit)
@@ -1676,12 +1572,10 @@ auto compare_ats_pos = [](const std::shared_ptr<atsfile> &lhs, const std::shared
   return true;
 };
 
-/*!
- * @brief compare the least significant bits (LSB) of two atsfile shared_ptrs. If same, we can easily concatenate the files
- * @param lhs first shared_ptr<atsfile>
- * @param rhs second shared_ptr<atsfile>
- * @return true if LSBs are equal, false otherwise
- */
+/// @brief compare the least significant bits (LSB) of two atsfile shared_ptrs. If same, we can easily concatenate the files
+/// @param lhs first shared_ptr<atsfile>
+/// @param rhs second shared_ptr<atsfile>
+/// @return true if LSBs are equal, false otherwise
 auto compare_ats_lsb = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   double lsb_lhs = lhs->atsheader["lsbval"];
   double lsb_rhs = rhs->atsheader["lsbval"];
@@ -1693,91 +1587,75 @@ auto compare_ats_lsb = [](const std::shared_ptr<atsfile> &lhs, const std::shared
   return d <= (1.0 + 1e-5);
 };
 
-/*!
- * @brief compare the sample rates of two atsfile shared_ptrs
- * @param lhs first shared_ptr<atsfile>
- * @param rhs second shared_ptr<atsfile>
- * @return true if sample rates are equal, false otherwise
- */
+/// @brief compare the sample rates of two atsfile shared_ptrs
+/// @param lhs first shared_ptr<atsfile>
+/// @param rhs second shared_ptr<atsfile>
+/// @return true if sample rates are equal, false otherwise
 auto compare_ats_sample_rate = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   return (lhs->atsheader_bin.sample_rate == rhs->atsheader_bin.sample_rate);
 };
 
-/*!
- * @brief compare the sensor types of two atsfile shared_ptrs, so for example both having "MFS-06e"?
- * @param lhs first shared_ptr<atsfile>
- * @param rhs second shared_ptr<atsfile>
- * @return true if sensor types are equal, false otherwise
- */
+/// @brief compare the sensor types of two atsfile shared_ptrs, so for example both having "MFS-06e"?
+/// @param lhs first shared_ptr<atsfile>
+/// @param rhs second shared_ptr<atsfile>
+/// @return true if sensor types are equal, false otherwise
 auto compare_ats_sensor_type = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   return (std::string(lhs->atsheader_bin.sensor_type) == std::string(rhs->atsheader_bin.sensor_type));
 };
 
-/*!
- * @brief compare the serial numbers of two atsfile shared_ptrs; hence that will easily fail for Ex, Ey because the are manually set
- * @param lhs first shared_ptr<atsfile>
- * @param rhs second shared_ptr<atsfile>
- * @return true if serial numbers are equal, false otherwise
- */
+/// @brief compare the serial numbers of two atsfile shared_ptrs; hence that will easily fail for Ex, Ey because the are manually set
+/// @param lhs first shared_ptr<atsfile>
+/// @param rhs second shared_ptr<atsfile>
+/// @return true if serial numbers are equal, false otherwise
 auto compare_ats_serial_number = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   return (lhs->atsheader_bin.serial_number == rhs->atsheader_bin.serial_number);
 };
 
-/*!
- * @brief compare the chopper settings of two atsfile shared_ptrs
- * @param lhs first shared_ptr<atsfile>
- * @param rhs second shared_ptr<atsfile>
- * @return true if chopper settings are equal, false otherwise
- */
+/// @brief compare the chopper settings of two atsfile shared_ptrs
+/// @param lhs first shared_ptr<atsfile>
+/// @param rhs second shared_ptr<atsfile>
+/// @return true if chopper settings are equal, false otherwise
 auto compare_ats_chopper = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   return (lhs->atsheader_bin.chopper == rhs->atsheader_bin.chopper);
 };
 
-/*!
- * @brief compare the start times of two atsfile shared_ptrs
- * @param lhs first shared_ptr<atsfile>
- * @param rhs second shared_ptr<atsfile>
- * @return true if start times are equal, false otherwise
- */
+/// @brief compare the start times of two atsfile shared_ptrs
+/// @param lhs first shared_ptr<atsfile>
+/// @param rhs second shared_ptr<atsfile>
+/// @return true if start times are equal, false otherwise
 auto compare_ats_start = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   return lhs->atsheader_bin.start < rhs->atsheader_bin.start;
 };
 
-/*!
- * @brief compare the similar properties of two atsfile shared_ptrs
- * @details This function checks if two atsfile shared_ptrs can be concatenated based on their properties.
- * position, sample rate, sensor type, chopper settings, and channel type must match.
- * the serial number may hae changed (replacement of a sensor), so we do not compare it
- * the LSB may have (slightly) changed after reboot, but concat will check that
- * BUT we can NOT change the position, because that is in the xml file.
- * @param lhs first shared_ptr<atsfile>
- * @param rhs second shared_ptr<atsfile>
- * @return true if the two atsfile shared_ptrs are similar enough to be concatenated, false otherwise
- */
+/// @brief compare the similar properties of two atsfile shared_ptrs
+/// @details This function checks if two atsfile shared_ptrs can be concatenated based on their properties.
+/// position, sample rate, sensor type, chopper settings, and channel type must match.
+/// the serial number may hae changed (replacement of a sensor), so we do not compare it
+/// the LSB may have (slightly) changed after reboot, but concat will check that
+/// BUT we can NOT change the position, because that is in the xml file.
+/// @param lhs first shared_ptr<atsfile>
+/// @param rhs second shared_ptr<atsfile>
+/// @return true if the two atsfile shared_ptrs are similar enough to be concatenated, false otherwise
 auto compare_ats_similar = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   return (compare_ats_pos(lhs, rhs) && compare_ats_sample_rate(lhs, rhs) &&
           compare_ats_sensor_type(lhs, rhs) &&
           compare_ats_chopper(lhs, rhs) && compare_ats_channel_type(lhs, rhs));
 };
 
-/*!
- * @brief compare the stop times of two atsfile shared_ptrs
- * @details This function compares the stop times of two atsfile shared_ptrs.
- * @return false if not equal, true if equal
- */
+/// @brief compare the stop times of two atsfile shared_ptrs
+/// @details This function compares the stop times of two atsfile shared_ptrs.
+/// @return false if not equal, true if equal
 auto compare_ats_stop = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   long double sf_lhs = static_cast<long double>(lhs->atsheader_bin.samples) / static_cast<long double>(lhs->atsheader_bin.sample_rate);
   long double sf_rhs = static_cast<long double>(rhs->atsheader_bin.samples) / static_cast<long double>(rhs->atsheader_bin.sample_rate);
   return ((static_cast<long double>(lhs->atsheader_bin.start)) + sf_lhs) != (static_cast<long double>(rhs->atsheader_bin.start) + sf_rhs);
 };
 
-/*!
- * @brief check if two atsfile shared_ptrs can be concatenated
- * @details This function checks if two atsfile shared_ptrs can be concatenated based on their properties.
- * It checks if the two files are similar enough to be concatenated, and if the stop time of the first file is before the start time of the second file.
- * The properties checked are:
- * - position, sample rate, sensor type, chopper settings, and channel type must match
- */
+/// @brief check if two atsfile shared_ptrs can be concatenated
+/// @details This function checks if two atsfile shared_ptrs can be concatenated based on their properties.
+/// It checks if the two files are similar enough to be concatenated, and if the stop time of the first file is before the start time of the second file.
+/// The properties checked are:
+/// - position, sample rate, sensor type, chopper settings, and channel type must match
 auto can_ats_concatenate = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   if (!compare_ats_similar(lhs, rhs))
     return false;
@@ -1787,9 +1665,7 @@ auto can_ats_concatenate = [](const std::shared_ptr<atsfile> &lhs, const std::sh
   return lhs_stop < rhs_start;
 };
 
-/*!
- * @brief check if two atsfile shared_ptrs are identical
- */
+/// @brief check if two atsfile shared_ptrs are identical
 auto identical_ats_files = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> bool {
   // we simply compare the atsheaders
   // we do not use the binary ATSHeader_80, because binary ATSHeader_80 may have different padding or "empty bytes" in the header
@@ -1797,12 +1673,10 @@ auto identical_ats_files = [](const std::shared_ptr<atsfile> &lhs, const std::sh
   return (lhs->atsheader == rhs->atsheader);
 };
 
-/*!
- * @brief calculate the difference in time between the stop time of the left-hand side and the start time of the right-hand side
- * @details we need long double; the "real" stop my not always be at a full second, so we calculate the difference in samples
- * @param lhs first shared_ptr<atsfile> (stop time)
- * @param rhs second shared_ptr<atsfile> (start time)
- */
+/// @brief calculate the difference in time between the stop time of the left-hand side and the start time of the right-hand side
+/// @details we need long double; the "real" stop my not always be at a full second, so we calculate the difference in samples
+/// @param lhs first shared_ptr<atsfile> (stop time)
+/// @param rhs second shared_ptr<atsfile> (start time)
 auto diff_time_ats_stop_start = [](const std::shared_ptr<atsfile> &lhs, const std::shared_ptr<atsfile> &rhs) -> long double {
   long double sf_lhs = static_cast<long double>(lhs->atsheader_bin.samples) / static_cast<long double>(lhs->atsheader_bin.sample_rate);
   long double sf_rhs = static_cast<long double>(rhs->atsheader_bin.start);
@@ -1810,12 +1684,10 @@ auto diff_time_ats_stop_start = [](const std::shared_ptr<atsfile> &lhs, const st
   return int64_t((sf_rhs - sf_lhs) * static_cast<long double>(lhs->atsheader_bin.sample_rate));
 };
 
-/*!
- * @brief compares comparable values of the json header of an atsfile
- * @details This class is used to compare the values of the atsheader in a shared_ptr
- * @example std::find_if(atsfiles.begin(), atsfiles.end(), ats_Greater(100.0, "lsbval")); this will find the first atsfile with a lsbval greater
- * @example to find all atsfiles with a lsbval greater than 100.0, use std::copy_if. which returns a vector of shared_ptr<atsfile>
- */
+/// @brief compares comparable values of the json header of an atsfile
+/// @details This class is used to compare the values of the atsheader in a shared_ptr
+/// @example std::find_if(atsfiles.begin(), atsfiles.end(), ats_Greater(100.0, "lsbval")); this will find the first atsfile with a lsbval greater
+/// @example to find all atsfiles with a lsbval greater than 100.0, use std::copy_if. which returns a vector of shared_ptr<atsfile>
 class ats_Greater {
   double _than;
   std::string what;
@@ -1829,11 +1701,9 @@ public:
   }
 };
 
-/*!
- * @brief compares comparable values of the json header of an atsfile
- * @details This class is used to compare the values of the atsheader in a shared_ptr
- * @example std::find_if(atsfiles.begin(), atsfiles.end(), ats_Less(100.0, "lsbval"));
- */
+/// @brief compares comparable values of the json header of an atsfile
+/// @details This class is used to compare the values of the atsheader in a shared_ptr
+/// @example std::find_if(atsfiles.begin(), atsfiles.end(), ats_Less(100.0, "lsbval"));
 class ats_Less {
   double _than;
   std::string what;

@@ -65,12 +65,10 @@ std::filesystem::path get_data_dir() {
   return std::filesystem::canonical(result);
 }
 
-/*!
- * \brief working_dir get dirs and files of procmt, size will be 0 if not found!
- * \param append_dir append a subdirectory without slash
- * \param filename append a file in case
- * \return either the current working dir of procmt, with subfolder and file in case, if file check existance
- */
+/// \brief working_dir get dirs and files of procmt, size will be 0 if not found!
+/// \param append_dir append a subdirectory without slash
+/// \param filename append a file in case
+/// \return either the current working dir of procmt, with subfolder and file in case, if file check existance
 std::filesystem::path working_dir_data(const std::string filename) {
   std::filesystem::path result(get_exec_dir());
   if (!std::filesystem::exists(result))
@@ -109,10 +107,8 @@ std::filesystem::path working_dir_data(const std::string filename) {
   return std::filesystem::canonical(result);
 }
 
-/*!
- * \brief sort_xml_and_files sort the path part - wich is concludent to the channel C00 ... C99 part of the filename
- * \param xmls_and_files
- */
+/// \brief sort_xml_and_files sort the path part - wich is concludent to the channel C00 ... C99 part of the filename
+/// \param xmls_and_files
 
 void sort_xml_and_files(std::multimap<std::string, std::filesystem::path> &xmls_and_files) {
 
@@ -147,12 +143,10 @@ void sort_xml_and_files(std::multimap<std::string, std::filesystem::path> &xmls_
   std::swap(xmls_and_files, new_xmls_and_files);
 }
 
-/*!
- * @brief
- * @param in_cmd sends a command to the shell and returns the output as a list of strings
- * @param timeout terminates the command after timeout seconds
- * @return list of strings
- */
+/// @brief
+/// @param in_cmd sends a command to the shell and returns the output as a list of strings
+/// @param timeout terminates the command after timeout seconds
+/// @return list of strings
 std::list<std::string> GetStdoutFromCommand(const std::string &in_cmd, const std::chrono::seconds &timeout = std::chrono::seconds(5)) {
   std::string cmd(in_cmd);
   std::list<std::string> data;
@@ -180,12 +174,10 @@ std::list<std::string> GetStdoutFromCommand(const std::string &in_cmd, const std
   return data;
 }
 
-/*!
- * @brief find an executable in a list of paths; if not found try which
- * @param paths list of paths
- * @param p program name
- * @return path to the executable or empty path
- */
+/// @brief find an executable in a list of paths; if not found try which
+/// @param paths list of paths
+/// @param p program name
+/// @return path to the executable or empty path
 std::filesystem::path check_executable(const std::list<std::filesystem::path> &paths, const std::string &p) {
   for (const auto &path : paths) {
     std::filesystem::path pp = path / p;

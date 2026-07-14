@@ -3,20 +3,16 @@
 
 // command line run configuration ******************************************************************************
 
-/*!
- * @brief contains the run number and the channel numbers for that run
- @details remind that we can Hx for example at channel number 2 and 5 in the same run, so we have to use channel numbers to identify channels
- */
+/// @brief contains the run number and the channel numbers for that run
+/// @details remind that we can Hx for example at channel number 2 and 5 in the same run, so we have to use channel numbers to identify channels
 class run_config {
 public:
   run_config() : channel_numbers(max_survey_channels, false) {}
 
-  /*!
-   * @brief we create a run_config from command line arguments
-   * @param it which is at "-r" position
-   * @param margs expected pattern: -r <run_no> -c <channels...>; parsing stops at next switch or end
-   * @return iterator positioned at next switch ("-r"/"-s"/end)
-   */
+  /// @brief we create a run_config from command line arguments
+  /// @param it which is at "-r" position
+  /// @param margs expected pattern: -r <run_no> -c <channels...>; parsing stops at next switch or end
+  /// @return iterator positioned at next switch ("-r"/"-s"/end)
   std::list<std::string>::iterator create_run_config(std::list<std::string>::iterator it, std::list<std::string> &margs) {
     // check that we get "-r" otherwise throw
     if (it == margs.end() || *it != "-r") {
@@ -82,15 +78,11 @@ public:
 
 class station_config {
 public:
-  /*!
-   * @brief Default constructor for station_config
-   */
+  /// @brief Default constructor for station_config
   station_config() = default;
 
-  /*!
-   * @brief Construct a station_config with a given station name
-   * @param name The name of the station
-   */
+  /// @brief Construct a station_config with a given station name
+  /// @param name The name of the station
   station_config(const std::string &name) : station_name(name) {}
 
   void set_station_name(const std::string &name) {
@@ -106,12 +98,10 @@ public:
     runs = other.runs;
   }
 
-  /*!
-   * @brief Create a station configuration from command line arguments
-   * @param it Iterator pointing to the current position in the argument list
-   * @param margs List of command line arguments
-   * @return Iterator pointing to the next unprocessed argument
-   */
+  /// @brief Create a station configuration from command line arguments
+  /// @param it Iterator pointing to the current position in the argument list
+  /// @param margs List of command line arguments
+  /// @return Iterator pointing to the next unprocessed argument
   std::list<std::string>::iterator create_station_config(std::list<std::string>::iterator it, std::list<std::string> &margs) {
     if (it == margs.end() || it->starts_with('-')) {
       throw std::runtime_error("No station name provided after -s");
@@ -142,7 +132,7 @@ public:
   }
 
   std::string station_name;
-  std::map<size_t, std::vector<bool>> runs; //!< run_number → channel selection flags
+  std::map<size_t, std::vector<bool>> runs; ///< run_number → channel selection flags
 };
 
 // std::map<std::string, std::map<size_t, std::vector<bool>>> &station_run_channels

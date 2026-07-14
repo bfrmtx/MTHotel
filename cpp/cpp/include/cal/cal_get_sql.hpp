@@ -9,8 +9,7 @@
 #include <string>
 #include <vector>
 
-/*! \brief Class to retrieve calibration data from a SQLite database
- */
+/// \brief Class to retrieve calibration data from a SQLite database
 class get_from_master_cal {
 public:
   get_from_master_cal(const std::filesystem::path &db_path) {

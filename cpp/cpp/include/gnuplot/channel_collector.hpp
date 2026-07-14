@@ -15,12 +15,10 @@
 
 class channel_collector_gplt {
 public:
-  /*!
-   * @brief constructor for a channel plotter for x y plots
-   * @param gplt
-   * @param channel_type
-   * @param use_selected
-   */
+  /// @brief constructor for a channel plotter for x y plots
+  /// @param gplt
+  /// @param channel_type
+  /// @param use_selected
   channel_collector_gplt(std::shared_ptr<gnuplotter<double, double>> gplt, std::string channel_type, bool use_selected = true) :
       gplt(gplt), channel_type(channel_type), use_selected(use_selected) {
     if (channel_type == "Ex") {
@@ -39,12 +37,10 @@ public:
       color = "lc rgbcolor \"grey\"";
     }
   }
-  /*!
-   * @brief constructor for a channel plotter for x y SPECTRA plots
-   * @param gplt
-   * @param spectra_type
-   * @param use_selected
-   */
+  /// @brief constructor for a channel plotter for x y SPECTRA plots
+  /// @param gplt
+  /// @param spectra_type
+  /// @param use_selected
   channel_collector_gplt(std::shared_ptr<gnuplotter<double, double>> gplt, std::pair<std::string, std::string> spectra_type, bool use_selected = true) :
       gplt(gplt), spectra_type(spectra_type), use_selected(use_selected) {
     // Create a channel pair where both channels have the same type (auto spectrum)

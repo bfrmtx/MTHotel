@@ -184,22 +184,26 @@ $P_{1} = i \cdot \frac{1}{4 Hz}, \enspace P_{2} = i \cdot \frac{1}{9645 Hz} \ens
 $P_{3} = i \cdot \frac{1}{0.72 Hz},\enspace P_{4} = i \cdot \frac{1}{23897 Hz}$
 
 #### Chopper on
-$F_{on}(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4} $
+$F_{on}(f)\,\left[\frac{mV}{nT}\right] = 800 \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4}$
 
 #### Chopper off
-$F_{off}(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3}  \cdot \frac{1}{1+P_4} $
+$F_{off}(f)\,\left[\frac{mV}{nT}\right] = 800 \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3} \cdot \frac{1}{1+P_4}$
 
 <hr style="height:1px;border-width:0;color:gray;background-color:gray">
 
 ### MFS-07e
+
 $P_{1} = i \cdot \frac{1}{32 Hz}, \enspace P_{2} = i \cdot \frac{1}{45150 Hz} \enspace$
+
 $P_{3} = i \cdot \frac{1}{0.72 Hz},\enspace P_{4} = i \cdot \frac{1}{49735 Hz}$
 
 #### Chopper on
-$F_{on}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4} $
+
+$F_{on}(f)\,\left[\frac{mV}{nT}\right] = 640 \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4}$
 
 #### Chopper off
-$F_{off}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3}  \cdot \frac{1}{1+P_4} $
+
+$F_{off}(f)\,\left[\frac{mV}{nT}\right] = 640 \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3} \cdot \frac{1}{1+P_4}$
 
 <hr style="height:1px;border-width:0;color:gray;background-color:gray">
 
@@ -214,7 +218,7 @@ In the old days we used copper on == LF mode and chopper off == HF mode.<br>
 Now we have a switch free design, so only one transfer function is used.<br>
 However, the amplifier still has a chopper stage, which is always on, but invisible in the transfer function. <br>
 The transfer function is a mix of both modes:<br>
-$F(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4} $
+$F(f)\,\left[\frac{mV}{nT}\right] = 800 \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4}$
 
 
 <hr style="height:1px;border-width:0;color:gray;background-color:gray">
@@ -231,7 +235,7 @@ Only a basic approximation of the transfer function is available:
 
 $P_{1} = i \cdot \frac{f}{300,000 Hz}$
 
-$F(f) = \frac{ mV}{nT} = 50 \enspace \frac{mV}{nT} \cdot \frac{1}{1 + P_1} $
+$F(f)\,\left[\frac{mV}{nT}\right] = 50 \cdot \frac{1}{1 + P_1}$
 
 **YOU MUST USE THE CALIBRATION FILES FOR THIS SENSOR**
 
@@ -246,24 +250,24 @@ Fluxgate magnetometers from Bartington Instruments just need to be scaled.
 ### FGS-02e
 Fluxgate with 75,000 nT range, Geomag-01.
 
- $F(f) = \frac{ mV}{nT} = 7.5 \cdot 10^{-4} \enspace \frac{mV}{nT} $
+$F(f)\,\left[\frac{mV}{nT}\right] = 7.5 \cdot 10^{-4}$
 
 ### FGS-03e
 Fluxgate with 100,000 nT range, Bartington Mag-03.
 
-$F(f) = \frac{ mV}{nT} = 1 \cdot 10^{-4} \enspace \frac{mV}{nT} $
+$F(f)\,\left[\frac{mV}{nT}\right] = 1 \cdot 10^{-4}$
 
 ### FGS-04e
 Fluxgate with 100,000 nT range, Bartington Mag-13 MCL (MC = cylindrical core, L = low noise). <br>
 That is a newer version of the FGS-03e, with a better noise performance. <br>
 
-$F(f) = \frac{ mV}{nT} = 1 \cdot 10^{-4} \enspace \frac{mV}{nT} $
+$F(f)\,\left[\frac{mV}{nT}\right] = 1 \cdot 10^{-4}$
 
 ### FGS-05e
 Fluxgate with 75,000 nT range, Bartington (never sold)<br>
 You may get an out of drift here.
 
-$F(f) = \frac{ mV}{nT} = 1.43 \cdot 10^{-4} \enspace \frac{mV}{nT} $
+$F(f)\,\left[\frac{mV}{nT}\right] = 1.43 \cdot 10^{-4}$
 
 
 [^about_p4]: $P_{4}$ is tuned during calibration; so 23897 (for MFS-06e) is not fixed; however $P_{4}$  

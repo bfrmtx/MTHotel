@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+/// @file cal_base.hpp
+
 //
 // that is now in cmake as add_compile_definitions( _USE_MATH_DEFINES _msvc )
 // #define _USE_MATH_DEFINES // for C++ and MSVC

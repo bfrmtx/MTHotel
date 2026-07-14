@@ -11,11 +11,9 @@
 // for a synthetic frequency list f can be generated
 // f =  ( double(i) * (f_sample/fwl) );
 
-/*!
- * @file cal_synthetic.h
- * @brief  Synthetic transfer functions; not normalized; complex<double> ; mV as unit
- * @details  after FFT you divide the FFT by the transfer function to get the correct amplitude.
- */
+/// @file cal_synthetic.h
+/// @brief  Synthetic transfer functions; not normalized; complex<double> ; mV as unit
+/// @details  after FFT you divide the FFT by the transfer function to get the correct amplitude.
 
 inline std::vector<std::complex<double>> gen_trf_mfs06e(const std::vector<double> &freqs, const ChopperStatus &chopper) {
   std::complex<double> im(0.0, 1.0);
@@ -159,13 +157,11 @@ inline std::vector<std::complex<double>> gen_trf_shft02e(const std::vector<doubl
 
 // ******************* B O A R D S **************************************************************************
 
-/*!
- * \brief gen_trf_adb_08e_hf generate transfer function for the HF board to be folded with the sensor
- * \param f
- * \param high_pass
- * \param gain 1 used
- * \return cal; multiply with EXTRA gain in case you have not included that in LSB (bridget tests, external pre-amp)
- */
+/// \brief gen_trf_adb_08e_hf generate transfer function for the HF board to be folded with the sensor
+/// \param f
+/// \param high_pass
+/// \param gain 1 used
+/// \return cal; multiply with EXTRA gain in case you have not included that in LSB (bridget tests, external pre-amp)
 inline std::vector<std::complex<double>> gen_trf_adb_08e_hf(const std::vector<double> &freqs, const ADU &hp_filter, const ADU &gain_1) {
 
   // input resistivity does not play a role
@@ -192,14 +188,12 @@ inline std::vector<std::complex<double>> gen_trf_adb_08e_hf(const std::vector<do
   return cal;
 }
 
-/*!
- * \brief gen_trf_adb_07e_hf generate transfer function for the HF board to be folded with the sensor
- * \param f
- * \param high_pass
- * \param gain_1
- * \param gain_2
-
- */
+/// \brief gen_trf_adb_07e_hf generate transfer function for the HF board to be folded with the sensor
+/// \param f
+/// \param high_pass
+/// \param gain_1
+/// \param gain_2
+///
 inline std::vector<std::complex<double>> gen_trf_adb_07e_hf(const std::vector<double> &freqs, const ADU &hp_filter, const ADU &gain_1, const ADU &gain_2) {
 
   std::complex<double> im(0.0, 1.0);
@@ -230,16 +224,14 @@ inline std::vector<std::complex<double>> gen_trf_adb_07e_hf(const std::vector<do
   return cal;
 }
 
-/*!
- * \brief gen_trf_adb_08e_lf ;
- * \param freqs
- * \param radio_filter
- * \param lp_filter
- * \param input_div
- * \param resistance
- * \param gain_2
- * \return
- */
+/// \brief gen_trf_adb_08e_lf ;
+/// \param freqs
+/// \param radio_filter
+/// \param lp_filter
+/// \param input_div
+/// \param resistance
+/// \param gain_2
+/// \return
 inline std::vector<std::complex<double>> gen_trf_adb_08e_lf(const std::vector<double> &freqs, const ADU &radio_filter, const ADU &lp_filter, const ADU &input_div, const double &resistance, const ADU &direct_mode, const ADU &gain_1) {
 
   std::complex<double> im(0.0, 1.0);
@@ -413,7 +405,7 @@ inline std::vector<std::complex<double>> gen_trf_adb_07e_lf(const std::vector<do
 
     // missing div_8
 
-    //!< @todo RADIO FILTER missing
+    ///< @todo RADIO FILTER missing
     // Radio Filter not respected yet  ADU08 setting
     //    if      ((radio_filter == ADU::LF_RF_1) && (input_div == ADU::div_8)) p4 = (f / 30.0E3) * im;
     //    else if ((radio_filter == ADU::LF_RF_2) && (input_div == ADU::div_8)) p4 = (f / 10.5E3) * im;
@@ -453,7 +445,7 @@ inline std::vector<std::complex<double>> gen_trf_adb_07e_mf(const std::vector<do
 
     std::complex<double> trf = (1. / (1. + p1));
 
-    //!< @todo RADIO FILTER missing
+    ///< @todo RADIO FILTER missing
 
     // Radio Filter not respected yet  ADU08 setting
     //    if      ((radio_filter == ADU::LF_RF_1) && (input_div == ADU::div_8)) p4 = (f / 30.0E3) * im;

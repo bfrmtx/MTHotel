@@ -5,16 +5,12 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-/**
- * @file statmaps.h
- * @brief defines map objects for statistical data
- *
- */
+/// @file statmaps.h
+/// @brief defines map objects for statistical data
+///
 
-/*!
- * \brief statmap is a typedef for statistical data
- * you insert as follows variance_data[g_stat::min_x] = d_min; and find it later with: if min < variance_data[g_stat::min_x]
- */
+/// \brief statmap is a typedef for statistical data
+/// you insert as follows variance_data[g_stat::min_x] = d_min; and find it later with: if min < variance_data[g_stat::min_x]
 typedef std::unordered_map<size_t, double> statmap;
 
 /*

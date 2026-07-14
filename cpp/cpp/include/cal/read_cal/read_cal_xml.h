@@ -28,25 +28,19 @@ public:
     return this->dbloaded;
   }
 
-  /*!
-   * @brief reads a standard calibration file from metronix (V/(nT * Hz)) and returns a calibration object (mV/nT)
-   * @param filename
-   * @param chopper
-   * @return
-   */
+  /// @brief reads a standard calibration file from metronix (V/(nT * Hz)) and returns a calibration object (mV/nT)
+  /// @param filename
+  /// @param chopper
+  /// @return
   std::shared_ptr<calibration> read_std_mtx_txt(const fs::path &filename, const ChopperStatus &chopper);
-  /*!
-   * \brief read_std_xml reads calibration from a measdoc xml file and returns a vector of calibration objects in new format (mV/nT)
-   * \param filename e.g. a measdoc.xml with multiple channels
-   * \return
-   */
+  /// \brief read_std_xml reads calibration from a measdoc xml file and returns a vector of calibration objects in new format (mV/nT)
+  /// \param filename e.g. a measdoc.xml with multiple channels
+  /// \return
   std::vector<std::shared_ptr<calibration>> read_std_xml(const fs::path &filename, std::string &messages);
 
-  /*!
-   * \brief read_std_xml_single same as above - but for a XML calibration contain no channels - but calibration only and returns a vector of calibration objects in new format (mV/nT)
-   * \param filename
-   * \return
-   */
+  /// \brief read_std_xml_single same as above - but for a XML calibration contain no channels - but calibration only and returns a vector of calibration objects in new format (mV/nT)
+  /// \param filename
+  /// \return
   std::vector<std::shared_ptr<calibration>> read_std_xml_single(const std::filesystem::path &filename);
 
   void clear();

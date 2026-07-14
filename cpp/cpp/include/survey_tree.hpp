@@ -20,140 +20,132 @@
 #include "survey_tree_cmdline.hpp"
 #include "xlogger.hpp"
 namespace fs = std::filesystem;
-/*!
- * @file survey_tree_d.hpp
- * the survey class is a tree structure with stations, runs and channels.
- * The survey class is a singleton, so there is only one instance of the survey class.
- *
- * @verbatim
- *└── Northern_Mining
- *    ├── config
- *    ├── db
- *    ├── dump
- *    ├── edi
- *    ├── filters
- *    ├── jle
- *    ├── jobs
- *    ├── log
- *    ├── meta
- *    │   ├── Kocatepe
- *    │   │   ├── run_001
- *    │   │   │   ├── 085_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
- *    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.json
- *    │   │   │   └── 085_ADU-07e_C004_THz_128Hz.json
- *    │   │   └── run_002
- *    │   │       ├── 085_2009-08-20_13-22-01_2009-08-21_06-59-59_R001_32H.xml
- *    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.json
- *    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.json
- *    │   │       ├── 085_ADU-07e_C002_THx_32Hz.json
- *    │   │       ├── 085_ADU-07e_C003_THy_32Hz.json
- *    │   │       └── 085_ADU-07e_C004_THz_32Hz.json
- *    │   └── Sarıçam
- *    │       ├── run_001
- *    │       │   ├── 084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
- *    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.json
- *    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.json
- *    │       │   ├── 084_ADU-07e_C002_THx_128Hz.json
- *    │       │   ├── 084_ADU-07e_C003_THy_128Hz.json
- *    │       │   └── 084_ADU-07e_C004_THz_128Hz.json
- *    │       └── run_002
- *    │           ├── 084_2009-08-20_13-22-01_2009-08-21_06-59-59_R001_32H.xml
- *    │           ├── 084_ADU-07e_C000_TEx_32Hz.json
- *    │           ├── 084_ADU-07e_C001_TEy_32Hz.json
- *    │           ├── 084_ADU-07e_C002_THx_32Hz.json
- *    │           ├── 084_ADU-07e_C003_THy_32Hz.json
- *    │           └── 084_ADU-07e_C004_THz_32Hz.json
- *    ├── processings
- *    ├── reports
- *    ├── shell
- *    │   ├── mkallproc.sh
- *    │   ├── plot_ascii_table_edi.sh
- *    │   └── procall.sh
- *    ├── stations
- *    │   ├── Kocatepe
- *    │   │   ├── run_001
- *    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.atss
- *    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.atss
- *    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.atss
- *    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.atss
- *    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.json
- *    │   │   │   ├── 085_ADU-07e_C004_THz_128Hz.atss
- *    │   │   │   └── 085_ADU-07e_C004_THz_128Hz.json
- *    │   │   └── run_002
- *    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.atss
- *    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.json
- *    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.atss
- *    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.json
- *    │   │       ├── 085_ADU-07e_C002_THx_32Hz.atss
- *    │   │       ├── 085_ADU-07e_C002_THx_32Hz.json
- *    │   │       ├── 085_ADU-07e_C003_THy_32Hz.atss
- *    │   │       ├── 085_ADU-07e_C003_THy_32Hz.json
- *    │   │       ├── 085_ADU-07e_C004_THz_32Hz.atss
- *    │   │       └── 085_ADU-07e_C004_THz_32Hz.json
- *    │   └── Sarıçam
- *    │       ├── run_001
- *    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.atss
- *    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.json
- *    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.atss
- *    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.json
- *    │       │   ├── 084_ADU-07e_C002_THx_128Hz.atss
- *    │       │   ├── 084_ADU-07e_C002_THx_128Hz.json
- *    │       │   ├── 084_ADU-07e_C003_THy_128Hz.atss
- *    │       │   ├── 084_ADU-07e_C003_THy_128Hz.json
- *    │       │   ├── 084_ADU-07e_C004_THz_128Hz.atss
- *    │       │   └── 084_ADU-07e_C004_THz_128Hz.json
- *    │       └── run_002
- *    │           ├── 084_ADU-07e_C000_TEx_32Hz.atss
- *    │           ├── 084_ADU-07e_C000_TEx_32Hz.json
- *    │           ├── 084_ADU-07e_C001_TEy_32Hz.atss
- *    │           ├── 084_ADU-07e_C001_TEy_32Hz.json
- *    │           ├── 084_ADU-07e_C002_THx_32Hz.atss
- *    │           ├── 084_ADU-07e_C002_THx_32Hz.json
- *    │           ├── 084_ADU-07e_C003_THy_32Hz.atss
- *    │           ├── 084_ADU-07e_C003_THy_32Hz.json
- *    │           ├── 084_ADU-07e_C004_THz_32Hz.atss
- *    │           └── 084_ADU-07e_C004_THz_32Hz.json
- *    └── tmp
- * @endverbatim
- */
+/// @file survey_tree_d.hpp
+/// the survey class is a tree structure with stations, runs and channels.
+/// The survey class is a singleton, so there is only one instance of the survey class.
+///
+/// @verbatim
+/// └── Northern_Mining
+///    ├── config
+///    ├── db
+///    ├── dump
+///    ├── edi
+///    ├── filters
+///    ├── jle
+///    ├── jobs
+///    ├── log
+///    ├── meta
+///    │   ├── Kocatepe
+///    │   │   ├── run_001
+///    │   │   │   ├── 085_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
+///    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.json
+///    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.json
+///    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.json
+///    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.json
+///    │   │   │   └── 085_ADU-07e_C004_THz_128Hz.json
+///    │   │   └── run_002
+///    │   │       ├── 085_2009-08-20_13-22-01_2009-08-21_06-59-59_R001_32H.xml
+///    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.json
+///    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.json
+///    │   │       ├── 085_ADU-07e_C002_THx_32Hz.json
+///    │   │       ├── 085_ADU-07e_C003_THy_32Hz.json
+///    │   │       └── 085_ADU-07e_C004_THz_32Hz.json
+///    │   └── Sarıçam
+///    │       ├── run_001
+///    │       │   ├── 084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
+///    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.json
+///    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.json
+///    │       │   ├── 084_ADU-07e_C002_THx_128Hz.json
+///    │       │   ├── 084_ADU-07e_C003_THy_128Hz.json
+///    │       │   └── 084_ADU-07e_C004_THz_128Hz.json
+///    │       └── run_002
+///    │           ├── 084_2009-08-20_13-22-01_2009-08-21_06-59-59_R001_32H.xml
+///    │           ├── 084_ADU-07e_C000_TEx_32Hz.json
+///    │           ├── 084_ADU-07e_C001_TEy_32Hz.json
+///    │           ├── 084_ADU-07e_C002_THx_32Hz.json
+///    │           ├── 084_ADU-07e_C003_THy_32Hz.json
+///    │           └── 084_ADU-07e_C004_THz_32Hz.json
+///    ├── processings
+///    ├── reports
+///    ├── shell
+///    │   ├── mkallproc.sh
+///    │   ├── plot_ascii_table_edi.sh
+///    │   └── procall.sh
+///    ├── stations
+///    │   ├── Kocatepe
+///    │   │   ├── run_001
+///    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.atss
+///    │   │   │   ├── 085_ADU-07e_C000_TEx_128Hz.json
+///    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.atss
+///    │   │   │   ├── 085_ADU-07e_C001_TEy_128Hz.json
+///    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.atss
+///    │   │   │   ├── 085_ADU-07e_C002_THx_128Hz.json
+///    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.atss
+///    │   │   │   ├── 085_ADU-07e_C003_THy_128Hz.json
+///    │   │   │   ├── 085_ADU-07e_C004_THz_128Hz.atss
+///    │   │   │   └── 085_ADU-07e_C004_THz_128Hz.json
+///    │   │   └── run_002
+///    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.atss
+///    │   │       ├── 085_ADU-07e_C000_TEx_32Hz.json
+///    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.atss
+///    │   │       ├── 085_ADU-07e_C001_TEy_32Hz.json
+///    │   │       ├── 085_ADU-07e_C002_THx_32Hz.atss
+///    │   │       ├── 085_ADU-07e_C002_THx_32Hz.json
+///    │   │       ├── 085_ADU-07e_C003_THy_32Hz.atss
+///    │   │       ├── 085_ADU-07e_C003_THy_32Hz.json
+///    │   │       ├── 085_ADU-07e_C004_THz_32Hz.atss
+///    │   │       └── 085_ADU-07e_C004_THz_32Hz.json
+///    │   └── Sarıçam
+///    │       ├── run_001
+///    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.atss
+///    │       │   ├── 084_ADU-07e_C000_TEx_128Hz.json
+///    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.atss
+///    │       │   ├── 084_ADU-07e_C001_TEy_128Hz.json
+///    │       │   ├── 084_ADU-07e_C002_THx_128Hz.atss
+///    │       │   ├── 084_ADU-07e_C002_THx_128Hz.json
+///    │       │   ├── 084_ADU-07e_C003_THy_128Hz.atss
+///    │       │   ├── 084_ADU-07e_C003_THy_128Hz.json
+///    │       │   ├── 084_ADU-07e_C004_THz_128Hz.atss
+///    │       │   └── 084_ADU-07e_C004_THz_128Hz.json
+///    │       └── run_002
+///    │           ├── 084_ADU-07e_C000_TEx_32Hz.atss
+///    │           ├── 084_ADU-07e_C000_TEx_32Hz.json
+///    │           ├── 084_ADU-07e_C001_TEy_32Hz.atss
+///    │           ├── 084_ADU-07e_C001_TEy_32Hz.json
+///    │           ├── 084_ADU-07e_C002_THx_32Hz.atss
+///    │           ├── 084_ADU-07e_C002_THx_32Hz.json
+///    │           ├── 084_ADU-07e_C003_THy_32Hz.atss
+///    │           ├── 084_ADU-07e_C003_THy_32Hz.json
+///    │           ├── 084_ADU-07e_C004_THz_32Hz.atss
+///    │           └── 084_ADU-07e_C004_THz_32Hz.json
+///    └── tmp
+/// @endverbatim
 
 // Scan for channels in the run directory
-/*!
- * @brief Maximum number of channels; each channel is at a fixed position! As it comes from the data logger
- * @details we have several times "Ex" for example, so we have to use the channel number to identify the channel.
- * @details refer to the run_d class documentation for more details.
- */
+/// @brief Maximum number of channels; each channel is at a fixed position! As it comes from the data logger
+/// @details we have several times "Ex" for example, so we have to use the channel number to identify the channel.
+/// @details refer to the run_d class documentation for more details.
 // forward declaration of tree class
 class survey_tree_d;
 // declaration of NodeType
 enum class NodeType {
-  experiment = 0, //!< this is only for HDF5 experiment nodes! NOT always present on filesystem!
-  survey = 1,     //!< survey level node, directly to be opened on a filesystem
-  station = 2,    //!< station level node, a directory or HDF5 group below survey
-  run = 3         //!< run level node, a directory or HDF5 group below station
+  experiment = 0, ///< this is only for HDF5 experiment nodes! NOT always present on filesystem!
+  survey = 1,     ///< survey level node, directly to be opened on a filesystem
+  station = 2,    ///< station level node, a directory or HDF5 group below survey
+  run = 3         ///< run level node, a directory or HDF5 group below station
 };
 
-/*!
- * @brief virtual base class for run_d (filesystem based) and run_hdf5 (HDF5 based)
- */
+/// @brief virtual base class for run_d (filesystem based) and run_hdf5 (HDF5 based)
 class run_d {
 public:
   virtual ~run_d() = default;
 
-  /*!
-   * @brief Constructor that initializes the run_d instance by scanning the specified directory.
-   * @param path The filesystem path to the run directory containing channel JSON files.
-   * @param parent_ptr Parent survey_tree_d node (will be stored as weak_ptr internally)
-   * @note The directory must exist or be created before using this constructor.
-   * @details since we we have many shared pointers, you DON'T want to implement a copy constructor or assignment operator!
-   * @details run_d likely will be managed by shared pointers only!
-   */
+  /// @brief Constructor that initializes the run_d instance by scanning the specified directory.
+  /// @param path The filesystem path to the run directory containing channel JSON files.
+  /// @param parent_ptr Parent survey_tree_d node (will be stored as weak_ptr internally)
+  /// @note The directory must exist or be created before using this constructor.
+  /// @details since we we have many shared pointers, you DON'T want to implement a copy constructor or assignment operator!
+  /// @details run_d likely will be managed by shared pointers only!
   explicit run_d(const fs::path &path, std::shared_ptr<survey_tree_d> parent_ptr = nullptr, std::shared_ptr<BS::thread_pool<BS::tp::none>> pool_ptr = nullptr) {
     basePath = path;
     parent = parent_ptr;
@@ -201,10 +193,8 @@ public:
   //   return scan(std::optional<std::vector<bool>>(channel_flags));
   // }
 
-  /*!
-   * @brief sets the parent pointer, e.g the survey_tree_d node run !
-   * @param parent_ptr
-   */
+  /// @brief sets the parent pointer, e.g the survey_tree_d node run !
+  /// @param parent_ptr
   void set_parent(std::shared_ptr<survey_tree_d> parent_ptr) {
     std::unique_lock lock(mutex_);
     parent = parent_ptr;
@@ -214,10 +204,8 @@ public:
     basePath = path;
   }
 
-  /*!
-   * @brief Set the parent pointer for this run_d instance in a CHILD CONSTRUCTOR lock free. add_child will lock the parent node!
-   * @param parent_ptr
-   */
+  /// @brief Set the parent pointer for this run_d instance in a CHILD CONSTRUCTOR lock free. add_child will lock the parent node!
+  /// @param parent_ptr
   void construct_parent(std::shared_ptr<survey_tree_d> parent_ptr) {
     this->parent = parent_ptr;
   }
@@ -232,19 +220,15 @@ public:
     return parent.lock();
   }
 
-  /*!
-   * @brief Thread-safe method to get a copy of the channels vector. Do this ONLY if you need to iterate over all channels INCLUDING nullptr entries!
-   * @return A vector of shared_ptr to channel instances
-   */
+  /// @brief Thread-safe method to get a copy of the channels vector. Do this ONLY if you need to iterate over all channels INCLUDING nullptr entries!
+  /// @return A vector of shared_ptr to channel instances
   std::vector<std::shared_ptr<channel>> get_channel_vector() const {
     std::shared_lock lock(mutex_);
     return channels;
   }
 
-  /*!
-   * @brief Thread-safe method to get all valid (non-nullptr) channels as a vector.
-   * @return A vector of shared_ptr to valid channel instances.
-   */
+  /// @brief Thread-safe method to get all valid (non-nullptr) channels as a vector.
+  /// @return A vector of shared_ptr to valid channel instances.
   std::vector<std::shared_ptr<channel>> get_channels() const {
     std::shared_lock lock(mutex_);
     size_t count = 0;
@@ -263,11 +247,9 @@ public:
     return chans;
   }
 
-  /*!
-   * @brief Thread-safe method to get a specific channel by its channel number.
-   * @param channel_no The channel number to retrieve.
-   * @return A shared_ptr to the channel instance, or nullptr if the channel does not exist.
-   */
+  /// @brief Thread-safe method to get a specific channel by its channel number.
+  /// @param channel_no The channel number to retrieve.
+  /// @return A shared_ptr to the channel instance, or nullptr if the channel does not exist.
   std::shared_ptr<channel>
   get_channel(const size_t &channel_no) const {
     std::shared_lock lock(mutex_);
@@ -277,10 +259,8 @@ public:
     return channels[channel_no];
   }
 
-  /*!
-   * @brief Clear all channels and reset the run to an empty state
-   * @details Thread-safe operation that resets channels vector and raw spectra data
-   */
+  /// @brief Clear all channels and reset the run to an empty state
+  /// @details Thread-safe operation that resets channels vector and raw spectra data
   void clear() {
     std::unique_lock lock(mutex_);
     for (auto &channel : channels) {
@@ -289,10 +269,8 @@ public:
     raw_spc.reset();
   }
 
-  /*!
-   * @brief Clear only the channels without affecting raw spectra
-   * @details Thread-safe operation that resets only the channels vector
-   */
+  /// @brief Clear only the channels without affecting raw spectra
+  /// @details Thread-safe operation that resets only the channels vector
   void clear_channels() {
     std::unique_lock lock(mutex_);
     for (auto &channel_ptr : channels) {
@@ -300,18 +278,14 @@ public:
     }
   }
 
-  /*!
-   * @brief Clear only the raw spectra without affecting channels
-   */
+  /// @brief Clear only the raw spectra without affecting channels
   void clear_raw_spectra() {
     std::unique_lock lock(mutex_);
     raw_spc.reset();
   }
 
-  /*!
-   * @brief count channels that are not nullptr
-   * @return Number of channels which can be used or are in use
-   */
+  /// @brief count channels that are not nullptr
+  /// @return Number of channels which can be used or are in use
   size_t size() const {
     std::shared_lock lock(mutex_);
     size_t count = 0;
@@ -323,9 +297,7 @@ public:
     return count;
   }
 
-  /*!
-   * @brief List all loaded channels with their numbers and file paths for console output
-   */
+  /// @brief List all loaded channels with their numbers and file paths for console output
   void ls(const std::string &indent_str = "") const {
     std::shared_lock lock(mutex_);
     for (const auto &channel : channels) {
@@ -344,10 +316,8 @@ public:
   //   return "run_" + mstr::run2string(this->number, run_digits);
   // }
 
-  /*!
-   * @brief Get the run number
-   * @return The run number
-   */
+  /// @brief Get the run number
+  /// @return The run number
   size_t get_run_number() const {
     std::shared_lock lock(mutex_);
     return this->number;
@@ -372,13 +342,11 @@ public:
   void set_run_number(const size_t &num) {
     std::unique_lock lock(mutex_);
     this->number = num;
-    //!< @todo consider implementing a move/rename operation if run number changes
+    ///< @todo consider implementing a move/rename operation if run number changes
   }
 
-  /*!
-   * @brief Get the sample rate of the run by checking the first valid channel
-   * @return The sample rate, or 0.0 if no valid channels are found
-   */
+  /// @brief Get the sample rate of the run by checking the first valid channel
+  /// @return The sample rate, or 0.0 if no valid channels are found
   double get_sample_rate() const {
     std::shared_lock lock(mutex_);
     for (const auto &chan : channels) {
@@ -408,11 +376,9 @@ public:
     throw std::runtime_error("No valid channel found to get start datetime");
   }
 
-  /*!
-   * @brief returns the p_timer at the start of the run from the first valid channel
-   * @details the timer object provides enhanced information compared to a string datetime
-   * @return start p_timer (sample 0)
-   */
+  /// @brief returns the p_timer at the start of the run from the first valid channel
+  /// @details the timer object provides enhanced information compared to a string datetime
+  /// @return start p_timer (sample 0)
   p_timer p_start() const {
     std::shared_lock lock(mutex_);
     for (const auto &chan : channels) {
@@ -423,10 +389,8 @@ public:
     throw std::runtime_error("No valid channel found to get start p_timer");
   }
 
-  /*!
-   * @brief Get the p_timer from the first valid channel
-   * @return The p_timer object
-   */
+  /// @brief Get the p_timer from the first valid channel
+  /// @return The p_timer object
   p_timer get_p_timer() const {
     std::shared_lock lock(mutex_);
     for (const auto &chan : channels) {
@@ -475,13 +439,13 @@ public:
 
 private:
   fs::path basePath;
-  std::weak_ptr<survey_tree_d> parent; //!< Parent survey_tree_d, if any
-  mutable std::shared_mutex mutex_;    //!< Mutex for thread-safe access to channels
+  std::weak_ptr<survey_tree_d> parent; ///< Parent survey_tree_d, if any
+  mutable std::shared_mutex mutex_;    ///< Mutex for thread-safe access to channels
   // this is not a node, this is the data of a run node
-  size_t number = SIZE_MAX; //!<  run number, e.g., 1 for run_001 or run_0001
+  size_t number = SIZE_MAX; ///<  run number, e.g., 1 for run_001 or run_0001
   std::vector<std::shared_ptr<channel>> channels = std::vector<std::shared_ptr<channel>>(max_survey_channels, nullptr);
-  std::shared_ptr<raw_spectra> raw_spc;                //!< raw spectra for the run - contains Ex, Ey, Hx, Hy, Hz, REx, REy, RHx, RHy, RHz, EEx, EEy (emap)
-  std::shared_ptr<BS::thread_pool<BS::tp::none>> pool; //!< Thread pool for parallel tasks
+  std::shared_ptr<raw_spectra> raw_spc;                ///< raw spectra for the run - contains Ex, Ey, Hx, Hy, Hz, REx, REy, RHx, RHy, RHz, EEx, EEy (emap)
+  std::shared_ptr<BS::thread_pool<BS::tp::none>> pool; ///< Thread pool for parallel tasks
 };
 
 // skip hdf5 for a while ... todo implementation later
@@ -500,44 +464,38 @@ private:
 ****************************************************************************************************************
 */
 
-/*!
- * @brief survey_tree_d class represents a hierarchical tree structure for managing MT survey data on the filesystem.
- * @details The tree consists of nodes representing surveys, stations, and runs, each mapped to directories on the filesystem.
- * @details Each node can have multiple child nodes, allowing for a flexible organization of survey data.
- * @details The class provides thread-safe access and modification of the tree structure using shared mutexes.
- */
+/// @brief survey_tree_d class represents a hierarchical tree structure for managing MT survey data on the filesystem.
+/// @details The tree consists of nodes representing surveys, stations, and runs, each mapped to directories on the filesystem.
+/// @details Each node can have multiple child nodes, allowing for a flexible organization of survey data.
+/// @details The class provides thread-safe access and modification of the tree structure using shared mutexes.
 class survey_tree_d : public std::enable_shared_from_this<survey_tree_d> {
 private:
   std::weak_ptr<survey_tree_d> parent;
-  std::map<std::string, std::shared_ptr<survey_tree_d>> children; //!< Child nodes mapped by their names, THIS HOLDS THE DATA STRUCTURE !!
+  std::map<std::string, std::shared_ptr<survey_tree_d>> children; ///< Child nodes mapped by their names, THIS HOLDS THE DATA STRUCTURE !!
   mutable std::shared_mutex mutex_;
-  fs::path basePath;                                   //!< Filesystem path of this node
-  NodeType type;                                       //!< Level of the node in the tree, experiment, survey, station, run
-  bool read_only = true;                               //!< If true, the node is read-only and cannot be modified
-  bool verbose = false;                                //!< If true, verbose logging is enabled
-  size_t run_digits = 3;                               //!< Number of digits for run formatting, e.g., 3 for run_001
-  std::shared_ptr<run_d> run_data;                     //!< For run nodes, hold a single run_d instance
-  std::shared_ptr<BS::thread_pool<BS::tp::none>> pool; //!< Thread pool for parallel tasks
+  fs::path basePath;                                   ///< Filesystem path of this node
+  NodeType type;                                       ///< Level of the node in the tree, experiment, survey, station, run
+  bool read_only = true;                               ///< If true, the node is read-only and cannot be modified
+  bool verbose = false;                                ///< If true, verbose logging is enabled
+  size_t run_digits = 3;                               ///< Number of digits for run formatting, e.g., 3 for run_001
+  std::shared_ptr<run_d> run_data;                     ///< For run nodes, hold a single run_d instance
+  std::shared_ptr<BS::thread_pool<BS::tp::none>> pool; ///< Thread pool for parallel tasks
 
 public:
   xlogger logger;
   // this is used only during construction, so i make it public for simplicity, no no lock during construction
 
-  /*!
-   * @brief destructor
-   */
+  /// @brief destructor
   ~survey_tree_d() = default;
 
-  /*!
-   * @brief Constructor for the main survey node (top-level)
-   * @param name_ Name of the survey and therefore the base directory
-   * @param pool_ptr Thread pool pointer for parallel tasks
-   * @param run_digits_ Number of digits for run formatting, e.g., 3 for run_001
-   * @param read_only_ If true, the node is read-only and cannot be modified
-   * @param verbose_ If true, verbose logging is enabled
-   * @throws runtime_error if the base directory does not exist in read-only mode or if directory creation fails in write mode
-   * @details This constructor initializes the survey_tree_d instance as the top-level survey node. IT DOES NOT SCAN FOR CHILD NODES! USE SCAN METHOD FOR THAT.
-   */
+  /// @brief Constructor for the main survey node (top-level)
+  /// @param name_ Name of the survey and therefore the base directory
+  /// @param pool_ptr Thread pool pointer for parallel tasks
+  /// @param run_digits_ Number of digits for run formatting, e.g., 3 for run_001
+  /// @param read_only_ If true, the node is read-only and cannot be modified
+  /// @param verbose_ If true, verbose logging is enabled
+  /// @throws runtime_error if the base directory does not exist in read-only mode or if directory creation fails in write mode
+  /// @details This constructor initializes the survey_tree_d instance as the top-level survey node. IT DOES NOT SCAN FOR CHILD NODES! USE SCAN METHOD FOR THAT.
   survey_tree_d(const std::string &name_, std::shared_ptr<BS::thread_pool<BS::tp::none>> pool_ptr, size_t run_digits_ = 3, const bool &read_only_ = true, const bool &verbose_ = false) {
     this->type = NodeType::survey;
     this->pool = pool_ptr;
@@ -658,14 +616,10 @@ public:
     }
   }
 
-  /*!
-   * @brief the delete indicates that there is NO DEFAULT CONSTRUCTOR
-   */
+  /// @brief the delete indicates that there is NO DEFAULT CONSTRUCTOR
   survey_tree_d() = delete; // no default constructor
-  /*!
-   * @brief constructor for station and run nodes
-   * @param name station or run name, where run name is like "run_001"
-   */
+  /// @brief constructor for station and run nodes
+  /// @param name station or run name, where run name is like "run_001"
   survey_tree_d(const std::string &name_, std::shared_ptr<survey_tree_d> parent_ptr) {
     this->parent = parent_ptr;
     if (parent_ptr == nullptr) {
@@ -717,11 +671,9 @@ public:
       this->run_data = std::make_shared<run_d>(this->basePath, std::shared_ptr<survey_tree_d>(nullptr), this->pool);
     }
   }
-  /*!
-   * @brief Get the name of the node
-   * @return The name of the node
-   * @details For survey level, this is the survey name; for station level, the station name; for run level, the run name like "run_001", use get_basepath to get the full path
-   */
+  /// @brief Get the name of the node
+  /// @return The name of the node
+  /// @details For survey level, this is the survey name; for station level, the station name; for run level, the run name like "run_001", use get_basepath to get the full path
   std::string get_name() const {
     std::shared_lock lock(mutex_);
     return this->basePath.filename().string();
@@ -732,57 +684,45 @@ public:
     return this->basePath;
   }
 
-  /*!
-   * @brief Set the read-only status of the node
-   * @param ro Read-only flag
-   */
+  /// @brief Set the read-only status of the node
+  /// @param ro Read-only flag
   void
   set_read_only(const bool &ro) {
     std::unique_lock lock(mutex_);
     this->read_only = ro;
   }
 
-  /*!
-   * @brief Get the read-only status of the node
-   * @return Read-only flag
-   */
+  /// @brief Get the read-only status of the node
+  /// @return Read-only flag
   bool get_read_only() const {
     std::shared_lock lock(mutex_);
     return this->read_only;
   }
 
-  /*!
-   * @brief Set the verbose logging status of the node
-   * @param vb Verbose flag
-   */
+  /// @brief Set the verbose logging status of the node
+  /// @param vb Verbose flag
   void set_verbose(const bool &vb) {
     std::unique_lock lock(mutex_);
     this->verbose = vb;
   }
 
-  /*!
-   * @brief Get the verbose logging status of the node
-   * @return Verbose flag
-   */
+  /// @brief Get the verbose logging status of the node
+  /// @return Verbose flag
   bool get_verbose() const {
     std::shared_lock lock(mutex_);
     return this->verbose;
   }
 
-  /*!
-   * @brief Get the node type
-   * @return NodeType enum value
-   */
+  /// @brief Get the node type
+  /// @return NodeType enum value
   NodeType get_nodetype() const {
     std::shared_lock lock(mutex_);
     return this->type;
   }
 
-  /*!
-   * @brief Get a child node by string name
-   * @param string or run number as string (will be formatted as run_XXX for station level if "1" but not "run_1" is given)
-   * @return child node pointer
-   */
+  /// @brief Get a child node by string name
+  /// @param string or run number as string (will be formatted as run_XXX for station level if "1" but not "run_1" is given)
+  /// @return child node pointer
   std::shared_ptr<survey_tree_d> get_child(const std::string &name) const {
     std::shared_lock lock(mutex_);
     std::string child_name;
@@ -807,10 +747,8 @@ public:
     lock.unlock();
     return get_child(child_name);
   }
-  /*!
-   * @brief Get all child nodes as a vector
-   * @return all child nodes as a vector
-   */
+  /// @brief Get all child nodes as a vector
+  /// @return all child nodes as a vector
   std::vector<std::shared_ptr<survey_tree_d>> get_children() const {
     std::shared_lock lock(mutex_);
     std::vector<std::shared_ptr<survey_tree_d>> child_nodes;
@@ -836,22 +774,18 @@ public:
     return this->type == NodeType::run;
   }
 
-  /*!
-   * @brief Get the base path of the survey_tree_d node
-   * @return The filesystem path
-   * @details that is the full path up to this node, use get_name to get the node name only
-   */
+  /// @brief Get the base path of the survey_tree_d node
+  /// @return The filesystem path
+  /// @details that is the full path up to this node, use get_name to get the node name only
   fs::path get_base_path() const {
     return basePath;
   }
 
-  /*!
-   * @brief Get the run object using run number
-   * @param number Run number (e.g., 1 for run_001)
-   * @param station Station name (only for survey-level nodes)
-   * @details You may mostly call this function on station level nodes. Optionally you can call it on survey level nodes by providing the station name (convenience).
-   * @return Shared pointer to run_d object, nullptr if run not found (not the run node)
-   */
+  /// @brief Get the run object using run number
+  /// @param number Run number (e.g., 1 for run_001)
+  /// @param station Station name (only for survey-level nodes)
+  /// @details You may mostly call this function on station level nodes. Optionally you can call it on survey level nodes by providing the station name (convenience).
+  /// @return Shared pointer to run_d object, nullptr if run not found (not the run node)
   std::shared_ptr<run_d> get_run_data(std::optional<size_t> number = std::nullopt, std::optional<std::string> station = std::nullopt) const {
     std::shared_lock lock(mutex_);
     if (this->type == NodeType::run) {
@@ -881,11 +815,9 @@ public:
     return nullptr; // Run not found
   }
 
-  /*!
-   * @brief move a shared pointer to run_d into the run node
-   * @param run_ptr, the "&&" indicates that the shared_ptr will be moved
-   * @details create a run node first using add_child, then call this method to set the run_d instance
-   */
+  /// @brief move a shared pointer to run_d into the run node
+  /// @param run_ptr, the "&&" indicates that the shared_ptr will be moved
+  /// @details create a run node first using add_child, then call this method to set the run_d instance
   void set_run_data(std::shared_ptr<run_d> &&run_ptr) {
     std::unique_lock lock(mutex_);
     if (this->type != NodeType::run) {
@@ -898,11 +830,9 @@ public:
     this->run_data->set_basepath(this->basePath);
   }
 
-  /*!
-   * @brief Get all runs for a given station or all runs if no station is specified
-   * @param station Optional station name. If not given, all runs under the current node are returned (e.g. survey level).
-   * @return Vector of shared pointers to run_d objects (not the rin nodes)
-   */
+  /// @brief Get all runs for a given station or all runs if no station is specified
+  /// @param station Optional station name. If not given, all runs under the current node are returned (e.g. survey level).
+  /// @return Vector of shared pointers to run_d objects (not the rin nodes)
   std::vector<std::shared_ptr<run_d>> get_runs_data(const std::optional<std::string> station = std::nullopt) const {
     std::shared_lock lock(mutex_);
     std::vector<std::shared_ptr<run_d>> runs;
@@ -965,11 +895,9 @@ public:
     return all_channels;
   }
 
-  /*!
-   * @brief adds a child node with the given name if it does not exist
-   * @param child_name
-   * @return pointer to the child node
-   */
+  /// @brief adds a child node with the given name if it does not exist
+  /// @param child_name
+  /// @return pointer to the child node
   std::shared_ptr<survey_tree_d> add_child(const std::string &child_name) {
     std::unique_lock lock(mutex_);
     // if child consists of numbers only and we are at station level, format it as run_XXX
@@ -992,12 +920,10 @@ public:
     return child_node;
   }
 
-  /*!
-   * @brief adds a child node with the given run number if it does not exist
-   * @param number run number
-   * @return pointer to the child node
-   * @details you can use get_nextRunId to get the next available run number; use addAutoRun for convenience; you don't need to scan the directory first, in case you have loaded the full tree.
-   */
+  /// @brief adds a child node with the given run number if it does not exist
+  /// @param number run number
+  /// @return pointer to the child node
+  /// @details you can use get_nextRunId to get the next available run number; use addAutoRun for convenience; you don't need to scan the directory first, in case you have loaded the full tree.
   std::shared_ptr<survey_tree_d> add_child(const size_t &number) {
     std::unique_lock lock(mutex_);
     std::string child_name = std::format("{}", number);
@@ -1010,11 +936,9 @@ public:
     children.clear();
   }
 
-  /*!
-   * @brief Scan the directory and update the tree structure
-   * @param recursive If true, recursively scan child directories; if false, only scan current level
-   * @param b_channels If true, scan channels.json files at run level (can be expensive)
-   */
+  /// @brief Scan the directory and update the tree structure
+  /// @param recursive If true, recursively scan child directories; if false, only scan current level
+  /// @param b_channels If true, scan channels.json files at run level (can be expensive)
   void scan(const bool recursive = true, const bool b_channels = false) {
     // std::unique_lock lock(mutex_);
     if (this->pool == nullptr) {
@@ -1060,14 +984,12 @@ public:
     return;
   }
 
-  /*!
-   * @brief create a new survey_tree_d instance containing ONLY the selected stations and runs
-   * @param  existing_tree
-   * @param station_configs
-   * @details a later processing shall ITERATE OVER ALL NODES! so no checks later.
-   * @details you don't need to scan first. IT WILL SCAN THE CHANNELS!
-   * @return new survey_tree_d instance with selected nodes
-   */
+  /// @brief create a new survey_tree_d instance containing ONLY the selected stations and runs
+  /// @param  existing_tree
+  /// @param station_configs
+  /// @details a later processing shall ITERATE OVER ALL NODES! so no checks later.
+  /// @details you don't need to scan first. IT WILL SCAN THE CHANNELS!
+  /// @return new survey_tree_d instance with selected nodes
   std::shared_ptr<survey_tree_d> select_only(const std::vector<station_config> &station_configs) {
     std::unique_lock lock(mutex_);
     // create a new survey_tree_d instance for the selected nodes
@@ -1088,11 +1010,9 @@ public:
     return selected_tree;
   }
 
-  /*!
-   * @brief list the tree structure to console
-   * @param recursive If true, recursively list child nodes; if false, only list current level
-   * @param indent space indentation for pretty printing
-   */
+  /// @brief list the tree structure to console
+  /// @param recursive If true, recursively list child nodes; if false, only list current level
+  /// @param indent space indentation for pretty printing
   void ls(const bool recursive = true, const size_t &indent = 3) const {
     std::shared_lock lock(mutex_);
     std::string indent_str(indent, ' ');
@@ -1124,22 +1044,18 @@ public:
       }
     }
   }
-  /*!
-   * @brief adds a run node with the next available run ID
-   * @param min_run_id in case you want to enforce a minimum run ID, you have run_003 and want to get at least run_005, set min_run_id=5
-   * @param scanDisk in case the run directories are not yet loaded in memory, scan the filesystem
-   * @return pointer to the newly created run node
-   */
+  /// @brief adds a run node with the next available run ID
+  /// @param min_run_id in case you want to enforce a minimum run ID, you have run_003 and want to get at least run_005, set min_run_id=5
+  /// @param scanDisk in case the run directories are not yet loaded in memory, scan the filesystem
+  /// @return pointer to the newly created run node
   std::shared_ptr<survey_tree_d> addAutoRun(const size_t min_run_id = 0, bool scanDisk = false) {
     int nextId = getNextRunId(min_run_id, scanDisk);
     return add_child(nextId);
   }
-  /*!
-   * @brief scans a station node for the next available run ID;
-   * @param min_run_id in case you want to enforce a minimum run ID, you have run_003 and want to get at least run_005, set min_run_id=5
-   * @param scanDisk in case the run directories are not yet loaded in memory, scan the filesystem
-   * @return
-   */
+  /// @brief scans a station node for the next available run ID;
+  /// @param min_run_id in case you want to enforce a minimum run ID, you have run_003 and want to get at least run_005, set min_run_id=5
+  /// @param scanDisk in case the run directories are not yet loaded in memory, scan the filesystem
+  /// @return
   size_t getNextRunId(const size_t min_run_id = 0, bool scanDisk = false) const {
     if (NodeType::station != this->type) {
       throw std::runtime_error("getNextRunId can only be called on station nodes");
@@ -1184,11 +1100,9 @@ public:
     return nextId;
   }
 
-  /*!
-   * @brief delete empty run nodes from the tree
-   * @details a run node is considered empty if its run_d instance is nullptr or has zero channels <br>
-   * you want FINALLY iterate over all DATA and PROCESS. The philosophy is to operate on VALID runs only, so empty runs are useless and force you check inside processing loops.
-   */
+  /// @brief delete empty run nodes from the tree
+  /// @details a run node is considered empty if its run_d instance is nullptr or has zero channels <br>
+  /// you want FINALLY iterate over all DATA and PROCESS. The philosophy is to operate on VALID runs only, so empty runs are useless and force you check inside processing loops.
   void delete_empty_runs() {
     std::unique_lock lock(mutex_);
     for (auto it = children.begin(); it != children.end();) {
@@ -1215,14 +1129,12 @@ public:
 
 // stl style functions *************************************************************************
 
-/*!
- * @brief compare two run instances and their run_d content for equality
- * @param lhs left-hand side run shared pointer (so tree elements can be passed directly)
- * @details it will use the channel comparison operator to compare the channels inside the run_d instances <br>
- * so you may find duplicates, stations has two runs with same content but different run numbers etc.
- * @warning if you have older imports with slightly different values for FILTER settings, those will be detected as different content! even thought the are the same for practical purposes.
- * @return true if both runs have the same channels with the same content, false otherwise
- */
+/// @brief compare two run instances and their run_d content for equality
+/// @param lhs left-hand side run shared pointer (so tree elements can be passed directly)
+/// @details it will use the channel comparison operator to compare the channels inside the run_d instances <br>
+/// so you may find duplicates, stations has two runs with same content but different run numbers etc.
+/// @warning if you have older imports with slightly different values for FILTER settings, those will be detected as different content! even thought the are the same for practical purposes.
+/// @return true if both runs have the same channels with the same content, false otherwise
 inline auto compare_same_content = [](const std::shared_ptr<survey_tree_d> &lhs, const std::shared_ptr<survey_tree_d> &rhs) {
   if (!lhs || !rhs) {
     throw std::runtime_error("Null pointer passed to compare_same_content");
@@ -1343,9 +1255,7 @@ inline auto compare_is_parallel_run = [](const std::shared_ptr<survey_tree_d> &l
   return false;
 };
 
-/*!
- * @brief the run std::shared_ptr<survey_tree_d> node is different, but the station node std::shared_ptr<survey_tree_d> is the same.
- */
+/// @brief the run std::shared_ptr<survey_tree_d> node is different, but the station node std::shared_ptr<survey_tree_d> is the same.
 inline auto compare_run_d_same_station = [](const std::shared_ptr<run_d> &lhs, const std::shared_ptr<run_d> &rhs) {
   if (!lhs || !rhs) {
     throw std::runtime_error("Null pointer passed to compare_run_d_same_station");

@@ -137,13 +137,11 @@ inline constexpr std::size_t next_power_of_two(const size_t &n) {
   return m;
 }
 
-/*!
- * @brief gen_equidistant_logvector generate a equally logarithmic spaced vector, low to high ASCENDING
- * \param start from start (included)
- * \param stop   to stop (included)
- * \param steps_per_decade steps per decade (like 11 for MSF-06e or 7 for MFS-07e)
- * \return vector of frequencies (or null vector if failed)
- */
+/// @brief gen_equidistant_logvector generate a equally logarithmic spaced vector, low to high ASCENDING
+/// \param start from start (included)
+/// \param stop   to stop (included)
+/// \param steps_per_decade steps per decade (like 11 for MSF-06e or 7 for MFS-07e)
+/// \return vector of frequencies (or null vector if failed)
 inline std::vector<double> gen_equidistant_logvector(const double &start, const double &stop, const size_t &steps_per_decade) {
 
   // dist would be log_stop - log_start
@@ -175,9 +173,7 @@ inline std::vector<double> gen_equidistant_logvector(const double &start, const 
 
   return result;
 }
-/*!
- * @brief generate a equally logarithmic spaced vector with fixed steps per decade and a fixed frequency list, low to high ASCENDING
- */
+/// @brief generate a equally logarithmic spaced vector with fixed steps per decade and a fixed frequency list, low to high ASCENDING
 inline std::vector<double> gen_equidistant_logvector_fixed(const double &start, const double &stop) {
   // dist would be log_stop - log_start
   // we calculate per decade
@@ -226,31 +222,29 @@ inline std::vector<double> gen_equidistant_logvector_fixed(const double &start, 
 //
 //
 
-/*!
- * @brief The fftw_freqs class stores the FFT parameters for FFTW; the fftw plan is INSIDE the channel as well as the result of the FFTW
- * the class DOES NOT contain a vector of frequencies - this is done by the channel, generated frequencies are from low to high, ASCENDING
- * if readlength is smaller than window length, the frequencies are zero padded
- * @details 8 real points will result in 8 (complex) outputs
- * Index 0: DC component (0 Hz)
- * Index 1: f = 1 * fs/8
- * Index 2: f = 2 * fs/8 = fs/4
- * Index 3: f = 3 * fs/8
- * Index 4: Nyquist frequency (fs/2) - REAL only
- * Index 5: f = 5 * fs/8 = -3 * fs/8 (negative freq)
- * Index 6: f = 6 * fs/8 = -2 * fs/8 = -fs/4 (negative freq)
- * Index 7: f = 7 * fs/8 = -1 * fs/8 (negative freq)
- * So we store N/2 + 1 frequencies, where N is the window length
- *
- * 0 can't be used as a frequency, it is 0 Hz and would lead to a division by zero; we ONLY need this for the inverse FFT
- * when doing the inverse FFT, we carefully multiply the all with the transfer (calibration) function EXCEPT the DC part (0 Hz, index 0)
- * (at least for coils, cal(0Hz) is 0, we don't have it, we don't use it); fluxgate is maybe different.
- * the Nyquist frequency is REAL, but can't be used for processing, it is only used for the inverse FFT
- * so, we store 8/2 + 1 = 5 frequencies, [0, 1, 2, 3, 4] for the example above and except from inverse, [1, 2, 3] are usable.
- * For for sine wave, you can use 50% for good resolution, and ~25% for NOISE (MT) data. So we normally don't use the upper part, closely to the equivalent of the sample rate.
- * @details the frequencies are generated from low to high, ASCENDING; the frequencies are stored
- * @details we differentiate between read length (rl) and window length (wl). If rl < wl, the frequencies are zero padded.
- * Zero padding is a kind of smoothing. BUT does not really enhance the physical resolution..
- */
+/// @brief The fftw_freqs class stores the FFT parameters for FFTW; the fftw plan is INSIDE the channel as well as the result of the FFTW
+/// the class DOES NOT contain a vector of frequencies - this is done by the channel, generated frequencies are from low to high, ASCENDING
+/// if readlength is smaller than window length, the frequencies are zero padded
+/// @details 8 real points will result in 8 (complex) outputs
+/// Index 0: DC component (0 Hz)
+/// Index 1: f = 1 * fs/8
+/// Index 2: f = 2 * fs/8 = fs/4
+/// Index 3: f = 3 * fs/8
+/// Index 4: Nyquist frequency (fs/2) - REAL only
+/// Index 5: f = 5 * fs/8 = -3 * fs/8 (negative freq)
+/// Index 6: f = 6 * fs/8 = -2 * fs/8 = -fs/4 (negative freq)
+/// Index 7: f = 7 * fs/8 = -1 * fs/8 (negative freq)
+/// So we store N/2 + 1 frequencies, where N is the window length
+///
+/// 0 can't be used as a frequency, it is 0 Hz and would lead to a division by zero; we ONLY need this for the inverse FFT
+/// when doing the inverse FFT, we carefully multiply the all with the transfer (calibration) function EXCEPT the DC part (0 Hz, index 0)
+/// (at least for coils, cal(0Hz) is 0, we don't have it, we don't use it); fluxgate is maybe different.
+/// the Nyquist frequency is REAL, but can't be used for processing, it is only used for the inverse FFT
+/// so, we store 8/2 + 1 = 5 frequencies, [0, 1, 2, 3, 4] for the example above and except from inverse, [1, 2, 3] are usable.
+/// For for sine wave, you can use 50% for good resolution, and ~25% for NOISE (MT) data. So we normally don't use the upper part, closely to the equivalent of the sample rate.
+/// @details the frequencies are generated from low to high, ASCENDING; the frequencies are stored
+/// @details we differentiate between read length (rl) and window length (wl). If rl < wl, the frequencies are zero padded.
+/// Zero padding is a kind of smoothing. BUT does not really enhance the physical resolution..
 class fftw_freqs {
 
 public:
@@ -274,10 +268,8 @@ public:
     this->wincal = sqrt(1. / (sample_rate * frl)); // zero padding does not count, take the read length
   }
 
-  /*!
-   * @brief copy constructor; this can not be empty because the fftw MUST be initialized with values!
-   * @param rhs
-   */
+  /// @brief copy constructor; this can not be empty because the fftw MUST be initialized with values!
+  /// @param rhs
   fftw_freqs(const std::shared_ptr<fftw_freqs> &rhs) {
     if (rhs == nullptr) {
       std::ostringstream err_str(__func__, std::ios_base::ate);
@@ -311,10 +303,8 @@ public:
     this->nlines_avg = rhs->nlines_avg;
   }
 
-  /*!
-   * @brief constructor to load from a JSON file; the JSON file must contain all the necessary parameters for the FFT; the frequencies are generated from low to high, ASCENDING
-   * @param filepath
-   */
+  /// @brief constructor to load from a JSON file; the JSON file must contain all the necessary parameters for the FFT; the frequencies are generated from low to high, ASCENDING
+  /// @param filepath
   fftw_freqs(const std::filesystem::path &filepath) {
     std::ifstream i(filepath);
     if (!i.is_open()) {
@@ -356,10 +346,8 @@ public:
     this->nlines_avg = j.at("nlines_avg").get<size_t>();
   }
 
-  /*!
-   * @brief save the fftw_freqs object to a JSON object
-   * @param j
-   */
+  /// @brief save the fftw_freqs object to a JSON object
+  /// @param j
   void save_to_json(jsn &j) const {
     j["sample_rate"] = this->sample_rate;
     j["wl"] = this->wl;
@@ -376,13 +364,11 @@ public:
     j["nlines_avg"] = this->nlines_avg;
   }
 
-  /*!
-   * @brief Save the fftw_freqs object to a JSON file
-   * @param filepath The path to the file where data will be written
-   * @details uses ordered_json for better readability, file will be created or overwritten
-   * @details if filename does not end with json, it will be added
-   * @throws runtime_error if file can not be created or written
-   */
+  /// @brief Save the fftw_freqs object to a JSON file
+  /// @param filepath The path to the file where data will be written
+  /// @details uses ordered_json for better readability, file will be created or overwritten
+  /// @details if filename does not end with json, it will be added
+  /// @throws runtime_error if file can not be created or written
   void save(const std::filesystem::path &filepath) const {
     jsn j;
     this->save_to_json(j);
@@ -400,28 +386,22 @@ public:
     o.close();
   }
 
-  /*!
-   * @brief get the bandwidth of the fft - that is half the physical resolution of the FFT, divide by rl.
-   * @return
-   */
+  /// @brief get the bandwidth of the fft - that is half the physical resolution of the FFT, divide by rl.
+  /// @return
   double get_bw() const {
     return this->sample_rate / double(this->rl);
   }
 
-  /*!
-   * @brief get the bin width of the fft - that is the frequency resolution of the FFT - maybe INTERPOLATED.
-   * @details bin width is different from bandwidth, especially when zero padding is used. <br> BUT if you want to fetch all data points from FFT, use bin width for your container.
-   * @return
-   */
+  /// @brief get the bin width of the fft - that is the frequency resolution of the FFT - maybe INTERPOLATED.
+  /// @details bin width is different from bandwidth, especially when zero padding is used. <br> BUT if you want to fetch all data points from FFT, use bin width for your container.
+  /// @return
   double get_bin_width() const {
     return this->sample_rate / double(this->wl);
   }
 
-  /*!
-   * @brief get the bandwidth of the fft using Welch's method - that is half the physical resolution of the FFT, divide by rl / n_segments.
-   * @param n_segments
-   * @return
-   */
+  /// @brief get the bandwidth of the fft using Welch's method - that is half the physical resolution of the FFT, divide by rl / n_segments.
+  /// @param n_segments
+  /// @return
   double get_bw_welch(const size_t &n_segments) const {
     if (n_segments < 1)
       return this->get_bw();
@@ -432,34 +412,26 @@ public:
     return this->wincal;
   }
 
-  /*!
-   * @brief get_wl window length
-   * \return
-   */
+  /// @brief get_wl window length
+  /// \return
   size_t get_wl() const {
     return this->wl;
   }
 
-  /*!
-   * @brief get_rl get the read length - that is the TRUE corresponding time series segment
-   * \return
-   */
+  /// @brief get_rl get the read length - that is the TRUE corresponding time series segment
+  /// \return
   size_t get_rl() const {
     return this->rl;
   }
 
-  /*!
-   * @brief get_fftw_scale the FFTW scales (multiplies!) in case to get from a +/- sine wave spectral peak of 1 @ f
-   * \return
-   */
+  /// @brief get_fftw_scale the FFTW scales (multiplies!) in case to get from a +/- sine wave spectral peak of 1 @ f
+  /// \return
   double get_fftw_scale() const {
     return 2.0 / (double(this->rl));
   }
 
-  /*!
-   * @brief get_fl get frequency length of spectral lines of the REMAINING SHORTENED FFT and/or ZERO PADDED FFT
-   * \return
-   */
+  /// @brief get_fl get frequency length of spectral lines of the REMAINING SHORTENED FFT and/or ZERO PADDED FFT
+  /// \return
   size_t get_fl() const {
     return this->idx_range.second - this->idx_range.first;
   }
@@ -468,18 +440,14 @@ public:
     return this->sample_rate;
   }
 
-  /*!
-   * @brief get_delta_f frequency resolution - spacing between samples in the frequency domain
-   * \return
-   */
+  /// @brief get_delta_f frequency resolution - spacing between samples in the frequency domain
+  /// \return
   double get_delta_f() const {
     return this->sample_rate / (double(this->wl));
   }
 
-  /*!
-   * @brief get the range of the USED / SET frequencies; f can be calculated by index * (sample_rate / wl)
-   * @return
-   */
+  /// @brief get the range of the USED / SET frequencies; f can be calculated by index * (sample_rate / wl)
+  /// @return
   std::pair<double, double> get_frange() const {
     return std::make_pair<double, double>((double(this->idx_range.first) * (this->sample_rate / double(this->wl))),
                                           (double(this->idx_range.second - 1) * (this->sample_rate / double(this->wl))));
@@ -535,12 +503,10 @@ public:
     return freqs;
   }
 
-  /*!
-   * @brief get_frequency_slice get a slice of EXISTING frequencies AFTER FFT
-   * \param min_f
-   * \param max_f
-   * \return
-   */
+  /// @brief get_frequency_slice get a slice of EXISTING frequencies AFTER FFT
+  /// \param min_f
+  /// \param max_f
+  /// \return
   std::vector<double> get_frequency_slice(const double &min_f, const double &max_f) {
     std::vector<double> freqs;
 
@@ -588,12 +554,10 @@ public:
     return this->idx_range_slice;
   }
 
-  /*!
-   * @brief auto_range; always use; [0] is DC! HOWEVER: for inverse take all and don't use this function
-   * \param rel_lower like 0.1
-   * \param rel_upper like 0.5 (1.0 == all)
-   * \return
-   */
+  /// @brief auto_range; always use; [0] is DC! HOWEVER: for inverse take all and don't use this function
+  /// \param rel_lower like 0.1
+  /// \param rel_upper like 0.5 (1.0 == all)
+  /// \return
   std::pair<double, double> auto_range(const double &rel_lower, const double &rel_upper) {
 
     if (!this->is_valid()) {
@@ -693,10 +657,8 @@ public:
     return this->get_frange();
   }
 
-  /*!
-   * @brief trim_fftw_result
-   * \return vector according to the selected frequencies
-   */
+  /// @brief trim_fftw_result
+  /// \return vector according to the selected frequencies
   std::vector<std::complex<double>> trim_fftw_result(const std::vector<std::complex<double>> &in_fftresult) const {
     std::vector<std::complex<double>> fftresult;
     fftresult.reserve(this->idx_range.second - this->idx_range.first);
@@ -815,12 +777,10 @@ public:
     std::cout << std::endl;
   }
 
-  /*!
-   * @brief
-   * @param fin sorted vector of frequencies from low to high ( == standard sort order)
-   * @param prz_radius
-   * @return
-   */
+  /// @brief
+  /// @param fin sorted vector of frequencies from low to high ( == standard sort order)
+  /// @param prz_radius
+  /// @return
   size_t set_target_freqs(const std::vector<double> &fin, const double &prz_radius, bool simple_avg = false) {
     double lf = (double(this->idx_range.first) * (this->sample_rate / double(this->wl)));
     double hf = (double(this->idx_range.second) * (this->sample_rate / double(this->wl)));
@@ -900,10 +860,8 @@ public:
       c *= this->wincal;
   }
 
-  /*!
-   * @brief unscale for testing purpose
-   * \param fftresult
-   */
+  /// @brief unscale for testing purpose
+  /// \param fftresult
   auto unscale(auto &fftresult) const {
     for (auto &c : fftresult)
       c /= this->wincal;
@@ -921,31 +879,29 @@ public:
     return this->selected_freqs;
   }
 
-  double prz_radius = 0.0; //!< radius for parzen window, also controls if parzening is on or off
-  size_t nlines_avg = 0;   //!< number of lines to average, must be odd, also controls if averaging is on or off
+  double prz_radius = 0.0; ///< radius for parzen window, also controls if parzening is on or off
+  size_t nlines_avg = 0;   ///< number of lines to average, must be odd, also controls if averaging is on or off
   std::vector<double> selected_freqs;
   std::vector<double> target_freqs;
   std::vector<std::vector<double>> parzendists;
   std::vector<size_t> smooth_index;
 
 private:
-  size_t wl = 0; //!< window length of fft
-  size_t rl = 0; //!< read length of time series data; if same like wl: standard fft, if smaller: zero padding
+  size_t wl = 0; ///< window length of fft
+  size_t rl = 0; ///< read length of time series data; if same like wl: standard fft, if smaller: zero padding
   // example: wl = 1024, rl = 512; then we have a zero padded fft with 512 zeros at the end
   double sample_rate = 0.0;
 
   std::pair<size_t, size_t> idx_range{0, SIZE_MAX};
   std::pair<size_t, size_t> idx_range_slice{0, SIZE_MAX};
   double wincal = 0.0;
-  size_t raw_stacks = 0; //!< to amount of received ffts
+  size_t raw_stacks = 0; ///< to amount of received ffts
 };
 // end of class fftw_freqs
 
-/*!
- * @brief field_width get the max frequency and the witdth of this double number as string - used for gnuplot
- * \param fftws
- * \return 4 for number like 1024
- */
+/// @brief field_width get the max frequency and the witdth of this double number as string - used for gnuplot
+/// \param fftws
+/// \return 4 for number like 1024
 inline constexpr std::size_t field_width(const std::vector<std::shared_ptr<fftw_freqs>> &fftws) {
 
   std::vector<double> maxf;

@@ -12,15 +12,13 @@
 #include <sstream>
 #include <string>
 
-/*!
- * @brief xlogger implements a two-stage logging mechanism
- * - buffer: accumulates new messages since last print_last()
- * - store: permanent archive of all logged messages
- * - overload the << operator to log messages
- * - thread safe
- * - echo to console immediately
- * - print_last() displays buffer and moves it to store
- */
+/// @brief xlogger implements a two-stage logging mechanism
+/// - buffer: accumulates new messages since last print_last()
+/// - store: permanent archive of all logged messages
+/// - overload the << operator to log messages
+/// - thread safe
+/// - echo to console immediately
+/// - print_last() displays buffer and moves it to store
 class xlogger {
 private:
   std::mutex log_mutex;
@@ -45,18 +43,14 @@ public:
     return *this;
   }
 
-  /*!
-   * @brief clear both buffer and store
-   */
+  /// @brief clear both buffer and store
   void clear() {
     std::lock_guard<std::mutex> lock(log_mutex);
     buffer.clear();
     store.clear();
   }
 
-  /*!
-   * @brief print all new messages in buffer, then move buffer to store
-   */
+  /// @brief print all new messages in buffer, then move buffer to store
   void print_last() {
     std::lock_guard<std::mutex> lock(log_mutex);
     if (buffer.empty()) {
@@ -71,9 +65,7 @@ public:
     buffer.clear();
   }
 
-  /*!
-   * @brief move all messages (buffer + store) to another logger
-   */
+  /// @brief move all messages (buffer + store) to another logger
   void pop(xlogger &other) {
     std::lock_guard<std::mutex> lock(log_mutex);
     // Move store messages

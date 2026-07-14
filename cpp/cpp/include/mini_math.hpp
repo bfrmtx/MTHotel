@@ -6,9 +6,7 @@
 #include <utility>
 #include <vector>
 
-/*!
- * \brief The inner_outer class collects the maximum range as well as the intersection
- */
+/// \brief The inner_outer class collects the maximum range as well as the intersection
 template <class T>
 class inner_outer {
 public:
@@ -112,14 +110,12 @@ void remove_spectral_lines(const std::vector<double> &f, const std::vector<doubl
   }
 }
 
-/*!
- * @brief  takes a sorted vector of pairs
- * @param f frequencies
- * @param s signal such as amplitude or phase
- * @param f_out
- * @param s_out
- * @param ranges such as std::vector<std::pair<double, double>> power_lines_ranges = {{12, 20}, {46, 54}, {146, 154}}; SORTED!!
- */
+/// @brief  takes a sorted vector of pairs
+/// @param f frequencies
+/// @param s signal such as amplitude or phase
+/// @param f_out
+/// @param s_out
+/// @param ranges such as std::vector<std::pair<double, double>> power_lines_ranges = {{12, 20}, {46, 54}, {146, 154}}; SORTED!!
 void remove_spectral_range(const std::vector<double> &f, const std::vector<double> &s, std::vector<double> &f_out,
                            std::vector<double> &s_out, const std::vector<std::pair<double, double>> &ranges) {
 

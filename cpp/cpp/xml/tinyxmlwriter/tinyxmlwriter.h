@@ -33,34 +33,28 @@ public:
       this->xml << this->indentation;
   }
 
-  /*!
-   * \brief push opens a section node
-   * \param element
-   */
+  /// \brief push opens a section node
+  /// \param element
   void push(const std::string &element) {
     this->indent();
     this->xml << "<" << element << ">" << std::endl;
     this->stack.push_back(element);
   }
 
-  /*!
-   * \brief push
-   * \param element
-   * \param attributes string of attributes
-   */
+  /// \brief push
+  /// \param element
+  /// \param attributes string of attributes
   void push(const std::string &element, const std::string &str_attributes) {
     this->indent();
     this->xml << "<" << element << " " << str_attributes << ">" << std::endl;
     this->stack.push_back(element);
   }
 
-  /*!
-   * \brief push for typical: "channel id=3", opens a section node
-   * \param element like channel
-   * \param str_attribute like id
-   * \param int_value like 3
-   * \return
-   */
+  /// \brief push for typical: "channel id=3", opens a section node
+  /// \param element like channel
+  /// \param str_attribute like id
+  /// \param int_value like 3
+  /// \return
   void push(const std::string &element, const std::string &str_attribute, const auto &attribute_value) {
     this->indent();
     // std::cout << "atr val " << attribute_value << std::endl;
@@ -69,10 +63,8 @@ public:
     this->stack.push_back(element);
   }
 
-  /*!
-   * \brief pop closes a push with </tag> - optional you can:
-   * \param reminder use tag in case you auto comment your source code
-   */
+  /// \brief pop closes a push with </tag> - optional you can:
+  /// \param reminder use tag in case you auto comment your source code
   void pop(const std::string &reminder = "") {
     if (stack.size()) {
       std::string element = this->stack.back();
@@ -94,13 +86,11 @@ public:
     }
   }
 
-  /*!
-   * \brief element
-   * \param element
-   * \param val
-   * \param precision assumes a double
-   * \param scientific activate scientific in cas precision is set
-   */
+  /// \brief element
+  /// \param element
+  /// \param val
+  /// \param precision assumes a double
+  /// \param scientific activate scientific in cas precision is set
   void element(const std::string &element, const auto &val, const uint32_t precision = 0, const bool scientific = false) {
     if (precision) {
       std::stringstream sstr;
@@ -118,24 +108,20 @@ public:
     }
   }
 
-  /*!
-   * \brief element with no content
-   * \param element
-   */
+  /// \brief element with no content
+  /// \param element
   void element_empty(const std::string &element) {
     indent();
     xml << "<" << element << "/>" << std::endl;
   }
 
-  /*!
-   * \brief element_attr element with a single attribute
-   * \param element
-   * \param str_attribute
-   * \param attribute_value
-   * \param val
-   * \param precision
-   * \param scientific
-   */
+  /// \brief element_attr element with a single attribute
+  /// \param element
+  /// \param str_attribute
+  /// \param attribute_value
+  /// \param val
+  /// \param precision
+  /// \param scientific
   void element_attr(const std::string &element, const std::string &str_attribute, const auto attribute_value, const auto &val, const uint32_t precision = 0, const bool scientific = false) {
     if (precision) {
       std::stringstream sstr;
@@ -208,9 +194,9 @@ public:
     return true;
   }
 
-  std::stringstream xml;          //!< contains the complete XML including indents
-  std::string indentation = "  "; //!< contains two spaces as indentation
-  std::vector<std::string> stack; //!< contains the stack of indententaion (levels)
+  std::stringstream xml;          ///< contains the complete XML including indents
+  std::string indentation = "  "; ///< contains two spaces as indentation
+  std::vector<std::string> stack; ///< contains the stack of indententaion (levels)
 private:
   std::fstream file;
   std::filesystem::path filename;

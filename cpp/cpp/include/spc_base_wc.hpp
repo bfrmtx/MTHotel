@@ -17,27 +17,25 @@
 #include "freqs.hpp"
 #include "mt_base.hpp"
 
-/**
- * @brief A class template for managing spectra. T is at least a std::vector<T> or std::vector<std::vector<T>>.
- *
- * This class is derived from std::map and provides functionality for adding, moving, retrieving, and deleting spectra.
- * Each  spectrum is associated with a name and stored as a shared pointer to a vector or a vector of vectors.
- * The class also allows setting and getting the bandwidth of the spectra.
- * Do not use channel = channel; we don't want counters on channel objects here; later in main it is desired to delete the shared pointers
- * The channel object CONTAINS THE FREQUENCIES! <br>
- * ----> vector: that is e.g. a stacked result, and in case of coherence of type double <br>
- * ----> vector of vectors: that is e.g. unstacked (first vector) of complex spectra (second vector) <br>
- * the channel wich we created should contain the frequencies, same size as the spectra (second vector) <br>
- * the <b>internal ch_map</b> shall contain the channel objects, which are used to create the spectra! Must be a pair map object!
- * a <Hx,> is mostly the vector of vector of complex raw spectra, which you want to work on
- * a <Hx,Hx> or <Hx, Hy>  is <br>
- * a) a vector of vectors of complex spectra, which you want to work on (where <Hx, Hx> is auto in should be real)
- * a1) if we have <Hx,Hy> of <Hx,Hx> - we always have two channel objects! even though we have ONE data vector.
- * b) a vector of (mostly real) spectra containing the stacked spectra, calculated from the vector of vectors of complex spectra <br>
- * c) a vector of coherence or noise which are definition real
- *
- * @tparam T The type of the elements in the spectra vector, like double or std::complex<double> OR <std::vector<std::complex<double>>>, <std::vector<std::double>>
- */
+/// @brief A class template for managing spectra. T is at least a std::vector<T> or std::vector<std::vector<T>>.
+///
+/// This class is derived from std::map and provides functionality for adding, moving, retrieving, and deleting spectra.
+/// Each  spectrum is associated with a name and stored as a shared pointer to a vector or a vector of vectors.
+/// The class also allows setting and getting the bandwidth of the spectra.
+/// Do not use channel = channel; we don't want counters on channel objects here; later in main it is desired to delete the shared pointers
+/// The channel object CONTAINS THE FREQUENCIES! <br>
+/// ----> vector: that is e.g. a stacked result, and in case of coherence of type double <br>
+/// ----> vector of vectors: that is e.g. unstacked (first vector) of complex spectra (second vector) <br>
+/// the channel wich we created should contain the frequencies, same size as the spectra (second vector) <br>
+/// the <b>internal ch_map</b> shall contain the channel objects, which are used to create the spectra! Must be a pair map object!
+/// a <Hx,> is mostly the vector of vector of complex raw spectra, which you want to work on
+/// a <Hx,Hx> or <Hx, Hy>  is <br>
+/// a) a vector of vectors of complex spectra, which you want to work on (where <Hx, Hx> is auto in should be real)
+/// a1) if we have <Hx,Hy> of <Hx,Hx> - we always have two channel objects! even though we have ONE data vector.
+/// b) a vector of (mostly real) spectra containing the stacked spectra, calculated from the vector of vectors of complex spectra <br>
+/// c) a vector of coherence or noise which are definition real
+///
+/// @tparam T The type of the elements in the spectra vector, like double or std::complex<double> OR <std::vector<std::complex<double>>>, <std::vector<std::double>>
 template <typename T>
 struct is_std_vector : std::false_type {};
 template <typename U, typename Alloc>
@@ -51,13 +49,11 @@ public:
 
   // ******************************************************  M O V I N G  / A D D I N G   S P E C T R A  ****************************************************************
   // 1) ********* for shared pointers ************
-  /**
-   * @brief Moves a single spectrum to the collection, e.g. from a channel object
-   * @param name_in The name of the spectrum. If name is a single string, the second name is empty so Hx -> <Hx, > and <Hx, Hy> -> <Hx, Hy>
-   * @param spectra The vector containing the spectral data. It will be **** MOVED **** into the map. if spectra is  N U L L P T R  , an empty vector will be created <br>
-   *   When we set the single spectra, like form a channel object, it is <b> STD::VECTOR<STD::VECTOR<STD::COMPLEX<DOUBLE>>> </b>
-   * @throws std::runtime_error if a spectrum with the same name already exists
-   */
+  /// @brief Moves a single spectrum to the collection, e.g. from a channel object
+  /// @param name_in The name of the spectrum. If name is a single string, the second name is empty so Hx -> <Hx, > and <Hx, Hy> -> <Hx, Hy>
+  /// @param spectra The vector containing the spectral data. It will be **** MOVED **** into the map. if spectra is  N U L L P T R  , an empty vector will be created <br>
+  ///   When we set the single spectra, like form a channel object, it is <b> STD::VECTOR<STD::VECTOR<STD::COMPLEX<DOUBLE>>> </b>
+  /// @throws std::runtime_error if a spectrum with the same name already exists
   template <typename S>
   void add_spectra(const S &name_in, std::shared_ptr<std::vector<T>> spectra = nullptr, const double &bw = 0.0, const bool move_spc = false) {
     std::shared_lock lock(spc_lock);
@@ -84,18 +80,14 @@ public:
     if (bw != 0.0)
       this->bw = bw;
   }
-  /*!
-   * @brief same as above, convience function for two strings
-   */
+  /// @brief same as above, convience function for two strings
   void add_spectra(const std::string &name_in, const std::string &name_in2, std::shared_ptr<std::vector<T>> spectra = nullptr, const double &bw = 0.0, const bool move_spc = false) {
     auto name = std::pair<std::string, std::string>(name_in, name_in2);
     this->add_spectra(name, spectra, bw, move_spc);
   }
 
   // 2) ********* for standard vectors ************
-  /*!
-   * @brief same as above, but we have a vector, not a shared pointer; we make a shared pointer and move it
-   */
+  /// @brief same as above, but we have a vector, not a shared pointer; we make a shared pointer and move it
   template <typename S>
   void add_spectra(const S &name_in, std::vector<T> &spectra, const double &bw = 0.0, const bool move_spc = false) {
     if (move_spc)
@@ -104,20 +96,16 @@ public:
       this->add_spectra(name_in, std::make_shared<std::vector<T>>(spectra), bw, false);
   }
 
-  /*!
-   * @brief same as above, convience function for two strings
-   */
+  /// @brief same as above, convience function for two strings
   void add_spectra(const std::string &name_in, const std::string &name_in2, std::vector<T> &spectra, const double &bw = 0.0, const bool move_spc = false) {
     auto name = std::pair<std::string, std::string>(name_in, name_in2);
     this->add_spectra(name, spectra, bw, move_spc);
   }
 
   // 3) ************************* move a channel object to the collection ************************
-  /*!
-   * @brief this is called for a channel object, we ALWAYS move the spectrum from the channel to the collection; channel has a shared pointer!
-   * @details a channel ONLY contains his own spectrum, so not <Ex, Ey> etc.
-   * @param chan the channel object can be set to be remote or emap; this will be considered
-   */
+  /// @brief this is called for a channel object, we ALWAYS move the spectrum from the channel to the collection; channel has a shared pointer!
+  /// @details a channel ONLY contains his own spectrum, so not <Ex, Ey> etc.
+  /// @param chan the channel object can be set to be remote or emap; this will be considered
   void move_spectra(std::shared_ptr<channel> chan) {
     std::string name_in = chan->channel_type;
     if (is_E(name_in) && chan->is_emap && !chan->is_remote) {
@@ -132,13 +120,11 @@ public:
     this->spc_t = get_spc_type_from_name(name);
   }
 
-  /*!
-   * @brief add a channel object; this will be newly created, not moved or copied
-   * @param name
-   * @param chan1
-   * @param chan2
-   * @param overwrite at the beginning the channel object may have no frequencies, so we can overwrite it later
-   */
+  /// @brief add a channel object; this will be newly created, not moved or copied
+  /// @param name
+  /// @param chan1
+  /// @param chan2
+  /// @param overwrite at the beginning the channel object may have no frequencies, so we can overwrite it later
   void add_channel(const std::pair<std::string, std::string> name, const std::shared_ptr<channel> chan1, const std::shared_ptr<channel> chan2 = nullptr, const bool overwrite = false) {
 
     if (overwrite) {
@@ -167,14 +153,12 @@ public:
     this->ch_map.emplace(name, std::make_pair(std::make_shared<channel>(chan1), std::make_shared<channel>(chan2)));
   }
 
-  /*!
-   * @brief prepares EMPTY spectra for auto and cross spectra; we need to know the channel names
-   * @param name the name of the spectra like HxHx of HxHy or ExHy
-   * @param chan1 the first channel
-   * @param chan2 the second channel, we always need two channels for auto or cross spectra!
-   * @note This is mostly in main where you decide what to calculate.
-   * @note for coherence we later need a a stacked object (for the cross channels) AND a unstacked for the raw, unstacked spectra
-   */
+  /// @brief prepares EMPTY spectra for auto and cross spectra; we need to know the channel names
+  /// @param name the name of the spectra like HxHx of HxHy or ExHy
+  /// @param chan1 the first channel
+  /// @param chan2 the second channel, we always need two channels for auto or cross spectra!
+  /// @note This is mostly in main where you decide what to calculate.
+  /// @note for coherence we later need a a stacked object (for the cross channels) AND a unstacked for the raw, unstacked spectra
   void prepare_ac_cross_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> chan_pair) {
     auto chan1 = chan_pair.first;
     auto chan2 = chan_pair.second;
@@ -205,10 +189,8 @@ public:
     this->spc_t = get_spc_type_from_name(name); // does not work!
   }
 
-  /*!
-   * @brief prepares ALL AUTO spectra for a given channel; e.g. HxHx, HyHy, HzHz for all available channels; so pairs of same channels
-   * @note CALL THIS in you raw_spc class after moving the raw spectra from channels to raw spectra object, THEN use the resulting channels for sa, sa_prz, sa_avg and so; the mmay be still empty!
-   */
+  /// @brief prepares ALL AUTO spectra for a given channel; e.g. HxHx, HyHy, HzHz for all available channels; so pairs of same channels
+  /// @note CALL THIS in you raw_spc class after moving the raw spectra from channels to raw spectra object, THEN use the resulting channels for sa, sa_prz, sa_avg and so; the mmay be still empty!
   std::vector<std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>>> generate_auto_spectra_channels(const bool verbose = false) {
     // get all unique channels from ch_map and may self-paired
     std::vector<std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>>> auto_cross_spectra_channels;
@@ -264,14 +246,12 @@ public:
 
   // ******************************************************  R E T R I E V I N G   S P E C T R A  ****************************************************************
   // 1) as shared pointer
-  /**
-   * @brief Retrieves a single spectrum from the collection.
-   * @param name The name of the spectrum to retrieve. If this spectra has been collected already, and you want to be it remote or emap, you can set the flags
-   * @param is_remote if you ask this spectra, and the channel is Hx, it will return RHx, if it is set to be remote
-   * @param is_emap if you ask this spectra, and the channel is Hx, it will return EHx, if it is set to be emap
-   * @return A shared pointer to the vector containing the spectrum data.
-   * @throws std::runtime_error if the spectrum with the given name does not exist.
-   */
+  /// @brief Retrieves a single spectrum from the collection.
+  /// @param name The name of the spectrum to retrieve. If this spectra has been collected already, and you want to be it remote or emap, you can set the flags
+  /// @param is_remote if you ask this spectra, and the channel is Hx, it will return RHx, if it is set to be remote
+  /// @param is_emap if you ask this spectra, and the channel is Hx, it will return EHx, if it is set to be emap
+  /// @return A shared pointer to the vector containing the spectrum data.
+  /// @throws std::runtime_error if the spectrum with the given name does not exist.
   template <typename S>
   std::shared_ptr<std::vector<T>> get_spectra(const S &name_out, const bool is_remote = false, const bool is_emap = false) const {
     std::shared_lock lock(spc_lock);
@@ -295,29 +275,23 @@ public:
     return this->at(name);
   }
 
-  /*!
-   * @brief convience function for two strings; if we provide two strings, we assume that we want a cross spectrum, we can not add remote or emap
-   */
+  /// @brief convience function for two strings; if we provide two strings, we assume that we want a cross spectrum, we can not add remote or emap
   std::shared_ptr<std::vector<T>> get_spectra(const std::string &name_in, const std::string &name_in2) const {
     auto name = std::pair<std::string, std::string>(name_in, name_in2);
     return this->get_spectra(name);
   }
 
   // 2) as std::vector - that is a copy! **************
-  /*!
-   * @brief Retrieves a single spectrum from the collection as a vector.
-   * @param name The name of the spectrum to retrieve.
-   * @return A vector containing the spectrum data.
-   * @throws std::runtime_error if the spectrum with the given name does not exist.
-   */
+  /// @brief Retrieves a single spectrum from the collection as a vector.
+  /// @param name The name of the spectrum to retrieve.
+  /// @return A vector containing the spectrum data.
+  /// @throws std::runtime_error if the spectrum with the given name does not exist.
   template <typename S>
   std::vector<T> get_spectra_vec(const S &name_out, const bool is_remote = false, const bool is_emap = false) const {
     return *this->get_spectra(name_out, is_remote, is_emap);
   }
 
-  /*!
-   * @brief convience function for two strings; if we provide two strings, we assume that we want a cross spectrum, we can not add remote or emap
-   */
+  /// @brief convience function for two strings; if we provide two strings, we assume that we want a cross spectrum, we can not add remote or emap
   std::vector<T> get_spectra_vec(const std::string &name_in, const std::string &name_in2) const {
     auto name = std::pair<std::string, std::string>(name_in, name_in2);
     return this->get_spectra_vec(name);
@@ -368,11 +342,9 @@ public:
   }
 
   // ******************************************************  D E L E T I N G   S P E C T R A  ****************************************************************
-  /**
-   * @brief Deletes a single spectrum from the collection.
-   * @param name The name of the spectrum to delete.
-   * @throws std::runtime_error if the spectrum with the given name does not exist.
-   */
+  /// @brief Deletes a single spectrum from the collection.
+  /// @param name The name of the spectrum to delete.
+  /// @throws std::runtime_error if the spectrum with the given name does not exist.
   template <typename S>
   void delete_spectra(const S &name_in) {
     std::shared_lock lock(spc_lock);
@@ -391,9 +363,7 @@ public:
     this->ch_map.erase(name);
   }
 
-  /*!
-   * @brief convience function for two strings
-   */
+  /// @brief convience function for two strings
   void delete_spectra(const std::string &name_in, const std::string &name_in2) {
     auto name = std::pair<std::string, std::string>(name_in, name_in2);
     this->delete_spectra(name);
@@ -478,10 +448,8 @@ public:
     this->emplace(new_name, this->at(old_name));
     this->erase(old_name);
   }
-  /*!
-   * @brief get the size of the map and the size of the vector in the map; throw an exception if the data type is a vector of vectors
-   * @return a pair with the size of the map and the size of the vector in the map
-   */
+  /// @brief get the size of the map and the size of the vector in the map; throw an exception if the data type is a vector of vectors
+  /// @return a pair with the size of the map and the size of the vector in the map
   std::pair<size_t, size_t> get_size_stacked() const {
     std::shared_lock lock(spc_lock);
     if (this->empty()) {
@@ -506,12 +474,10 @@ public:
     // - `->size()` gets the size of the vector pointed to by that `shared_ptr`.
     return std::make_pair(this->size(), this->at(this->begin()->first)->size());
   }
-  /*!
-   * @brief get the size of the map and the size of the vector in the map; throw an exception if the data type is NOT a vector of vectors
-   * @param nstacks will be set to the number of stacks, that is the size of the outer vector
-   * @return a pair with the size of the map and the size of the inner vector in the map, aka frequency vector
-   * @throws std::runtime_error if the data type is not a vector of vectors
-   */
+  /// @brief get the size of the map and the size of the vector in the map; throw an exception if the data type is NOT a vector of vectors
+  /// @param nstacks will be set to the number of stacks, that is the size of the outer vector
+  /// @return a pair with the size of the map and the size of the inner vector in the map, aka frequency vector
+  /// @throws std::runtime_error if the data type is not a vector of vectors
   std::pair<size_t, size_t> get_size_stacked(size_t &nstacks) const {
     std::shared_lock lock(spc_lock);
     if (this->empty()) {
@@ -603,14 +569,12 @@ public:
     }
   }
 
-  /*!
-   * @brief save the spectra to a ascii file and a json metadata file
-   * @param top_dir e.g. the run_NNN directory BELOW the station directory
-   * @param create if true, create the directory if it does not exist
-   * @details only for vectors of doubles or complex doubles, NOT for vectors of vectors
-   * @throws std::runtime_error if the data type is not supported
-   * @throws std::runtime_error if the file cannot be opened
-   */
+  /// @brief save the spectra to a ascii file and a json metadata file
+  /// @param top_dir e.g. the run_NNN directory BELOW the station directory
+  /// @param create if true, create the directory if it does not exist
+  /// @details only for vectors of doubles or complex doubles, NOT for vectors of vectors
+  /// @throws std::runtime_error if the data type is not supported
+  /// @throws std::runtime_error if the file cannot be opened
   void save_to_ascii(const std::filesystem::path &top_dir, const bool create = false) const {
     std::shared_lock lock(spc_lock);
     if (this->empty()) {
@@ -766,10 +730,8 @@ public:
     }
   }
 
-  /*!
-   * @brief Set the file extension for saving spectra, do this when you create the object and you know what to store!
-   * @param ext The file extension to set (e.g., ".fa" or ".fc")
-   */
+  /// @brief Set the file extension for saving spectra, do this when you create the object and you know what to store!
+  /// @param ext The file extension to set (e.g., ".fa" or ".fc")
   void set_extension(const std::string &ext_type) {
     std::unique_lock lock(spc_lock);
     this->bin_extension = "bin" + ext_type;
@@ -789,18 +751,14 @@ private:
   mutable std::shared_mutex spc_lock;
   spc_type spc_t = spc_type::null; // we keep track of the type of the spectra
 
-  /**
-   * @brief file extension for saving spectra, refer to [MTHotel](../../MTHotel.md) for the naming convention of the files
-   * @details can be ".binfa" for real spectra stacked or ".binfc" for complex spectra stacked
-   * @details we shall not store the <vector<vector<T>>> type; that does not make sense
-   */
+  /// @brief file extension for saving spectra, refer to [MTHotel](../../MTHotel.md) for the naming convention of the files
+  /// @details can be ".binfa" for real spectra stacked or ".binfc" for complex spectra stacked
+  /// @details we shall not store the <vector<vector<T>>> type; that does not make sense
   std::string bin_extension; // file extension for saving spectra
 
-  /**
-   * @brief file extension for saving spectra in ascii
-   * @details can be ".datfa" for real spectra stacked or ".datfc" for complex spectra stacked
-   * @details we shall not store the <vector<vector<T>>> type; that does not make sense
-   */
+  /// @brief file extension for saving spectra in ascii
+  /// @details can be ".datfa" for real spectra stacked or ".datfc" for complex spectra stacked
+  /// @details we shall not store the <vector<vector<T>>> type; that does not make sense
   std::string ascii_extension; // file extension for saving spectra in ascii
 
   // we keep a deep copy of the channel data

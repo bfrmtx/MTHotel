@@ -111,8 +111,7 @@ void fir_filter::shift_to_new_start_time(const bool &shift_to_full_seconds) {
 
   throw std::runtime_error("fir_filter::shift_to_new_start_time: not implemented yet");
   // you need to skip samples
-  /*! @todo : implement shift to new start time by skipping samples and shifting the start time of the output channel
-   */
+  /// @todo : implement shift to new start time by skipping samples and shifting the start time of the output channel
   // example for 128 Hz and 32 x filter, (471 - 1) // 2 = 235 samples delay
   //  fracs = 1.8359375 = 235 / 128 ..that also can be 4.34 ... more than 1s
   size_t hlen = (this->coeff.size() - 1) / 2;                          // half length of the filter -1; we can't use half samples

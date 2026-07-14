@@ -3,12 +3,10 @@
 #include <cmath>
 namespace miter {
 
-/*!
- * \brief cleanup set elements to zero wich absloute value is smaller than treat_as_zero
- * \param first double iter
- * \param last double iter
- * \param treat_as_zero something like 1E-32
- */
+/// \brief cleanup set elements to zero wich absloute value is smaller than treat_as_zero
+/// \param first double iter
+/// \param last double iter
+/// \param treat_as_zero something like 1E-32
 template <typename Iterator>
 void cleanup(Iterator first, Iterator last, const double &treat_as_zero) {
 
@@ -19,12 +17,10 @@ void cleanup(Iterator first, Iterator last, const double &treat_as_zero) {
   }
 }
 
-/*!
- * \brief cleanup_cplx set elements to zero (real AND/OR imaginary) wich absloute value is smaller than treat_as_zero
- * \param first complex double iter
- * \param last complex double iter
- * \param treat_as_zero something like 1E-32
- */
+/// \brief cleanup_cplx set elements to zero (real AND/OR imaginary) wich absloute value is smaller than treat_as_zero
+/// \param first complex double iter
+/// \param last complex double iter
+/// \param treat_as_zero something like 1E-32
 template <typename Iterator>
 void cleanup_cplx(Iterator first, Iterator last, const double &treat_as_zero) {
 
@@ -40,14 +36,13 @@ void cleanup_cplx(Iterator first, Iterator last, const double &treat_as_zero) {
 
 //**************************************************  A K I M A   S P L I N E   *******************************************************
 
-/*! \brief m little helper for Akima Splines ; dx(i) (x[i+1]-x[i]); dy(i) (y[i+1]-y[i]) and m = dy(i)/dx(i)
- * (random access seems not to want const qualifier)
- * @param x abscissa in
- * @param y ordinate in
- * @param index index on abscissa
- * @return dy[i] / dx[i]
- *
- */
+/// \brief m little helper for Akima Splines ; dx(i) (x[i+1]-x[i]); dy(i) (y[i+1]-y[i]) and m = dy(i)/dx(i)
+/// (random access seems not to want const qualifier)
+/// @param x abscissa in
+/// @param y ordinate in
+/// @param index index on abscissa
+/// @return dy[i] / dx[i]
+///
 template <class T, class const_iterator_x>
 T m(const const_iterator_x x, const const_iterator_x y, const std::size_t index) {
 
@@ -56,31 +51,29 @@ T m(const const_iterator_x x, const const_iterator_x y, const std::size_t index)
   return dy / dx;
 }
 
-/*!
- * \brief aspline  Calculates the akima spline parameters b, c, d for  given inputs (x ,y) where x[0] < x[1] < ... < x[n] <br>
- * so the x-axis numbers MUST be SORTED x[0] < x[1] < x[n]<br>
- * RANDOM ACCESS Iterators needed - this template can only be used where "[]" is defined --- and not only "++"
- *
- * x = complete frequency list from cal file
- * y = complete spectra (real/imag) from cal file
- * b = 1st coefficient (output) computed from input
- * c = 2nd coefficient (output) computed from input
- * d = 3rd coefficient (output) computed from input
- *
- * for each input pair in x/y one set of coefffiecents b/c/d is computed.
- *
- * @param x_first first x Iterator
- * @param x_last  last x Iterator
- * @param y_first first y Iterator corresponding with first x!  -> (&x[0], &x[n+1])
- * @param y_last  last y Iterator corresponding with last x!  -> (&x[n], &y[n+1])
- * @param b_first coefficients start  - same size as 2D input (x,y)
- * @param b_last  coefficients stop
- * @param c_first coefficients start  - same size as 2D input (x,y)
- * @param c_last  coefficients stop
- * @param d_first coefficients start  - same size as 2D input (x,y)
- * @param d_last  coefficients stop
- * @return size of input
- */
+/// \brief aspline  Calculates the akima spline parameters b, c, d for  given inputs (x ,y) where x[0] < x[1] < ... < x[n] <br>
+/// so the x-axis numbers MUST be SORTED x[0] < x[1] < x[n]<br>
+/// RANDOM ACCESS Iterators needed - this template can only be used where "[]" is defined --- and not only "++"
+///
+/// x = complete frequency list from cal file
+/// y = complete spectra (real/imag) from cal file
+/// b = 1st coefficient (output) computed from input
+/// c = 2nd coefficient (output) computed from input
+/// d = 3rd coefficient (output) computed from input
+///
+/// for each input pair in x/y one set of coefffiecents b/c/d is computed.
+///
+/// @param x_first first x Iterator
+/// @param x_last  last x Iterator
+/// @param y_first first y Iterator corresponding with first x!  -> (&x[0], &x[n+1])
+/// @param y_last  last y Iterator corresponding with last x!  -> (&x[n], &y[n+1])
+/// @param b_first coefficients start  - same size as 2D input (x,y)
+/// @param b_last  coefficients stop
+/// @param c_first coefficients start  - same size as 2D input (x,y)
+/// @param c_last  coefficients stop
+/// @param d_first coefficients start  - same size as 2D input (x,y)
+/// @param d_last  coefficients stop
+/// @return size of input
 
 template <class T, class const_iterator_x, class iterator_s>
 std::size_t aspline(
@@ -189,31 +182,30 @@ std::size_t aspline(
   return n;
 }
 
-/*! @brief seval calculates a cubic spline for newly given u ("x-axis") and returns a new v ("y-axis")
- *
- * seval v = y(i) + b(i)*(u-x(i)) + c(i)*(u-x(i))**2 + d(i)*(u-x(i))**3<br>
- * where  x(0) < u < x(n), using horner's rule<br>
- * if  u < x(0) then  i = 1  is used<br>
- * if  u > x(n) then  i = n  is used<br>
- * u = the abscissa at which the spline is to be evaluated<br>
- * x,y = the arrays of data abscissas and ordinates<br>
- * b,c,d = arrays of spline coefficients computed by spline / aspline<br>
- *
- * u = target frequency value (from input spectra / not cal spectra)
- * v = output value (interpolation result) for new target frequency u
- * x = frequency list from cal file
- * y = spectral values from cal file
- * b, c, d = coefficients taken priory computed with function aspline (...)
- *
- * @param u new value u
- * @param x_first
- * @param x_last
- * @param y_first
- * @param b_first
- * @param c_first
- * @param d_first
- * @return the interpolated v (u,v)
- */
+/// @brief seval calculates a cubic spline for newly given u ("x-axis") and returns a new v ("y-axis")
+///
+/// seval v = y(i) + b(i)*(u-x(i)) + c(i)*(u-x(i))**2 + d(i)*(u-x(i))**3<br>
+/// where  x(0) < u < x(n), using horner's rule<br>
+/// if  u < x(0) then  i = 1  is used<br>
+/// if  u > x(n) then  i = n  is used<br>
+/// u = the abscissa at which the spline is to be evaluated<br>
+/// x,y = the arrays of data abscissas and ordinates<br>
+/// b,c,d = arrays of spline coefficients computed by spline / aspline<br>
+///
+/// u = target frequency value (from input spectra / not cal spectra)
+/// v = output value (interpolation result) for new target frequency u
+/// x = frequency list from cal file
+/// y = spectral values from cal file
+/// b, c, d = coefficients taken priory computed with function aspline (...)
+///
+/// @param u new value u
+/// @param x_first
+/// @param x_last
+/// @param y_first
+/// @param b_first
+/// @param c_first
+/// @param d_first
+/// @return the interpolated v (u,v)
 template <class T, class const_iterator_x>
 T seval(const const_iterator_x u,
         const_iterator_x x_first, const const_iterator_x x_last,

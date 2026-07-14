@@ -46,7 +46,7 @@ public:
     this->measdocxml = ats_file->get_xmlpath();
   }
   std::shared_ptr<channel> convert_header() {
-    std::vector<std::shared_ptr<calibration>> cals; //!< vector of calibration objects, normally 3 which are in the measdoc.xml file
+    std::vector<std::shared_ptr<calibration>> cals; ///< vector of calibration objects, normally 3 which are in the measdoc.xml file
     auto rcal = std::make_shared<read_cal>();
     auto cal = std::make_shared<calibration>();
     cal->set_format(CalibrationType::mtx, false);
@@ -186,21 +186,19 @@ public:
   ~ats2atss() = default;
 
 private:
-  std::shared_ptr<channel> chan;     //!< channel object to write atss data (new ATSS files)
-  std::shared_ptr<atsfile> ats_file; //!< atsfile object to read ATS data (old ATS files)
-  std::filesystem::path out_dir;     //!< output directory for atss files
-  std::filesystem::path measdocxml;  //!< contains the calibration data (old cal, normalized)
-  bool can_convert_data = false;     //!< can we convert the data? (e.g. if no calibration is available, we cannot convert)
-  const bool verbose = false;        //!< verbose output
+  std::shared_ptr<channel> chan;     ///< channel object to write atss data (new ATSS files)
+  std::shared_ptr<atsfile> ats_file; ///< atsfile object to read ATS data (old ATS files)
+  std::filesystem::path out_dir;     ///< output directory for atss files
+  std::filesystem::path measdocxml;  ///< contains the calibration data (old cal, normalized)
+  bool can_convert_data = false;     ///< can we convert the data? (e.g. if no calibration is available, we cannot convert)
+  const bool verbose = false;        ///< verbose output
 };
 
 // classes for iterating for iterating over OLD survey directories
 // we do a simple iteration over the directories, not a tree.
 
-/*!
- * @brief scans a measdoc.xml file for channels; all channels in xml file ARE A RUN!
- * @details scan converts on the fly; we keep both files. After writing the headers, we convert the data.
- */
+/// @brief scans a measdoc.xml file for channels; all channels in xml file ARE A RUN!
+/// @details scan converts on the fly; we keep both files. After writing the headers, we convert the data.
 class ats_run_ats {
 public:
   ats_run_ats(const std::filesystem::path &measdocxml) :
@@ -340,11 +338,11 @@ public:
     }
   }
 
-  std::filesystem::path measdocxml;               //!< /survey/Northern_Mining/ts/Sarıçam/meas_2009-08-20_13-22-00/084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
-  std::vector<std::shared_ptr<channel>> channels; //!< vector of channels, one for each ats file
-  std::vector<std::filesystem::path> ats_files;   //!< vector of ats files, one for each channel, we keep for data conversion
-  mutable std::shared_mutex mutex_;               //!< mutex for thread-safe access to ats_files
-  const bool verbose = false;                     //!< verbose output
+  std::filesystem::path measdocxml;               ///< /survey/Northern_Mining/ts/Sarıçam/meas_2009-08-20_13-22-00/084_2009-08-20_13-22-00_2009-08-21_07-00-00_R001_128H.xml
+  std::vector<std::shared_ptr<channel>> channels; ///< vector of channels, one for each ats file
+  std::vector<std::filesystem::path> ats_files;   ///< vector of ats files, one for each channel, we keep for data conversion
+  mutable std::shared_mutex mutex_;               ///< mutex for thread-safe access to ats_files
+  const bool verbose = false;                     ///< verbose output
 };
 
 class station_ats {
@@ -394,10 +392,10 @@ public:
       run.second->ls(); // list the channels in the run
     }
   }
-  std::filesystem::path basePath; //!< base path for the survey, e.g. /survey/Northern_Mining/ts/Sample_Station
+  std::filesystem::path basePath; ///< base path for the survey, e.g. /survey/Northern_Mining/ts/Sample_Station
   std::map<std::filesystem::path, std::shared_ptr<ats_run_ats>> runs;
   mutable std::shared_mutex mutex_;
-  const bool verbose = false; //!< verbose output
+  const bool verbose = false; ///< verbose output
 };
 // "/survey/Northern_Mining/"
 
@@ -440,10 +438,10 @@ public:
     }
   }
 
-  std::filesystem::path basePath;                               //!< base path for the survey, e.g. /survey/Northern_Mining/ts
-  std::map<std::string, std::shared_ptr<station_ats>> stations; //!< map of station names to station objects
+  std::filesystem::path basePath;                               ///< base path for the survey, e.g. /survey/Northern_Mining/ts
+  std::map<std::string, std::shared_ptr<station_ats>> stations; ///< map of station names to station objects
   mutable std::shared_mutex mutex_;
-  const bool verbose = false; //!< verbose output
+  const bool verbose = false; ///< verbose output
 };
 
 class command_line_options_ats2atss {
@@ -556,15 +554,15 @@ public:
     //   std::exit(0);
     // }
   }
-  std::string survey_path_ats;       //!< Path to the input survey directory
-  std::string survey_tree_path;      //!< Path to the output survey tree directory
-  std::string in_directory;          //!< Input directory path for a quick and dirty conversion, together with out_directory
-  std::string out_directory;         //!< Output directory path for a quick and dirty conversion, together with in_directory
-  bool verbose = false;              //!< Enable verbose output
-  bool no_e = false;                 //!< Disable E channel processing
-  bool help = false;                 //!< Show help message
-  std::vector<std::string> stations; //!< List of input stations to process
-  size_t start_run = 0;              //!< Start run number for processing, 0 indicates no specific start run
+  std::string survey_path_ats;       ///< Path to the input survey directory
+  std::string survey_tree_path;      ///< Path to the output survey tree directory
+  std::string in_directory;          ///< Input directory path for a quick and dirty conversion, together with out_directory
+  std::string out_directory;         ///< Output directory path for a quick and dirty conversion, together with in_directory
+  bool verbose = false;              ///< Enable verbose output
+  bool no_e = false;                 ///< Disable E channel processing
+  bool help = false;                 ///< Show help message
+  std::vector<std::string> stations; ///< List of input stations to process
+  size_t start_run = 0;              ///< Start run number for processing, 0 indicates no specific start run
 };
 
 #endif // ATS2ATSS_HPP

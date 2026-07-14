@@ -19,29 +19,23 @@
 #include "freqs.hpp"
 #include "mt_base.hpp"
 
-/**
- * @brief A class template for managing spectra. T is at least a std::vector<T> or std::vector<std::vector<T>>.
- *
- * <Ex, null> std::vector<std::vector<std::complex<double>> is the raw unstacked spectra for Ex.
- * <Hx, null> std::vector<std::vector<std::complex<double>> is the raw unstacked spectra for Hx
- * <...> and so on for the other channels.
- *
- * YOU MAY HAVE - but this should be for (parzened)smoothed spectra
- * <Ex, Hy> std::vector<std::vector<std::complex<double>> that is a 1:1 multiplication.
- *
- * <Ex, Ex> std::vector<double> stacked auto spectra (real)
- * <Ex, Hy> std::vector<double> stacked cross spectra (real) ... complex makes no sense!
- */
+/// @brief A class template for managing spectra. T is at least a std::vector<T> or std::vector<std::vector<T>>.
+///
+/// <Ex, null> std::vector<std::vector<std::complex<double>> is the raw unstacked spectra for Ex.
+/// <Hx, null> std::vector<std::vector<std::complex<double>> is the raw unstacked spectra for Hx
+/// <...> and so on for the other channels.
+///
+/// YOU MAY HAVE - but this should be for (parzened)smoothed spectra
+/// <Ex, Hy> std::vector<std::vector<std::complex<double>> that is a 1:1 multiplication.
+///
+/// <Ex, Ex> std::vector<double> stacked auto spectra (real)
+/// <Ex, Hy> std::vector<double> stacked cross spectra (real) ... complex makes no sense!
 
-/*!
- * @def spc<double> stores a std::shared_ptr<std::vector<T>>, e.g. stacked results
- */
+/// @def spc<double> stores a std::shared_ptr<std::vector<T>>, e.g. stacked results
 template <typename T>
 struct is_std_vector : std::false_type {};
 
-/*!
- * @def spc<std::vector<std::complex<double>>> stores a std::shared_ptr<std::vector<std::complex<double>>>, so a vector of shared pointers, each pointing to a vector of complex<double>.
- */
+/// @def spc<std::vector<std::complex<double>>> stores a std::shared_ptr<std::vector<std::complex<double>>>, so a vector of shared pointers, each pointing to a vector of complex<double>.
 /// @brief Template specialization that identifies std::vector types
 ///
 /// This is a template specialization of the `is_std_vector` type trait that matches
@@ -78,44 +72,42 @@ struct is_std_vector<std::vector<U, Alloc>> : std::true_type {};
 // first channel can never be null!
 // vector can never be null!
 template <typename T>
-/*!
- * @class spc_base
- * @brief Template base class for storing and managing spectral data associated with channel pairs.
- *
- * @tparam T The type of spectral data stored. Can be:
- *           - std::vector<double> for real amplitude spectra (uses .datfa extension)
- *           - std::vector<std::complex<double>> for complex spectra (uses .datfc extension)
- *           - std::vector<std::vector<T>> for multiple time slices of spectra
- *
- * @details This class inherits from std::map where:
- *          - Key: pair of channel shared pointers (chan1, chan2)
- *            - For single channel spectra: (chan1, nullptr)
- *            - For auto spectra: (chan1, chan1)
- *            - For cross spectra: (chan1, chan2) where chan1 ≠ chan2
- *          - Value: shared pointer to vector of spectral data
- *
- * @note Thread-safe: All public methods use read/write locks via std::shared_mutex
- * @note The class supports both stacked (averaged) spectra and time-sliced spectra
- * @note Channel order matters for cross spectra: <Hx,Hy> is treated differently from <Hy,Hx>
- *
- * @section usage Usage Examples
- * @code
- * // Create a spectra container for complex data
- * spc_base<std::vector<std::complex<double>>> spectra;
- *
- * // Add a spectrum
- * auto chan1 = std::make_shared<channel>("Ex", false, false);
- * auto data = std::make_shared<std::vector<std::complex<double>>>(1024);
- * spectra.add_spectra(chan1, nullptr, data);
- *
- * // Generate auto and cross spectra channel pairs
- * auto auto_pairs = spectra.generate_auto_spectra_channels();
- * auto cross_pairs = spectra.generate_cross_spectra_channels();
- * @endcode
- *
- * @see channel
- * @see fftw_freqs
- */
+/// @class spc_base
+/// @brief Template base class for storing and managing spectral data associated with channel pairs.
+///
+/// @tparam T The type of spectral data stored. Can be:
+///           - std::vector<double> for real amplitude spectra (uses .datfa extension)
+///           - std::vector<std::complex<double>> for complex spectra (uses .datfc extension)
+///           - std::vector<std::vector<T>> for multiple time slices of spectra
+///
+/// @details This class inherits from std::map where:
+///          - Key: pair of channel shared pointers (chan1, chan2)
+///            - For single channel spectra: (chan1, nullptr)
+///            - For auto spectra: (chan1, chan1)
+///            - For cross spectra: (chan1, chan2) where chan1 ≠ chan2
+///          - Value: shared pointer to vector of spectral data
+///
+/// @note Thread-safe: All public methods use read/write locks via std::shared_mutex
+/// @note The class supports both stacked (averaged) spectra and time-sliced spectra
+/// @note Channel order matters for cross spectra: <Hx,Hy> is treated differently from <Hy,Hx>
+///
+/// @section usage Usage Examples
+/// @code
+/// // Create a spectra container for complex data
+/// spc_base<std::vector<std::complex<double>>> spectra;
+///
+/// // Add a spectrum
+/// auto chan1 = std::make_shared<channel>("Ex", false, false);
+/// auto data = std::make_shared<std::vector<std::complex<double>>>(1024);
+/// spectra.add_spectra(chan1, nullptr, data);
+///
+/// // Generate auto and cross spectra channel pairs
+/// auto auto_pairs = spectra.generate_auto_spectra_channels();
+/// auto cross_pairs = spectra.generate_cross_spectra_channels();
+/// @endcode
+///
+/// @see channel
+/// @see fftw_freqs
 class spc_base : public std::map<std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>>, std::shared_ptr<std::vector<T>>> {
 public:
   spc_base() : std::map<std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>>, std::shared_ptr<std::vector<T>>>() {
@@ -135,26 +127,22 @@ public:
 
   // ADD OR MOVE SPECTRA with V E C T O R   D A T A
 
-  /*!
-   * @brief wrapper for @ref add_spectra_no_lock that acquires the mutex for writing
-
-   */
+  /// @brief wrapper for @ref add_spectra_no_lock that acquires the mutex for writing
+  ///
   void add_spectra(const std::shared_ptr<channel> &chan1, const std::shared_ptr<channel> &chan2, std::shared_ptr<std::vector<T>> spectra, const bool move_spc = false) {
     std::unique_lock lock(mutex_);
     add_spectra_no_lock(chan1, chan2, spectra, move_spc);
   }
 
-  /*!
-   * @brief  overload for two strings
-   * @param name_in_1 creates channel 1
-   * @param is_remote creates channel 1
-   * @param is_emap creates channel 1
-   * @param name_in_2 creates channel 2 if not EMPTY
-   * @param is_remote_2 creates channel 2 if not EMPTY
-   * @param is_emap_2 creates channel 2 if not EMPTY
-   * @param spectra shared pointer to the spectra vector
-   * @param move_spc move instead of copy
-   */
+  /// @brief  overload for two strings
+  /// @param name_in_1 creates channel 1
+  /// @param is_remote creates channel 1
+  /// @param is_emap creates channel 1
+  /// @param name_in_2 creates channel 2 if not EMPTY
+  /// @param is_remote_2 creates channel 2 if not EMPTY
+  /// @param is_emap_2 creates channel 2 if not EMPTY
+  /// @param spectra shared pointer to the spectra vector
+  /// @param move_spc move instead of copy
   void add_spectra(const std::string &name_in_1, const bool is_remote, const bool is_emap, const std::string &name_in_2, const bool is_remote_2, const bool is_emap_2, std::shared_ptr<std::vector<T>> spectra, const bool move_spc = false) {
     std::unique_lock lock(mutex_);
     auto chan1 = std::make_shared<channel>(name_in_1, is_remote, is_emap);
@@ -165,10 +153,8 @@ public:
     add_spectra_no_lock(chan1, chan2, spectra, move_spc);
   }
 
-  /*!
-   * @brief moves a spectra object OUT OFF A CHANNEL; is is e.g. of type std::vector<std::complex<double>>.
-   * @param chan1
-   */
+  /// @brief moves a spectra object OUT OFF A CHANNEL; is is e.g. of type std::vector<std::complex<double>>.
+  /// @param chan1
   void move_spectra(const std::shared_ptr<channel> &chan1) {
     std::unique_lock lock(mutex_);
     if (chan1 == nullptr) {
@@ -184,12 +170,10 @@ public:
 
   // P R E P A R E   S P E C T R A   and CREATE an empty vector to be filled from outside
 
-  /*!
-   * @brief prepares an auto (self-paired) or cross (two different channels) spectrum; CREATES an EMPTY VECTOR
-   * @param chan_pair (same, same) for auto, (same, different) for cross; ORDER DOES MATTER!!!
-   * @details in the sense of math the order may not matter, when finding a mane <Hx,Hy> is different from <Hy,Hx>.
-   * @details this is most likely a target to be filled as a result of multiplication or stacking.
-   */
+  /// @brief prepares an auto (self-paired) or cross (two different channels) spectrum; CREATES an EMPTY VECTOR
+  /// @param chan_pair (same, same) for auto, (same, different) for cross; ORDER DOES MATTER!!!
+  /// @details in the sense of math the order may not matter, when finding a mane <Hx,Hy> is different from <Hy,Hx>.
+  /// @details this is most likely a target to be filled as a result of multiplication or stacking.
   void prepare_ac_cross_spectra(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> chan_pair) {
     std::unique_lock lock(mutex_);
     auto chan1 = chan_pair.first;
@@ -208,12 +192,10 @@ public:
     }
   }
 
-  /*!
-   * @brief get a vector of all possible auto spectra channels, that is all channels self-paired
-   * @details this is most likely a source spectra
-   * @param verbose
-   * @return
-   */
+  /// @brief get a vector of all possible auto spectra channels, that is all channels self-paired
+  /// @details this is most likely a source spectra
+  /// @param verbose
+  /// @return
   std::vector<std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>>> generate_auto_spectra_channels(const bool verbose = false) const {
     std::shared_lock lock(mutex_);
     // get all unique channels from ch_map and may self-paired
@@ -236,13 +218,11 @@ public:
     return auto_spectra_channels;
   }
 
-  /*!
-   * @brief get a vector of all possible cross spectra channels, that is all combinations of two different channels; we do not include self-paired channels; ORDER DOES MATTER!!!
-   * @details in the sense of math the order may not matter, when finding a mane <Hx,Hy> is different from <Hy,Hx>.
-   * @details this is most likely a source spectra
-   * @param verbose
-   * @return
-   */
+  /// @brief get a vector of all possible cross spectra channels, that is all combinations of two different channels; we do not include self-paired channels; ORDER DOES MATTER!!!
+  /// @details in the sense of math the order may not matter, when finding a mane <Hx,Hy> is different from <Hy,Hx>.
+  /// @details this is most likely a source spectra
+  /// @param verbose
+  /// @return
   std::vector<std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>>> generate_cross_spectra_channels(const bool verbose = false) const {
     std::shared_lock lock(mutex_);
     // get all unique channels from ch_map and may  cross paired, NOT self-paired
@@ -322,11 +302,9 @@ public:
     return channel_pairs;
   }
 
-  /*!
-   * @brief Retrieve the spectra vector for a given channel pair. It also can be <Ex, null> for single channel spectra
-   * @param chan_pair Pair of channels to search for.
-   * @return A shared pointer to the spectra vector.
-   */
+  /// @brief Retrieve the spectra vector for a given channel pair. It also can be <Ex, null> for single channel spectra
+  /// @param chan_pair Pair of channels to search for.
+  /// @return A shared pointer to the spectra vector.
   std::shared_ptr<std::vector<T>> get_spectra(std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> chan_pair) const {
     std::shared_lock lock(mutex_);
     return get_spectra_no_lock(chan_pair);
@@ -360,29 +338,23 @@ public:
     }
   }
 
-  /*!
-   * @brief Check if the type T is a vector. This is true if T is std::vector<U> for some U, but not if T is std::vector<std::vector<U>>.
-   * @return true if T is a vector of non-vector type, false otherwise, a simple vector<T>
-   */
+  /// @brief Check if the type T is a vector. This is true if T is std::vector<U> for some U, but not if T is std::vector<std::vector<U>>.
+  /// @return true if T is a vector of non-vector type, false otherwise, a simple vector<T>
   bool is_vector() const {
     std::shared_lock lock(mutex_);
     return is_vector_no_lock();
   }
 
-  /*!
-   * @brief Check if the type T is a vector of vectors. This is true if T is std::vector<std::vector<U>> for some U.
-   * @return true if T is a vector of vectors, false otherwise.
-   */
+  /// @brief Check if the type T is a vector of vectors. This is true if T is std::vector<std::vector<U>> for some U.
+  /// @return true if T is a vector of vectors, false otherwise.
   bool is_vector_of_vectors() const {
     std::shared_lock lock(mutex_);
     return is_vector_of_vectors_no_lock();
   }
 
-  /*!
-   * @brief a) get the amount of spectra types like <Ex,Ey> ... <Hy,Hz>, b) Get the size of the stacked spectra, like 1024 or 4096 which is also internally paired to the frequencies.
-   * @details use the first number also for unstacked raw spectra ... the convention is also like <Ex, null> or <Hx, Hz>. Take the FIRST number only!
-   * @return a pair of the size of the map (number of spectra types) and the size of the vector (number of frequencies)
-   */
+  /// @brief a) get the amount of spectra types like <Ex,Ey> ... <Hy,Hz>, b) Get the size of the stacked spectra, like 1024 or 4096 which is also internally paired to the frequencies.
+  /// @details use the first number also for unstacked raw spectra ... the convention is also like <Ex, null> or <Hx, Hz>. Take the FIRST number only!
+  /// @return a pair of the size of the map (number of spectra types) and the size of the vector (number of frequencies)
   std::pair<size_t, size_t> get_size_stacked() const {
     std::shared_lock lock(mutex_);
     if (this->empty()) {
@@ -395,10 +367,8 @@ public:
     return std::make_pair(this->size(), this->begin()->second->size());
   }
 
-  /*!
-   * @brief a) get the size of the outer vector, that is for example 60 stacks for 60 time segments, and inner size, that is for example 1024 frequencies; throw an exception if the data type is not a vector of vectors
-   * @return number of outer slices (nstacks) and inner size (number of frequencies)
-   */
+  /// @brief a) get the size of the outer vector, that is for example 60 stacks for 60 time segments, and inner size, that is for example 1024 frequencies; throw an exception if the data type is not a vector of vectors
+  /// @return number of outer slices (nstacks) and inner size (number of frequencies)
   std::pair<size_t, size_t> get_size_slices() const {
     std::shared_lock lock(mutex_);
     if (this->empty()) {
@@ -487,11 +457,9 @@ public:
     }
   }
 
-  /*!
-   * @brief save e.g. stacked amplitude spectra to ascii files.
-   * @param top_dir e.g. the run_NNN directory BELOW the station directory
-   * @param create create e.g. the run_NNN directory if it does not exist. Normally, the directory should already exist, because that is a tree.
-   */
+  /// @brief save e.g. stacked amplitude spectra to ascii files.
+  /// @param top_dir e.g. the run_NNN directory BELOW the station directory
+  /// @param create create e.g. the run_NNN directory if it does not exist. Normally, the directory should already exist, because that is a tree.
   void save_ascii(const std::filesystem::path &top_dir, const bool create = false) const {
     std::shared_lock lock(mutex_);
     if (is_vector_of_vectors_no_lock()) {
@@ -550,10 +518,8 @@ public:
       fft_freqs->save(fft_freq_file);
     }
   }
-  /*!
-   * @brief Set the ASCII file extension for saving spectra.
-   * @param extension The file extension to set (e.g., "datfa" or "datfc")
-   */
+  /// @brief Set the ASCII file extension for saving spectra.
+  /// @param extension The file extension to set (e.g., "datfa" or "datfc")
   void set_ascii_extension(const std::string &extension) {
     std::unique_lock lock(mutex_);
     if (extension.empty()) {
@@ -578,17 +544,15 @@ public:
   }
 
 private:
-  mutable std::shared_mutex mutex_;      //!< Mutex for thread-safe access to the spectra map.
-  std::filesystem::path ascii_extension; //!< The file extension for ASCII files (e.g., ".datfa" or ".datfc").
+  mutable std::shared_mutex mutex_;      ///< Mutex for thread-safe access to the spectra map.
+  std::filesystem::path ascii_extension; ///< The file extension for ASCII files (e.g., ".datfa" or ".datfc").
 
-  /*!
-   * @brief Add spectra to the map without acquiring the mutex. This function assumes that the caller has already acquired the appropriate lock (unique_lock for writing).
-   * @param chan1 The first channel.
-   * @param chan2 The second channel.
-   * @param spectra The spectra to add.
-   * @param move_spc Whether to move the spectra. If true, the input shared pointer will be reset after moving the spectra into the map.
-   * @throws std::runtime_error if chan1 is nullptr, if spectra is not a shared pointer to a vector, or if a spectrum with the same channel(s) already exists in the map.
-   */
+  /// @brief Add spectra to the map without acquiring the mutex. This function assumes that the caller has already acquired the appropriate lock (unique_lock for writing).
+  /// @param chan1 The first channel.
+  /// @param chan2 The second channel.
+  /// @param spectra The spectra to add.
+  /// @param move_spc Whether to move the spectra. If true, the input shared pointer will be reset after moving the spectra into the map.
+  /// @throws std::runtime_error if chan1 is nullptr, if spectra is not a shared pointer to a vector, or if a spectrum with the same channel(s) already exists in the map.
   void add_spectra_no_lock(const std::shared_ptr<channel> &chan1, const std::shared_ptr<channel> &chan2, std::shared_ptr<std::vector<T>> spectra, const bool move_spc) {
     if (chan1 == nullptr) {
       throw std::runtime_error("spc_base::add_spectra: chan1 is nullptr");
@@ -655,11 +619,9 @@ private:
     return false; // should never reach here
   }
 
-  /*!
-   * @brief find a spectrum by channel pair
-   * @param chan_pair pair of channels to search for
-   * @return const_iterator to the map entry, or end() if not found
-   */
+  /// @brief find a spectrum by channel pair
+  /// @param chan_pair pair of channels to search for
+  /// @return const_iterator to the map entry, or end() if not found
   typename std::map<std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>>, std::shared_ptr<std::vector<T>>>::const_iterator find(const std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>> &chan_pair) const {
     for (auto it = this->begin(); it != this->end(); ++it) {
       const auto &existing_chan1 = it->first.first;

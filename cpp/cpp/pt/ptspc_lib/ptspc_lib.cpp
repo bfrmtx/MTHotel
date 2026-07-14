@@ -441,7 +441,7 @@ void ptspc_lib::run_info_console() {
 }
 
 void ptspc_lib::stack_ac_spectra() {
-  //!< @todo should I use high res coherence and noise?
+  ///< @todo should I use high res coherence and noise?
   for (auto &run : runs) {
     std::cout << "setting auto- and cross- spectra ";
     for (auto &ac : auto_cross_spectra_names) {

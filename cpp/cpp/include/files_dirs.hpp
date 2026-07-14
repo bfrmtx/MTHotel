@@ -38,12 +38,10 @@ const auto no_measdir_filter = [](const std::filesystem::path &p) -> bool {
   return p.stem().generic_string().find("Sub") != std::string::npos;
 };
 
-/*!
- * @brief
- * @tparam T in or so
- * @param v vector like 1 3 4 5
- * @return first gap, that would be 2 in this case
- */
+/// @brief
+/// @tparam T in or so
+/// @param v vector like 1 3 4 5
+/// @return first gap, that would be 2 in this case
 template <typename T>
 T first_gap(std::vector<T> &v) {
   // Handle the special case of an empty vector.  Return 1.
@@ -63,11 +61,9 @@ T first_gap(std::vector<T> &v) {
   return 1 + *i;
 }
 
-/*!
- * \brief scan_runs returns the first free number of run_001 ... run_003, run_004
- * \param station_dir
- * \return here it would be 2
- */
+/// \brief scan_runs returns the first free number of run_001 ... run_003, run_004
+/// \param station_dir
+/// \return here it would be 2
 inline size_t scan_runs(const std::filesystem::path &station_dir) {
   std::vector<size_t> iruns;
   for (const auto &entry : std::filesystem::directory_iterator(station_dir)) {
@@ -83,11 +79,9 @@ inline size_t scan_runs(const std::filesystem::path &station_dir) {
   return fdirs::first_gap(iruns);
 }
 
-/*!
- * @brief return the highest run number in the station directory + 1
- * @param station_dir
- * @return
- */
+/// @brief return the highest run number in the station directory + 1
+/// @param station_dir
+/// @return
 inline size_t scan_runs_high(const std::filesystem::path &station_dir) {
   std::vector<size_t> iruns;
   for (const auto &entry : std::filesystem::directory_iterator(station_dir)) {
@@ -136,14 +130,12 @@ inline void CopyRecursive(const std::filesystem::path &src, const std::filesyste
     std::cout << e.what();
   }
 }
-/*!
- * @brief saves two OR three column binary; e.g. f and amplitude, f and complex, f, amplitude and phase
- * @tparam T
- * @param filename
- * @param freqs
- * @param amplitudes_or_complex
- * @param extra - e.g. phase if needed, then amplitudes_or_complex should be REAL numbers
- */
+/// @brief saves two OR three column binary; e.g. f and amplitude, f and complex, f, amplitude and phase
+/// @tparam T
+/// @param filename
+/// @param freqs
+/// @param amplitudes_or_complex
+/// @param extra - e.g. phase if needed, then amplitudes_or_complex should be REAL numbers
 template <typename T>
 inline void save_vector_to_bin_f(const std::filesystem::path &filename, const std::vector<double> &freqs, const std::vector<T> &amplitudes_or_complex, const std::optional<std::vector<double>> &e_g_phase = std::nullopt) {
   // first check that sizes match

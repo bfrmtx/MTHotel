@@ -32,17 +32,15 @@
 #include <fftw3.h>
 using jsn = nlohmann::ordered_json;
 
-/**
- * @file atss.h
- * @brief provides the atss format and the JSON description of the atss format and the timer class
- */
+/// @file atss.h
+/// @brief provides the atss format and the JSON description of the atss format and the timer class
 
 // forward declaration of stats struct, needed in tsplotter
 struct stats {
-  size_t wl = 1024; //!< window length of FFT, in case of zero padding this is more than rl
-  size_t rl = 1024; //!< window length and range length
+  size_t wl = 1024; ///< window length of FFT, in case of zero padding this is more than rl
+  size_t rl = 1024; ///< window length and range length
   size_t max_samples = 0;
-  std::pair<int64_t, int64_t> read_pos{0, 0}; //!< read sample position in the file, start ... < end; shared between all channels
+  std::pair<int64_t, int64_t> read_pos{0, 0}; ///< read sample position in the file, start ... < end; shared between all channels
   bool detrend = false;
   bool is_locked = false;
   bool show_spectra = false;
@@ -50,38 +48,30 @@ struct stats {
   bool cal_on = false;
 };
 
-/*!
- * \brief The p_timer class allows date functions with fractions of seconds
- * remind: 12:00:00.0001 is maybe a bad start time! when ever possible, shift your samples so that you get full seconds
- * @details I HAVE THE CHOICE : START TIME AT FULL SECOND AND COMPATIBLE WITH SECONDS SINCE 1970 or faulty interfaces
- * I decided to use the full second, so we have no problems with seconds since 1970 with others
- * I must deep think about FIR filters at long periods, because they are odd.
- */
+/// \brief The p_timer class allows date functions with fractions of seconds
+/// remind: 12:00:00.0001 is maybe a bad start time! when ever possible, shift your samples so that you get full seconds
+/// @details I HAVE THE CHOICE : START TIME AT FULL SECOND AND COMPATIBLE WITH SECONDS SINCE 1970 or faulty interfaces
+/// I decided to use the full second, so we have no problems with seconds since 1970 with others
+/// I must deep think about FIR filters at long periods, because they are odd.
 
 class p_timer {
 
 public:
-  /*!
-   * \brief p_timer empty constructor
-   */
+  /// \brief p_timer empty constructor
   p_timer() = default;
 
-  /*!
-   * \brief p_timer default constructor
-   * \param datetime
-   * \param sample_rate
-   * \param fracs
-   */
+  /// \brief p_timer default constructor
+  /// \param datetime
+  /// \param sample_rate
+  /// \param fracs
   p_timer(const std::string &datetime, const double &sample_rate, double &fracs) {
     this->set_datetime_sample_rate_fracs(datetime, sample_rate, fracs);
   }
 
-  /*!
-   * \brief set_datetime_sample_rate_fracs
-   * \param datetime ISO string like 2009-08-20T13:22:01 NOT 2009-08-20T13:22:01.0034
-   * \param sample_rate in Hz
-   * \param fracs like 0.0034
-   */
+  /// \brief set_datetime_sample_rate_fracs
+  /// \param datetime ISO string like 2009-08-20T13:22:01 NOT 2009-08-20T13:22:01.0034
+  /// \param sample_rate in Hz
+  /// \param fracs like 0.0034
   void set_datetime_sample_rate_fracs(const std::string &datetime, const double &sample_rate, const double &fracs) {
     this->tt = mstr::iso8601_to_time_t(datetime);
     this->sample_rate = sample_rate;
@@ -91,10 +81,8 @@ public:
       this->fracs = fracs;
   }
 
-  /*!
-   * \brief p_timer copy constructor
-   * \param rhs p_timer
-   */
+  /// \brief p_timer copy constructor
+  /// \param rhs p_timer
   p_timer(const p_timer &rhs) {
     this->tt = rhs.tt;
     this->fracs = rhs.fracs;
@@ -103,10 +91,8 @@ public:
     this->spos = rhs.spos;
   }
 
-  /*!
-   * \brief p_timer copy constructor from a shared pointer
-   * \param rhs
-   */
+  /// \brief p_timer copy constructor from a shared pointer
+  /// \param rhs
   p_timer(const std::shared_ptr<p_timer> &rhs) {
     if (rhs != nullptr) {
       this->tt = rhs->tt;
@@ -136,11 +122,9 @@ public:
     return *this;
   }
 
-  /*!
-   * @brief compares the START TIMES of two p_timer objects
-   * @param rhs
-   * @return true if earlier than rhs
-   */
+  /// @brief compares the START TIMES of two p_timer objects
+  /// @param rhs
+  /// @return true if earlier than rhs
   bool operator<(const p_timer &rhs) const {
     if (this->tt < rhs.tt)
       return true; // second diff
@@ -149,11 +133,9 @@ public:
     return (this->fracs < rhs.fracs); // else compare sub samples
   }
 
-  /*!
-   * @brief compares the START TIMES of two p_timer objects
-   * @param rhs
-   * @return true if later than rhs
-   */
+  /// @brief compares the START TIMES of two p_timer objects
+  /// @param rhs
+  /// @return true if later than rhs
   bool operator>(const p_timer &rhs) const {
     if (this->tt > rhs.tt)
       return true; // second diff
@@ -229,11 +211,9 @@ public:
     return *this;
   }
 
-  /*!
-   * @brief compares two p_timer objects for equality
-   * @param rhs
-   * @return true if equal START and STOP times !!!
-   */
+  /// @brief compares two p_timer objects for equality
+  /// @param rhs
+  /// @return true if equal START and STOP times !!!
   bool operator==(const p_timer &rhs) const {
     if (this->sample_rate != rhs.sample_rate)
       return false;
@@ -242,12 +222,10 @@ public:
     return ((this->tt == rhs.tt) && (this->fracs == rhs.fracs));
   }
 
-  /*!
-   * @brief returns the timer at the specified sample index
-   * @param nth_sample
-   * @details p_timer.tt AND p_timer.fracs are SET! For intermediate usage.
-   * @return timer at sample nth_sample or an empty timer if nth_sample is out of range;
-   */
+  /// @brief returns the timer at the specified sample index
+  /// @param nth_sample
+  /// @details p_timer.tt AND p_timer.fracs are SET! For intermediate usage.
+  /// @return timer at sample nth_sample or an empty timer if nth_sample is out of range;
   p_timer sample_time(const size_t nth_sample) const {
     p_timer nt(*this); // copy current timer
     if (nth_sample <= this->samples)
@@ -271,12 +249,10 @@ public:
     return (int64_t)pos1 + (int64_t)pos2;
   }
 
-  /*!
-   * @brief returns the p_timer at the start of the channel
-   * @details check that sample_rate and samples for both channels if you want to compare two channels !!! <br>
-   * use also if samples are still zero !!!
-   * @return start p_timer (sample 0)
-   */
+  /// @brief returns the p_timer at the start of the channel
+  /// @details check that sample_rate and samples for both channels if you want to compare two channels !!! <br>
+  /// use also if samples are still zero !!!
+  /// @return start p_timer (sample 0)
   p_timer p_start() const {
     return this->sample_time(0);
   }
@@ -309,11 +285,9 @@ public:
     return mstr::iso8601_time_t(nt.tt, iso_0_date_1_time_2, nt.fracs);
   }
 
-  /*!
-   * \brief start_datetime
-   * \param iso_0_date_1_time_2
-   * \return
-   */
+  /// \brief start_datetime
+  /// \param iso_0_date_1_time_2
+  /// \return
   std::string start_datetime(const int iso_0_date_1_time_2 = 0) const {
     auto nt = this->sample_time(0);
     return mstr::iso8601_time_t(nt.tt, iso_0_date_1_time_2, nt.fracs);
@@ -334,20 +308,18 @@ public:
     return ss.str();
   }
 
-  /*!
-   * \brief set_max_samples convinence function for tests ONLY, where you don't have a file or scanning
-   * \param max_samples
-   */
+  /// \brief set_max_samples convinence function for tests ONLY, where you don't have a file or scanning
+  /// \param max_samples
   void set_max_samples(const size_t max_samples) {
     this->samples = max_samples;
   }
 
   // 2007-12-24T18:21:00.01234 is probably not supported by C/C++/Python/PHP and others COMPLETELY, eg. fraction of seconds is a problem
-  time_t tt = 0;            //!< generates the ISO 8601 in UTC , as time_t seconds since 1970, can be negative in some implementaions
-  double fracs = 0.0;       //!< fractions of seconds from 0 ...0.9999... > 1 MHz may assumed as mstr::zero_frac
-  double sample_rate = 0.0; //!< in Hz always
-  size_t samples = 0;       //!< total samples of the file, e.g. CALCULATED from file size.
-  size_t spos = 0;          //!< sample pos
+  time_t tt = 0;            ///< generates the ISO 8601 in UTC , as time_t seconds since 1970, can be negative in some implementaions
+  double fracs = 0.0;       ///< fractions of seconds from 0 ...0.9999... > 1 MHz may assumed as mstr::zero_frac
+  double sample_rate = 0.0; ///< in Hz always
+  size_t samples = 0;       ///< total samples of the file, e.g. CALCULATED from file size.
+  size_t spos = 0;          ///< sample pos
 };
 
 //
@@ -358,37 +330,29 @@ public:
 //
 //
 
-/*!
- * \brief The channel class is the FILENAME part of the atss format consisting of binary .atss, JSON .json
- * the tags of the filename are NOT repeated in the JSON
- * For more information, visit: https://example.com/documentation
- * A channel also need all information to be treated as unique identifier.
- */
+/// \brief The channel class is the FILENAME part of the atss format consisting of binary .atss, JSON .json
+/// the tags of the filename are NOT repeated in the JSON
+/// For more information, visit: https://example.com/documentation
+/// A channel also need all information to be treated as unique identifier.
 class channel {
 
 public:
-  /*!
-   * \brief channel create an empty (unusable) channel
-   */
+  /// \brief channel create an empty (unusable) channel
   channel() {
   }
 
-  /*!
-   * @brief sets a channel from a string like Ex, Ey, Hx, Hy, Hz as a placeholder in spectra classes.
-   * @param channel_type
-   * @param is_remote
-   * @param is_emap
-   */
+  /// @brief sets a channel from a string like Ex, Ey, Hx, Hy, Hz as a placeholder in spectra classes.
+  /// @param channel_type
+  /// @param is_remote
+  /// @param is_emap
   channel(const std::string &channel_type, const bool is_remote = false, const bool is_emap = false) {
     this->set_channel_type(channel_type);
     this->is_remote = is_remote;
     this->is_emap = is_emap;
   }
 
-  /*!
-   * @brief copy constructor
-   * @param rhs is a shared pointer to a channel.
-   */
+  /// @brief copy constructor
+  /// @param rhs is a shared pointer to a channel.
   channel(const channel &rhs) : filepath_wo_ext(rhs.filepath_wo_ext), pt(rhs.pt), latitude(rhs.latitude), longitude(rhs.longitude), elevation(rhs.elevation), angle(rhs.angle),
                                 tilt(rhs.tilt), resistance(rhs.resistance), filter(rhs.filter), units(rhs.units), id(rhs.id), source(rhs.source), serial(rhs.serial),
                                 system(rhs.system), channel_no(rhs.channel_no), channel_type(rhs.channel_type), board(rhs.board), radio_filter(rhs.radio_filter),
@@ -413,10 +377,8 @@ public:
     }
   }
 
-  /*!
-   * @brief move constructor
-   * @param rhs
-   */
+  /// @brief move constructor
+  /// @param rhs
   channel(channel &&rhs) noexcept
       : filepath_wo_ext(std::move(rhs.filepath_wo_ext)), pt(std::move(rhs.pt)), cal(std::move(rhs.cal)), latitude(rhs.latitude), longitude(rhs.longitude),
         elevation(rhs.elevation), angle(rhs.angle), tilt(rhs.tilt), resistance(rhs.resistance), filter(std::move(rhs.filter)), units(std::move(rhs.units)),
@@ -624,11 +586,9 @@ public:
       this->fft_freqs.reset();
   }
 
-  /*!
-   * \brief channel most common minimum constructor
-   * \param channel_type like Ex, Ex, ... Hx ..
-   * \param sample_rate in Hz always
-   */
+  /// \brief channel most common minimum constructor
+  /// \param channel_type like Ex, Ex, ... Hx ..
+  /// \param sample_rate in Hz always
   channel(const std::string &channel_type, const double &sample_rate, const std::string &datetime = "1970-01-01T00:00:00", const double &fracs = 0.0) {
     this->set_channel_type(channel_type);
     this->set_sample_rate(sample_rate);
@@ -643,10 +603,8 @@ public:
     this->pt.fracs = fracs;
   }
 
-  /*!
-   * @brief copy constructor
-   * @param rhs
-   */
+  /// @brief copy constructor
+  /// @param rhs
   channel(const std::shared_ptr<channel> &rhs) {
 
     if (rhs != nullptr) {
@@ -686,10 +644,8 @@ public:
     }
   }
 
-  /*!
-   * \brief channel
-   * \param in_file the file name without extension, the extension is added automatically
-   */
+  /// \brief channel
+  /// \param in_file the file name without extension, the extension is added automatically
   channel(const std::filesystem::path &in_file) {
 
     std::filesystem::path json_file(in_file);
@@ -761,9 +717,7 @@ public:
     }
   }
 
-  /*!
-   * \brief set_filter this can be done ONLY after teh header is read!
-   */
+  /// \brief set_filter this can be done ONLY after teh header is read!
   void set_filter(const bool apply_corrections = false) {
     // split the filter string into a vector of strings
     std::vector<std::string> filters;
@@ -924,10 +878,8 @@ public:
     this->filter.pop_back(); // remove the last comma
   }
 
-  /*!
-   * @brief set_high_pas_filter need some overwrite for airborne systems
-   * @param filter
-   */
+  /// @brief set_high_pas_filter need some overwrite for airborne systems
+  /// @param filter
   void
   set_high_pas_filter(const ADU &filter) {
     this->high_pas_filter = filter;
@@ -945,21 +897,17 @@ public:
     this->filter.clear();
   }
 
-  /*!
-   * @brief Set the date and time
-   * @param datetime
-   * @param fracs here you can explicitly set the fractions of seconds, without control
-   */
+  /// @brief Set the date and time
+  /// @param datetime
+  /// @param fracs here you can explicitly set the fractions of seconds, without control
   void set_datetime(const std::string &datetime = "1970-01-01T00:00:00", const double &fracs = 0.0) {
     this->pt.tt = mstr::iso8601_to_time_t(datetime);
     this->pt.fracs = fracs;
   }
 
-  /*!
-   * @brief Set the Unix timestamp
-   * @param tt
-   * @param fracs here you can explicitly set the fractions of seconds, without control
-   */
+  /// @brief Set the Unix timestamp
+  /// @param tt
+  /// @param fracs here you can explicitly set the fractions of seconds, without control
   void set_unix_timestamp(const time_t tt, const double &fracs = 0) {
     this->pt.tt = tt;
     this->pt.fracs = fracs;
@@ -992,11 +940,9 @@ public:
     this->set_serial(ser);
     this->set_channel_no(channel_no);
   }
-  /*!
-   * \brief parse_json_filename - put it in a try block
-   * \param in_json_file
-   * \return
-   */
+  /// \brief parse_json_filename - put it in a try block
+  /// \param in_json_file
+  /// \return
   bool parse_json_filename(const std::filesystem::path &in_json_file) {
 
     if (!std::filesystem::exists(in_json_file)) {
@@ -1045,10 +991,8 @@ public:
     return atsf /= this->filename(".atss");
   }
 
-  /*!
-   * @brief Get the file path without extension
-   * @return The file path without extension; you can use filename
-   */
+  /// @brief Get the file path without extension
+  /// @return The file path without extension; you can use filename
   std::filesystem::path get_filepath_wo_ext() const {
     return this->filepath_wo_ext;
   }
@@ -1118,11 +1062,9 @@ public:
     this->is_emap = is_emap;
   }
 
-  /*!
-   * @brief returns the channel type, like Ex, Hx, Vx, etc.
-   * \note this is used for the filename, so it is always simplified
-   * @return ... Hx, RHx, Ex, EEx
-   */
+  /// @brief returns the channel type, like Ex, Hx, Vx, etc.
+  /// \note this is used for the filename, so it is always simplified
+  /// @return ... Hx, RHx, Ex, EEx
   std::string get_channel_type(const bool extra_indicator = false) const {
     if (!extra_indicator)
       return this->channel_type;
@@ -1133,11 +1075,9 @@ public:
     return this->channel_type;
   }
 
-  /*!
-   * @brief get the channel type classification of electric, magnetic, etc.
-   * @param type string like E, H, J or x, where x is a wildcard for x, y, z, U for Euler angles Pitch, Roll, Yaw
-   * @return
-   */
+  /// @brief get the channel type classification of electric, magnetic, etc.
+  /// @param type string like E, H, J or x, where x is a wildcard for x, y, z, U for Euler angles Pitch, Roll, Yaw
+  /// @return
   bool is_type(const std::string &type) const {
     if (type.size() > 1) {
       std::cerr << "channel::is_type: type string is too long, must be 1: " << type << std::endl;
@@ -1205,19 +1145,15 @@ public:
     this->channel_no = size_t(channel_no);
   }
 
-  /*!
-   * @brief get_channel_no returns the channel number as a size_t; that is faster than parsing the file name
-   * @return
-   */
+  /// @brief get_channel_no returns the channel number as a size_t; that is faster than parsing the file name
+  /// @return
   size_t get_channel_no() const {
     return this->channel_no;
   }
 
-  /*!
-   * @brief get_channel_no_str returns the channel number as a like 003 0r 012
-   * \note this is used for the filename, so it is always 3 digits
-   * @return
-   */
+  /// @brief get_channel_no_str returns the channel number as a like 003 0r 012
+  /// \note this is used for the filename, so it is always 3 digits
+  /// @return
   std::string get_channel_no_str(bool prepend_C = false, unsigned int FieldWidth = 3) const {
     if (prepend_C)
       return "C" + mstr::zero_fill_field(this->channel_no, FieldWidth);
@@ -1225,10 +1161,8 @@ public:
       return mstr::zero_fill_field(this->channel_no, FieldWidth);
   }
 
-  /*!
-   * @brief get_channel_no_pair returns the channel number and type as a pair of size_t and string for building a map;
-   * @return
-   */
+  /// @brief get_channel_no_pair returns the channel number and type as a pair of size_t and string for building a map;
+  /// @return
   std::pair<size_t, std::string> get_channel_no_type() const {
     return std::make_pair(this->channel_no, this->channel_type);
   }
@@ -1252,11 +1186,9 @@ public:
     return mstr::sample_rate_to_str_simple(this->pt.sample_rate, add_space, append_space);
   }
 
-  /*!
-   * \brief filename can be used to create files, use get_filepath_wo_ext if the file EXISTS
-   * \param extension_wo_dot
-   * \return a newly constructed filename, that is not checked for existence, so you can use it to create files; if you want to check for existence, use get_filepath_wo_ext and add the extension
-   */
+  /// \brief filename can be used to create files, use get_filepath_wo_ext if the file EXISTS
+  /// \param extension_wo_dot
+  /// \return a newly constructed filename, that is not checked for existence, so you can use it to create files; if you want to check for existence, use get_filepath_wo_ext and add the extension
   std::string filename(const std::string &extension_with_dot = "") const {
 
     if (this->pt.sample_rate < treat_as_null) {
@@ -1282,11 +1214,9 @@ public:
     return str;
   }
 
-  /*!
-   * @brief CONSTRUCTS a filename! better use get_filepath_wo_ext if the file exists.
-   * @param extension_with_dot
-   * @return filename
-   */
+  /// @brief CONSTRUCTS a filename! better use get_filepath_wo_ext if the file exists.
+  /// @param extension_with_dot
+  /// @return filename
   std::string get_filename(const std::string &extension_with_dot = "") const {
     return this->filename(extension_with_dot);
   }
@@ -1353,10 +1283,8 @@ public:
     std::filesystem::rename(atss_file_out, atss_file_in);
   }
 
-  /*!
-   * @brief trim cut samples from the end NO change of header needed
-   * @param cut_last_n_samples
-   */
+  /// @brief trim cut samples from the end NO change of header needed
+  /// @param cut_last_n_samples
   void rtrim(const size_t cut_last_n_samples) {
     if (!cut_last_n_samples)
       return;
@@ -1380,43 +1308,39 @@ public:
     }
   }
 
-  /*!
-   * @brief trim cut samples from begin and end and change header accordingly
-   * @param cut_first_n_samples
-   * @param cut_last_n_samples
-   */
+  /// @brief trim cut samples from begin and end and change header accordingly
+  /// @param cut_first_n_samples
+  /// @param cut_last_n_samples
   void trim(const size_t cut_first_n_samples, const size_t cut_last_n_samples) {
     this->ltrim(cut_first_n_samples);
     this->rtrim(cut_last_n_samples);
   }
 
-  std::filesystem::path filepath_wo_ext; //!< path without extension ... aka remember me
+  std::filesystem::path filepath_wo_ext; ///< path without extension ... aka remember me
   // *********** maybe add parent node from survey tree later **************
-  p_timer pt;                       //!< that is the timer class with fractions of seconds
-  std::shared_ptr<calibration> cal; //!< calibration class
+  p_timer pt;                       ///< that is the timer class with fractions of seconds
+  std::shared_ptr<calibration> cal; ///< calibration class
 
   // JSON values + datetime from p_timer
-  double latitude = 0.0;    //!< decimal degree such as 52.2443, ISO 6709, +/- 90
-  double longitude = 0.0;   //!< decimal degree such as 10.5594, ISO 6709, +/- 180
-  double elevation = 0.0;   //!< elevation in meter
-  double angle = 0.0;       //!< orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
-  double tilt = 0.0;        //!< angle positive down 90 = down, 0 = horizontal - in case it had been measured
-  double resistance = 0.0;  //!< e.g. contact resistance of the electrodes
-  std::string filter;       //!< comma separated string; system board name and filter like ADB-LF_LF-RF-1_LF-LP-4Hz which is the LF board with Radio Filter 1 and 4Hz low pass switched on
-  std::string units = "mV"; //!< for ADUs it will be mV H or whatever or scaled E mV/km
-  std::string id = "";      //!< optional id for the channel or station, like "deposit L1 S22"
-  std::string source = "";  //!< empty or indicate as, ns, ca, cp, tx or what ever
+  double latitude = 0.0;    ///< decimal degree such as 52.2443, ISO 6709, +/- 90
+  double longitude = 0.0;   ///< decimal degree such as 10.5594, ISO 6709, +/- 180
+  double elevation = 0.0;   ///< elevation in meter
+  double angle = 0.0;       ///< orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
+  double tilt = 0.0;        ///< angle positive down 90 = down, 0 = horizontal - in case it had been measured
+  double resistance = 0.0;  ///< e.g. contact resistance of the electrodes
+  std::string filter;       ///< comma separated string; system board name and filter like ADB-LF_LF-RF-1_LF-LP-4Hz which is the LF board with Radio Filter 1 and 4Hz low pass switched on
+  std::string units = "mV"; ///< for ADUs it will be mV H or whatever or scaled E mV/km
+  std::string id = "";      ///< optional id for the channel or station, like "deposit L1 S22"
+  std::string source = "";  ///< empty or indicate as, ns, ca, cp, tx or what ever
 
   // not content of JSON -  these are the elements of the filename, generated on the fly
-  std::size_t serial = 0;        //!< such as 1234 (no negative numbers please) for the system
-  std::string system = "";       //!< such as ADU-08e, XYZ (a manufacturer is not needed because the system indicates it)
-  std::size_t channel_no = 0;    //!< channel number - you can integrate EAMP stations as channels if the have the SAME!! timings
-  std::string channel_type = ""; //!< type such as Ex, Ey, Hx, Hy, Hz or currents like Jx, Jy, Jz or Pitch, Roll, Yaw or x, y, z or T for temperature
-  /*!
-   * sample_rate contains sample_rate. Unit: Hz (samples per second) - "Hz" or "s" will be appended while writing in real time
-   * the FILENAME contains a UNIT for better readability; you MUST have 256Hz (sample rate 256) OR 4s (sample rate 0.25);
-   * a "." in the FILENAME is possible on modern systems, 16.6666Hz is possible
-   */
+  std::size_t serial = 0;        ///< such as 1234 (no negative numbers please) for the system
+  std::string system = "";       ///< such as ADU-08e, XYZ (a manufacturer is not needed because the system indicates it)
+  std::size_t channel_no = 0;    ///< channel number - you can integrate EAMP stations as channels if the have the SAME!! timings
+  std::string channel_type = ""; ///< type such as Ex, Ey, Hx, Hy, Hz or currents like Jx, Jy, Jz or Pitch, Roll, Yaw or x, y, z or T for temperature
+  /// sample_rate contains sample_rate. Unit: Hz (samples per second) - "Hz" or "s" will be appended while writing in real time
+  /// the FILENAME contains a UNIT for better readability; you MUST have 256Hz (sample rate 256) OR 4s (sample rate 0.25);
+  /// a "." in the FILENAME is possible on modern systems, 16.6666Hz is possible
   ADU board = ADU::off;           // from enum class ADU
   ADU radio_filter = ADU::off;    // from enum class ADU
   ADU low_pas_filter = ADU::off;  // from enum class ADU
@@ -1427,31 +1351,31 @@ public:
   ADU mode = ADU::off;            // from enum class ADU, DIRECT mode
 
   std::string tmp_station;          // temporary station name, used for conversion
-  double tmp_lsb = 1.0;             //!< temporary lsb value, used for conversion
-  std::filesystem::path tmp_origin; //!< temporary origin path, used for conversion
-  std::filesystem::path tmp_xml;    //!< temporary xml file, used for conversion
+  double tmp_lsb = 1.0;             ///< temporary lsb value, used for conversion
+  std::filesystem::path tmp_origin; ///< temporary origin path, used for conversion
+  std::filesystem::path tmp_xml;    ///< temporary xml file, used for conversion
 
-  std::vector<double> ts_slice;                       //!< data slice in time domain, that is read length; mostly the same a window length, except for zero padding
-  std::vector<double> ts_slice_padded;                //!< data slice in time domain with zero padding, data from ts_slice WILL BE COPIED HERE
-  std::vector<double> ts_chunk;                       //!< if wl = 1024 and overlapping is 50%, ts_chunk is 512; when filter 32x wl = 471 and ts_chunk = 32
-  std::vector<std::complex<double>> spc_slice;        //!< data slice in spectral domain
-  std::vector<double> ampl_slice;                     //!< single spectra amplitude slice, e.g. for plotting
-  std::vector<double> ts_slice_inv;                   //!< data slice in time domain after ftt, calibration, inverse fft; always rl size, respectively wl ts_slice.
-  std::vector<size_t> sample_vector;                  //!< sample vector for the x-axis
-  size_t read_count = 0;                              //!< read count; increment this when you read a slice; reset to zero when you read a new file or change FFT
-  std::queue<std::vector<std::complex<double>>> qspc; //!< spectra queue
-  std::vector<std::vector<std::complex<double>>> spc; //!< spectra vector
-  std::vector<std::complex<double>> caldata;          //!< calibration data complex for performing the calibration
-  std::vector<double> caldata_f;                      //!< calibration data in frequency domain, tied with the calibration data;
-  double bw = 0.0;                                    //!< bandwidth of FFT
-  std::ifstream infile;                               //!< read binary data
-  std::ofstream outfile;                              //!< write binary data
-  fftw_plan plan = nullptr;                           //!< forward fftw plan (default)
-  fftw_plan plan_inv = nullptr;                       //!< inverse fftw plan
-  std::shared_ptr<fftw_freqs> fft_freqs;              //!< frequencies for FFT SHARE this pointer with other channels from the SAME RUN!
-  bool is_remote = false;                             //!< set this to true if the data is remote or you want this data to be treated as remote
-  bool is_emap = false;                               //!< set this to true if the data is from an EAMP station
-  std::pair<int64_t, int64_t> read_pos{0, 0};         //!< sample position in the file, so 0 and 1024 for rl = 1024
+  std::vector<double> ts_slice;                       ///< data slice in time domain, that is read length; mostly the same a window length, except for zero padding
+  std::vector<double> ts_slice_padded;                ///< data slice in time domain with zero padding, data from ts_slice WILL BE COPIED HERE
+  std::vector<double> ts_chunk;                       ///< if wl = 1024 and overlapping is 50%, ts_chunk is 512; when filter 32x wl = 471 and ts_chunk = 32
+  std::vector<std::complex<double>> spc_slice;        ///< data slice in spectral domain
+  std::vector<double> ampl_slice;                     ///< single spectra amplitude slice, e.g. for plotting
+  std::vector<double> ts_slice_inv;                   ///< data slice in time domain after ftt, calibration, inverse fft; always rl size, respectively wl ts_slice.
+  std::vector<size_t> sample_vector;                  ///< sample vector for the x-axis
+  size_t read_count = 0;                              ///< read count; increment this when you read a slice; reset to zero when you read a new file or change FFT
+  std::queue<std::vector<std::complex<double>>> qspc; ///< spectra queue
+  std::vector<std::vector<std::complex<double>>> spc; ///< spectra vector
+  std::vector<std::complex<double>> caldata;          ///< calibration data complex for performing the calibration
+  std::vector<double> caldata_f;                      ///< calibration data in frequency domain, tied with the calibration data;
+  double bw = 0.0;                                    ///< bandwidth of FFT
+  std::ifstream infile;                               ///< read binary data
+  std::ofstream outfile;                              ///< write binary data
+  fftw_plan plan = nullptr;                           ///< forward fftw plan (default)
+  fftw_plan plan_inv = nullptr;                       ///< inverse fftw plan
+  std::shared_ptr<fftw_freqs> fft_freqs;              ///< frequencies for FFT SHARE this pointer with other channels from the SAME RUN!
+  bool is_remote = false;                             ///< set this to true if the data is remote or you want this data to be treated as remote
+  bool is_emap = false;                               ///< set this to true if the data is from an EAMP station
+  std::pair<int64_t, int64_t> read_pos{0, 0};         ///< sample position in the file, so 0 and 1024 for rl = 1024
 
   void close_runtime_resources() {
     if (this->infile.is_open())
@@ -1493,12 +1417,10 @@ public:
     this->set_inv_fftw_plan();
   }
 
-  /*!
-   * \brief set_lat_lon_elev according to ISO 6709, +/- 90, +/- 180, elevation in meter
-   * \param lat
-   * \param lon
-   * \param elev
-   */
+  /// \brief set_lat_lon_elev according to ISO 6709, +/- 90, +/- 180, elevation in meter
+  /// \param lat
+  /// \param lon
+  /// \param elev
   void set_lat_lon_elev(const double &lat, const double &lon, const double elev = 0.) {
     this->latitude = lat;
     if (lon > 180.0)
@@ -1510,10 +1432,8 @@ public:
     this->elevation = elev;
   }
 
-  /*!
-   * \brief write_header
-   * \param jsn_cal the calibration part, in case you have a calibration object from outside
-   */
+  /// \brief write_header
+  /// \param jsn_cal the calibration part, in case you have a calibration object from outside
   std::filesystem::path write_header(const std::shared_ptr<calibration> &jsn_cal = nullptr) {
     jsn head;
     head["datetime"] = this->start_datetime();
@@ -1617,9 +1537,7 @@ public:
     return this->outfile.good();
   }
 
-  /*!
-   * @brief close_outfile (will be called by destructor)
-   */
+  /// @brief close_outfile (will be called by destructor)
   void close_outfile() {
     if (this->outfile.is_open())
       this->outfile.close();
@@ -1678,10 +1596,8 @@ public:
     file_dat.close();
   }
 
-  /*!
-   * \brief open_atss_read
-   * \return true in case of success, false else
-   */
+  /// \brief open_atss_read
+  /// \return true in case of success, false else
   bool open_atss_read() {
     bool ok = false;
 
@@ -1706,20 +1622,16 @@ public:
     return true;
   }
 
-  /*!
-   * @brief close_atss_read (will be called by destructor)
-   */
+  /// @brief close_atss_read (will be called by destructor)
   void close_atss_read() {
     if (this->infile.is_open())
       this->infile.close();
     this->read_count = 0;
   }
 
-  /*!
-   * @brief skip_samples move the file pointer sizeof(double) * samples (positive or negative); file must be open
-   * @param samples
-   * @return
-   */
+  /// @brief skip_samples move the file pointer sizeof(double) * samples (positive or negative); file must be open
+  /// @param samples
+  /// @return
   int64_t skip_samples(const int64_t &samples) {
     if (!samples)
       return this->infile.tellg();
@@ -1761,11 +1673,9 @@ public:
     return this->infile.tellg();
   }
 
-  /*!
-   * \brief read_data
-   * \param read_last_chunk
-   * \return file position or -1 in case of fail or unexpected end (-1 should NOT happen when read for fft)
-   */
+  /// \brief read_data
+  /// \param read_last_chunk
+  /// \return file position or -1 in case of fail or unexpected end (-1 should NOT happen when read for fft)
 
   int64_t read_data(const bool read_last_chunk = false, const std::shared_ptr<atmm> &sel = nullptr) {
     if (this->infile.is_open()) {
@@ -1909,11 +1819,9 @@ public:
     return this->ts_slice;
   }
 
-  /*!
-   * \brief read_all_fftw that includes the COMPLETE spectra inclusive DC part and Nyquist; executes this->plan and stores INSIDE channel
-   * \param read_last_chunk false for MT processing - last chunk has != read length (fft) size
-   * \param sel atmm selection vector 0 = not excluded, 1 excluded from reading / processing
-   */
+  /// \brief read_all_fftw that includes the COMPLETE spectra inclusive DC part and Nyquist; executes this->plan and stores INSIDE channel
+  /// \param read_last_chunk false for MT processing - last chunk has != read length (fft) size
+  /// \param sel atmm selection vector 0 = not excluded, 1 excluded from reading / processing
   void read_all_fftw(const bool read_last_chunk = false, const std::shared_ptr<atmm> &sel = nullptr) {
     int64_t reads = 0;
     // clear the queue
@@ -1968,10 +1876,8 @@ public:
     }
   }
 
-  /*!
-   * \brief ats_simple_stack_all
-   * \return non calibrated stacked complex spectra
-   */
+  /// \brief ats_simple_stack_all
+  /// \return non calibrated stacked complex spectra
   std::vector<std::complex<double>> ats_simple_stack_all(const std::shared_ptr<fftw_freqs> &fft_freqs, const bool bwincal = true) {
     std::vector<std::complex<double>> sa;
     sa.resize(this->qspc.front().size());
@@ -1992,11 +1898,9 @@ public:
     return sa;
   }
 
-  /*!
-   * \brief prepare_raw_spc converts the local queue to a vector spc AND scales with the window wincal and CALIBRATES!
-   * \param fft_freqs where the fft settings are stored; YOU MUST interpolate / extend the calibration to the same length as the FFT in ADVANCE
-   * \param bcal
-   */
+  /// \brief prepare_raw_spc converts the local queue to a vector spc AND scales with the window wincal and CALIBRATES!
+  /// \param fft_freqs where the fft settings are stored; YOU MUST interpolate / extend the calibration to the same length as the FFT in ADVANCE
+  /// \param bcal
   void prepare_raw_spc(const bool bcal = true, const bool syscal = true, const bool bwincal = true) {
     this->spc.reserve(this->qspc.size());
     size_t j = 0;
@@ -2175,11 +2079,9 @@ public:
   bool operator!=(const channel &rhs) const {
     return !(*this == rhs);
   }
-  /*!
-   * @brief creates a vector of: sensor _ serial _ channel_number (as C_NNN)
-   * @param append_under_score if true, appends an underscore at the very end
-   * @return
-   */
+  /// @brief creates a vector of: sensor _ serial _ channel_number (as C_NNN)
+  /// @param append_under_score if true, appends an underscore at the very end
+  /// @return
   std::deque<std::string> get_channel_tags(std::string &sample_rate_string, bool append_under_score = true) const {
     std::deque<std::string> tags;
     tags.emplace_back(this->get_sensor()); // sensor
@@ -2194,13 +2096,11 @@ public:
   }
 
 private:
-  /*!
-   * \brief read_bin binary core routine
-   * \param data data slice to read
-   * \param file ifstream
-   * \param read_last_chunk - false in case of fft, true incase you want to read all and the last data vector is smaller than the previous ones
-   * \return -1 in case of failure, else the sample position
-   */
+  /// \brief read_bin binary core routine
+  /// \param data data slice to read
+  /// \param file ifstream
+  /// \param read_last_chunk - false in case of fft, true incase you want to read all and the last data vector is smaller than the previous ones
+  /// \return -1 in case of failure, else the sample position
   int64_t read_bin(std::vector<double> &data, std::ifstream &file, const bool read_last_chunk = false) {
     // too much checking ?
     if (file.peek() == EOF) {
@@ -2263,10 +2163,8 @@ private:
     return this->read_pos.second;
   }
 
-  /*!
-   * @brief set_fftw_plan
-   * @param force_padded - this is for tsplotter, in order to have an independent copy of the ts_slice
-   */
+  /// @brief set_fftw_plan
+  /// @param force_padded - this is for tsplotter, in order to have an independent copy of the ts_slice
   void set_fftw_plan(bool force_padded = false) {
     if (this->fft_freqs == nullptr)
       throw std::runtime_error(std::string(__func__) + " :: no fft frequencies available");
@@ -2279,7 +2177,7 @@ private:
       this->plan = nullptr;
     }
     this->ts_slice.resize(this->fft_freqs->get_rl());  // need this always for reading rl of data
-    this->spc_slice.resize(this->fft_freqs->get_fl()); //!< get frequency lines, e.g. wl/2 +1 : rl 1024 -> 513
+    this->spc_slice.resize(this->fft_freqs->get_fl()); ///< get frequency lines, e.g. wl/2 +1 : rl 1024 -> 513
     if ((this->fft_freqs->get_rl() == this->fft_freqs->get_wl() && !force_padded)) {
       this->plan = fftw_plan_dft_r2c_1d(this->fft_freqs->get_wl(), &this->ts_slice[0], reinterpret_cast<fftw_complex *>(&this->spc_slice[0]), FFTW_ESTIMATE);
     }
@@ -2326,92 +2224,72 @@ ensure_channel_ptr(const std::shared_ptr<channel> &ptr, const char *ctx) {
  *
  */
 
-/*!
- * @brief lexicographical sort by channel filename, Ex is before Ey, Hx before Hy before Hz and so on
- */
+/// @brief lexicographical sort by channel filename, Ex is before Ey, Hx before Hy before Hz and so on
 static auto compare_channel_name_lt = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   ensure_channel_ptr(lhs, "compare_channel_name_lt");
   ensure_channel_ptr(rhs, "compare_channel_name_lt");
   return lhs->filename() < rhs->filename();
 };
 
-/*!
- * @brief returns true if lhs start time is less than rhs start time; using std::sort you get the earliest first
- */
+/// @brief returns true if lhs start time is less than rhs start time; using std::sort you get the earliest first
 static auto compare_channel_start_lt = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   ensure_channel_ptr(lhs, "compare_channel_start_lt");
   ensure_channel_ptr(rhs, "compare_channel_start_lt");
   return lhs->pt < rhs->pt;
 };
 
-/*!
- * @brief returns true if lhs start time is equal to rhs start time
- */
+/// @brief returns true if lhs start time is equal to rhs start time
 static auto compare_channel_start_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   ensure_channel_ptr(lhs, "compare_channel_start_eq");
   ensure_channel_ptr(rhs, "compare_channel_start_eq");
   return lhs->pt == rhs->pt;
 };
 
-/*!
- * @brief returns true if lhs sampling rate is equal to rhs sampling rate
- */
+/// @brief returns true if lhs sampling rate is equal to rhs sampling rate
 static auto compare_channel_sampling_rate_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   ensure_channel_ptr(lhs, "compare_channel_sampling_rate_eq");
   ensure_channel_ptr(rhs, "compare_channel_sampling_rate_eq");
   return (lhs->get_sample_rate() == rhs->get_sample_rate());
 };
 
-/*!
- * @brief returns true if lhs run directory is equal to rhs run directory, that is the parent dir ../run_xxxx/
- */
+/// @brief returns true if lhs run directory is equal to rhs run directory, that is the parent dir ../run_xxxx/
 static auto compare_channel_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   ensure_channel_ptr(lhs, "compare_channel_run_eq");
   ensure_channel_ptr(rhs, "compare_channel_run_eq");
   return (lhs->get_run_dir() == rhs->get_run_dir());
 };
 
-/*!
- * @brief returns true if lhs station directory is equal to rhs station directory. that is the parent, parent directory ../run_xxxx/station_yyyy/
- */
+/// @brief returns true if lhs station directory is equal to rhs station directory. that is the parent, parent directory ../run_xxxx/station_yyyy/
 static auto compare_channel_station_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   ensure_channel_ptr(lhs, "compare_channel_station_eq");
   ensure_channel_ptr(rhs, "compare_channel_station_eq");
   return (lhs->get_station_dir() == rhs->get_station_dir());
 };
 
-/*!
- * @brief returns true if lhs station directory and run directory are equal to rhs station directory and run directory. e.g. we are in the same station and same run
- */
+/// @brief returns true if lhs station directory and run directory are equal to rhs station directory and run directory. e.g. we are in the same station and same run
 static auto compare_channel_station_run_eq = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   ensure_channel_ptr(lhs, "compare_channel_station_run_eq");
   ensure_channel_ptr(rhs, "compare_channel_station_run_eq");
   return ((lhs->get_station_dir() == rhs->get_station_dir()) && (lhs->get_run_dir() == rhs->get_run_dir()));
 };
 
-/*!
- * @brief returns true if lhs start time and sample rate are equal to rhs start time and sample rate, but channel numbers are different
- */
+/// @brief returns true if lhs start time and sample rate are equal to rhs start time and sample rate, but channel numbers are different
 static auto same_run = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   ensure_channel_ptr(lhs, "same_run");
   ensure_channel_ptr(rhs, "same_run");
   return ((lhs->pt == rhs->pt) && (lhs->get_sample_rate() == rhs->get_sample_rate() && (lhs->get_channel_no() != rhs->get_channel_no())));
 };
 
-/*!
- * @brief returns true if lhs start time and sample rate are equal to rhs start time and sample rate, channel types and stop times are also equal
- */
+/// @brief returns true if lhs start time and sample rate are equal to rhs start time and sample rate, channel types and stop times are also equal
 static auto is_parallel_channel = [](const std::shared_ptr<channel> &lhs, const std::shared_ptr<channel> &rhs) -> bool {
   ensure_channel_ptr(lhs, "is_parallel_channel");
   ensure_channel_ptr(rhs, "is_parallel_channel");
   return ((lhs->pt == rhs->pt) && (lhs->get_sample_rate() == rhs->get_sample_rate() && (lhs->get_channel_type() == rhs->get_channel_type())));
 };
 
-/*!
- * @brief repair_run_files
- * @param channels vector of channels pointers to repair
- * @details throws an error if start time is not the same (serious problem!), perform a rtrim to the shortest length and make sure that all channels have the same number of samples
- */
+/// @brief repair_run_files
+/// @param channels vector of channels pointers to repair
+/// @details throws an error if start time is not the same (serious problem!), perform a rtrim to the shortest length and make sure that all channels have the same number of samples
 static size_t repair_run_files(std::vector<std::shared_ptr<channel>> &channels) {
   if (channels.size() < 2)
     return 0; // nothing to do
@@ -2450,13 +2328,11 @@ static std::string make_time_string_now() {
   return oss.str();
 }
 
-/*!
- * @brief make default channel with EFP-6 and MFS-06e; the calibration data is still empty!
- * @param chan an existing channel
- * @param sample_rate
- * @param channel_type Ex, Ey, Hx, Hy, Hz, T,
- * @param system default is ADU-08e
- */
+/// @brief make default channel with EFP-6 and MFS-06e; the calibration data is still empty!
+/// @param chan an existing channel
+/// @param sample_rate
+/// @param channel_type Ex, Ey, Hx, Hy, Hz, T,
+/// @param system default is ADU-08e
 static void make_channel(std::shared_ptr<channel> &chan, const double &sample_rate, const std::string &channel_type, const std::string &system = "ADU-08e") {
   if (chan == nullptr)
     throw std::runtime_error(std::string(__func__) + " :: channel is nullptr");

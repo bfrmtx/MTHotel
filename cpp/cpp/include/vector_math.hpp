@@ -67,13 +67,11 @@ std::vector<std::complex<T>> multiply_conj(const std::vector<std::complex<T>> &a
   return out;
 }
 
-/*!
- * @brief
- * @param cplx vector of complex numbers
- * @param ampl amplitude vector returned
- * @param phz phase vector returned
- * @param deg if true, phase is returned in degrees (not radians)
- */
+/// @brief
+/// @param cplx vector of complex numbers
+/// @param ampl amplitude vector returned
+/// @param phz phase vector returned
+/// @param deg if true, phase is returned in degrees (not radians)
 inline void cplx2ap(const std::vector<std::complex<double>> &cplx, std::vector<double> &ampl, std::vector<double> &phz, const bool deg = false) {
   if (!cplx.size())
     return;
@@ -102,13 +100,11 @@ inline void cplx2_vap(const std::vector<std::complex<double>> &cplx, std::vector
   cplx2ap(cplx, ampls.back(), phzs.back(), deg);
 }
 
-/*!
- * \brief sort_indices simulates a sort of v; assuming freq, ampl and phase,
- * you sort freq by index and use the return vector index for finally sorting freq, ampl and phase
- * keeping the triple (freq, ampl, phase) together, orderd by f
- * \param v vector to sort in future
- * \return vector of indices of v, presenting the sorted vector
- */
+/// \brief sort_indices simulates a sort of v; assuming freq, ampl and phase,
+/// you sort freq by index and use the return vector index for finally sorting freq, ampl and phase
+/// keeping the triple (freq, ampl, phase) together, orderd by f
+/// \param v vector to sort in future
+/// \return vector of indices of v, presenting the sorted vector
 template <typename T>
 std::vector<size_t> sort_indices(const std::vector<T> &v) {
 
@@ -122,13 +118,11 @@ std::vector<size_t> sort_indices(const std::vector<T> &v) {
   return idx;
 }
 
-/*!
- * \brief vector_from_indices - assume you sort freq and want to apply the result to ampl
- * keeping the triple (freq, ampl) together
- * \param idx index for re-arrange the vector
- * \param v
- * \return vector sorted by idx
- */
+/// \brief vector_from_indices - assume you sort freq and want to apply the result to ampl
+/// keeping the triple (freq, ampl) together
+/// \param idx index for re-arrange the vector
+/// \param v
+/// \return vector sorted by idx
 template <typename T>
 std::vector<T> vector_from_indices(const std::vector<size_t> &idx, const std::vector<T> &v) {
   std::vector<T> out;
@@ -166,11 +160,9 @@ std::vector<T> join_overlap(const std::vector<T> &lower, const std::vector<T> &h
   return out;
 }
 
-/*!
- * \brief absv
- * \param v vector<std::complex<double>>
- * \return vector<double> of absolute values
- */
+/// \brief absv
+/// \param v vector<std::complex<double>>
+/// \return vector<double> of absolute values
 template <typename T>
 std::vector<T> absv(const std::vector<std::complex<T>> &v) {
   std::vector<double> res(v.size());
@@ -203,14 +195,12 @@ T median(const std::vector<T> &v) {
   return med;
 }
 
-/*!
- * @brief calculate the median of a vector and take only a fraction of the data for the mean calculation;
- *        e.g. fraction_to_use = 0.5 means the median is calculated and the mean is calculated from the middle 50% of the data, so if you have 64 values, the mean is calculated from 16 to 48
- * @tparam T
- * @param v
- * @param fraction_to_use
- * @return
- */
+/// @brief calculate the median of a vector and take only a fraction of the data for the mean calculation;
+///        e.g. fraction_to_use = 0.5 means the median is calculated and the mean is calculated from the middle 50% of the data, so if you have 64 values, the mean is calculated from 16 to 48
+/// @tparam T
+/// @param v
+/// @param fraction_to_use
+/// @return
 template <typename T>
 T median_range_mean(const std::vector<T> &v, const double &fraction_to_use) {
 
@@ -266,11 +256,9 @@ inline double median_range_mean_cplx(const std::vector<std::complex<double>> &v,
   return sum;
 }
 
-/*!
- * \brief swap_vec_vec  a) v[stacks][f], b) v[f][stacks]
- * \param in
- * \return swapped a) v[f][stacks], b) v[stacks][f]
- */
+/// \brief swap_vec_vec  a) v[stacks][f], b) v[f][stacks]
+/// \param in
+/// \return swapped a) v[f][stacks], b) v[stacks][f]
 template <typename T>
 std::vector<std::vector<T>> swap_vec_vec(const std::vector<std::vector<T>> &in) {
 
@@ -289,12 +277,10 @@ std::vector<std::vector<T>> swap_vec_vec(const std::vector<std::vector<T>> &in) 
 
   return out;
 }
-/*!
- * \brief get_fslice; get a slice of a vector of vectors so in case of 4 stacks and 6 frequencies, out size is 4,  you get the 4 values of the 1st, 2nd ... 6th frequency
- * \param in vector[stacks][f_index]
- * \param f_index
- * \return vector[f] of stack length
- */
+/// \brief get_fslice; get a slice of a vector of vectors so in case of 4 stacks and 6 frequencies, out size is 4,  you get the 4 values of the 1st, 2nd ... 6th frequency
+/// \param in vector[stacks][f_index]
+/// \param f_index
+/// \return vector[f] of stack length
 template <typename T>
 std::vector<T> get_fslice(const std::vector<std::vector<T>> &in, const size_t f_index) {
   if (!in.size())
@@ -308,14 +294,12 @@ std::vector<T> get_fslice(const std::vector<std::vector<T>> &in, const size_t f_
   }
   return out;
 }
-/*!
- * @brief this is simply spoken an abs(vector) BUT we use abs (v * conj(v)) and sqrt it, to get the absolute value of a complex number
-   implemented for a vector of vectors
- * @tparam T
- * @param in
- * @param in2
- * @return
- */
+/// @brief this is simply spoken an abs(vector) BUT we use abs (v * conj(v)) and sqrt it, to get the absolute value of a complex number
+/// implemented for a vector of vectors
+/// @tparam T
+/// @param in
+/// @param in2
+/// @return
 template <typename T>
 std::vector<std::vector<double>> make_cross_sqrt_conj_abs(const std::vector<std::vector<T>> &in, const std::vector<std::vector<T>> &in2) {
   std::vector<std::vector<double>> out;
@@ -337,14 +321,12 @@ std::vector<std::vector<double>> make_cross_sqrt_conj_abs(const std::vector<std:
   }
   return out;
 }
-/*!
- * @brief this is simply spoken an abs(vector) BUT we use abs (v * conj(v)) and sqrt it, to get the absolute value of a complex number
-    implemented for a vector
- * @tparam T
- * @param in
- * @param in2
- * @return
- */
+/// @brief this is simply spoken an abs(vector) BUT we use abs (v * conj(v)) and sqrt it, to get the absolute value of a complex number
+/// implemented for a vector
+/// @tparam T
+/// @param in
+/// @param in2
+/// @return
 template <typename T>
 std::vector<double> make_cross_sqrt_conj_abs(const std::vector<T> &in, const std::vector<T> &in2) {
   std::vector<double> out;
@@ -359,13 +341,11 @@ std::vector<double> make_cross_sqrt_conj_abs(const std::vector<T> &in, const std
   return out;
 }
 
-/*!
- * @brief Calculates coherence between two single vectors
- * @tparam T input type, typically complex<double>
- * @param x first signal vector
- * @param y second signal vector
- * @return single coherence value as double
- */
+/// @brief Calculates coherence between two single vectors
+/// @tparam T input type, typically complex<double>
+/// @param x first signal vector
+/// @param y second signal vector
+/// @return single coherence value as double
 template <typename T>
 double coherence(const std::vector<T> &x, const std::vector<T> &y) {
   if (x.empty() || y.empty()) {
@@ -402,14 +382,12 @@ double coherence(const std::vector<T> &x, const std::vector<T> &y) {
   return std::sqrt(coh);
 }
 
-/*!
- * @brief interpolates a x,y data set with Akima spline to new given x-axis (e.g. frequencies) and gives back the interpolated y data
- * @param x_in
- * @param y_in
- * @param new_xin
- * @param y_out
- * @return
- */
+/// @brief interpolates a x,y data set with Akima spline to new given x-axis (e.g. frequencies) and gives back the interpolated y data
+/// @param x_in
+/// @param y_in
+/// @param new_xin
+/// @param y_out
+/// @return
 inline size_t akima_vector_double(const std::vector<double> &x_in, const std::vector<double> &y_in,
                                   const std::vector<double> &new_x_in, std::vector<double> &y_out) {
 
@@ -475,12 +453,10 @@ inline size_t akima_vector_double(const std::vector<double> &x_in, const std::ve
   return y_out.size();
 }
 
-/*!
- * \brief simple_smoothing - a simple moving average smoothing
- * \param in input vector
- * \param n_avg number of values to average, e.g. 3 means the average of the current value and the two previous values
- * \return smoothed vector
- */
+/// \brief simple_smoothing - a simple moving average smoothing
+/// \param in input vector
+/// \param n_avg number of values to average, e.g. 3 means the average of the current value and the two previous values
+/// \return smoothed vector
 
 inline std::vector<double> simple_smoothing(const std::vector<double> &in, int n_avg) {
   if (n_avg < 2)

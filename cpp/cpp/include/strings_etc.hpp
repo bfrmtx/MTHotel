@@ -1,9 +1,7 @@
 #ifndef STRINGS_ETC_HPP
 #define STRINGS_ETC_HPP
-/*!
- * @file strings_etc.hpp
- * @brief Utility functions for string manipulation and other common tasks.
- */
+/// @file strings_etc.hpp
+/// @brief Utility functions for string manipulation and other common tasks.
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -18,23 +16,17 @@
 #include <sstream>
 #include <string>
 
-/*!
- * @brief
- */
+/// @brief
 namespace mstr {
 
-/*!
- * @brief zero frac: round to zero; we assume that values smaller than this are zero if a TIME is given
- * @details this is used to round values to zero in the time series, e.g. if start time fraction is smaller than this value, we set the fraction part to zero.
- */
+/// @brief zero frac: round to zero; we assume that values smaller than this are zero if a TIME is given
+/// @details this is used to round values to zero in the time series, e.g. if start time fraction is smaller than this value, we set the fraction part to zero.
 static const double zero_frac = 1.0 / 1048576.0; // 1048576 is 1 MHz sample frequency (power of two) "0.00000095367431640625"
 
 // ************************   T R I M   F U N C T I O N S   ******************************
-/*!
- * @brief Trim leading whitespace from a string.
- * @param s The input string.
- * @return A new string with leading whitespace removed.
- */
+/// @brief Trim leading whitespace from a string.
+/// @param s The input string.
+/// @return A new string with leading whitespace removed.
 inline std::string ltrim(const std::string &s) {
   std::string ws(" \t\f\v\n\r");
   auto found = s.find_first_not_of(ws);
@@ -43,11 +35,9 @@ inline std::string ltrim(const std::string &s) {
   }
   return std::string();
 }
-/*!
- * @brief Trim trailing whitespace from a string.
- * @param s The input string.
- * @return A new string with trailing whitespace removed.
- */
+/// @brief Trim trailing whitespace from a string.
+/// @param s The input string.
+/// @return A new string with trailing whitespace removed.
 inline std::string rtrim(const std::string &s) {
   std::string ws(" \t\f\v\n\r");
   auto found = s.find_last_not_of(ws);
@@ -57,23 +47,19 @@ inline std::string rtrim(const std::string &s) {
   return s;
 }
 
-/*!
- * @brief Trim whitespace from both ends of a string.
- * @param s The input string.
- * @return A new string with leading and trailing whitespace removed.
- */
+/// @brief Trim whitespace from both ends of a string.
+/// @param s The input string.
+/// @return A new string with leading and trailing whitespace removed.
 inline std::string trim(const std::string &s) {
   std::string str(rtrim(s));
   return ltrim(str);
 }
 
-/*!
- * \brief simplify removes all leading and trailing whitespaces from a string; additionally all whitespaces INSIDE will be replaced with a single space
- * underscores can be removed: this is needed when you create atss file names where the underscore is a separator and
- * systemname= ADU_08e will break the file name tags "_"
- * \param s
- * \return
- */
+/// \brief simplify removes all leading and trailing whitespaces from a string; additionally all whitespaces INSIDE will be replaced with a single space
+/// underscores can be removed: this is needed when you create atss file names where the underscore is a separator and
+/// systemname= ADU_08e will break the file name tags "_"
+/// \param s
+/// \return
 inline std::string simplify(const std::string s_in, bool remove_underscores = false) {
   bool next = false;
   bool has_first_char = false;
@@ -99,29 +85,23 @@ inline std::string simplify(const std::string s_in, bool remove_underscores = fa
   return rtrim(str);
 }
 
-/*!
- * @brief removeTrailingCharacters removes all trailing characters from a string
- * @param str The input string.
- * @param charToRemove The character to remove from the end of the string.
- */
+/// @brief removeTrailingCharacters removes all trailing characters from a string
+/// @param str The input string.
+/// @param charToRemove The character to remove from the end of the string.
 
 inline void removeTrailingCharacters(std::string &str, const char charToRemove) {
   str.erase(str.find_last_not_of(charToRemove) + 1, std::string::npos);
 }
 
-/*!
- * @brief removeLeadingCharacters removes all leading characters from a string
- * @param str The input string.
- * @param charToRemove The character to remove from the beginning of the string.
- */
+/// @brief removeLeadingCharacters removes all leading characters from a string
+/// @param str The input string.
+/// @param charToRemove The character to remove from the beginning of the string.
 inline void removeLeadingCharacters(std::string &str, const char charToRemove) {
   str.erase(0, std::min(str.find_first_not_of(charToRemove), str.size() - 1));
 }
-/*!
- * @brief Check if a filename is valid.
- * @param name The filename to check.
- * @return True if the filename is valid, false otherwise.
- */
+/// @brief Check if a filename is valid.
+/// @param name The filename to check.
+/// @return True if the filename is valid, false otherwise.
 inline bool is_valid_filename(const std::string &name) {
   static const std::string forbidden = "/\\:*?\"<>|\n\r\t";
   if (name.empty() || name == "." || name == "..")
@@ -132,15 +112,13 @@ inline bool is_valid_filename(const std::string &name) {
   }
   return true;
 }
-/*!
- * @brief Check if a path is a file or a string, which we can append to a path.
- * @details we have either /home/data/file.txt or file.txt
- * @details my_path would be /home/data in this case. if file not exists, we assume I can append "file.txt" to my_path
- * @details in that case we must check that parameter p does not contain a path separator (/ \ : .. etc.) in the string. otherwise we can not append it to my_path
- * @param my_path The filesystem path to check. must be either in path or a simple filename without path.
- * @param p The path to check.
- * @return The path if it is a file, an empty path otherwise.
- */
+/// @brief Check if a path is a file or a string, which we can append to a path.
+/// @details we have either /home/data/file.txt or file.txt
+/// @details my_path would be /home/data in this case. if file not exists, we assume I can append "file.txt" to my_path
+/// @details in that case we must check that parameter p does not contain a path separator (/ \ : .. etc.) in the string. otherwise we can not append it to my_path
+/// @param my_path The filesystem path to check. must be either in path or a simple filename without path.
+/// @param p The path to check.
+/// @return The path if it is a file, an empty path otherwise.
 inline std::filesystem::path path_is_file(const std::filesystem::path &my_path, const std::filesystem::path &p) {
   if (p.empty()) {
     throw std::runtime_error("Path is empty in path_is_file() function.");
@@ -173,11 +151,9 @@ inline std::filesystem::path path_is_file(const std::filesystem::path &my_path, 
 // ******* B I N A R Y   S T R I N G S *******
 //
 
-/*!
- * @brief Trim trailing null characters from a binary string.
- * @param s The input string.
- * @return A new string with trailing null characters removed.
- */
+/// @brief Trim trailing null characters from a binary string.
+/// @param s The input string.
+/// @return A new string with trailing null characters removed.
 inline std::string brtrim(const std::string &s) {
   auto found = s.find_last_not_of('\x0');
   if (found != std::string::npos) {
@@ -186,11 +162,9 @@ inline std::string brtrim(const std::string &s) {
   return std::string();
 }
 
-/*!
- * @brief Trim leading null characters from a binary string.
- * @param s The input string.
- * @return A new string with leading null characters removed.
- */
+/// @brief Trim leading null characters from a binary string.
+/// @param s The input string.
+/// @return A new string with leading null characters removed.
 inline std::string bltrim(const std::string &s) {
   auto found = s.find_first_not_of('\x0');
   if (found != std::string::npos) {
@@ -198,21 +172,17 @@ inline std::string bltrim(const std::string &s) {
   }
   return s;
 }
-/*!
- * @brief Trim leading and trailing null characters from a binary string.
- * @param s The input string.
- * @return A new string with leading and trailing null characters removed.
- */
+/// @brief Trim leading and trailing null characters from a binary string.
+/// @param s The input string.
+/// @return A new string with leading and trailing null characters removed.
 inline std::string btrim(const std::string &s) {
   std::string str(bltrim(s));
   return brtrim(str);
 }
 
-/*!
- * @brief Clean a binary string by removing null characters and trimming whitespace.
- * @param str The input string.
- * @return A cleaned string with null characters removed and whitespace trimmed.
- */
+/// @brief Clean a binary string by removing null characters and trimming whitespace.
+/// @param str The input string.
+/// @return A cleaned string with null characters removed and whitespace trimmed.
 inline std::string clean_b_str(std::string const &str) {
 
   std::string strbc;
@@ -241,33 +211,27 @@ inline std::string clean_bc_str(const char *c, size_t n) {
 
 // ********************* U T I L I T Y   F U N C T I O N S *********************
 
-/*!
- * @brief Check if a string begins with a given prefix.
- * @param str The input string.
- * @param prefix The prefix to check for.
- * @return True if the string begins with the prefix, false otherwise.
- */
+/// @brief Check if a string begins with a given prefix.
+/// @param str The input string.
+/// @param prefix The prefix to check for.
+/// @return True if the string begins with the prefix, false otherwise.
 inline bool begins_with(std::string const &str, std::string const &prefix) {
   return (str.size() >= prefix.size()) && (0 == str.compare(0, prefix.size(), prefix));
 }
 
-/*!
- * @brief Check if a string ends with a given suffix.
- * @param str The input string.
- * @param suffix The suffix to check for.
- * @return True if the string ends with the suffix, false otherwise.
- */
+/// @brief Check if a string ends with a given suffix.
+/// @param str The input string.
+/// @param suffix The suffix to check for.
+/// @return True if the string ends with the suffix, false otherwise.
 inline bool ends_with(std::string const &str, std::string const &suffix) {
   return (str.size() >= suffix.size()) && (0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix));
 }
 
-/*!
- * \brief contains search a needle in the haystack
- * \param str haystack
- * \param search needle
- * \param case_sensitive
- * \return true if contains otherwise false
- */
+/// \brief contains search a needle in the haystack
+/// \param str haystack
+/// \param search needle
+/// \param case_sensitive
+/// \return true if contains otherwise false
 inline bool contains(std::string const &str, std::string const &search, bool case_sensitive = true) {
 
   if (!case_sensitive) {
@@ -286,13 +250,11 @@ inline bool contains(std::string const &str, std::string const &search, bool cas
   return false;
 }
 
-/*!
- * @brief Replace all occurrences of a substring within a string.
- * @param in The input string.
- * @param search The substring to search for.
- * @param replace The substring to replace with.
- * @return A new string with all occurrences of the search substring replaced.
- */
+/// @brief Replace all occurrences of a substring within a string.
+/// @param in The input string.
+/// @param search The substring to search for.
+/// @param replace The substring to replace with.
+/// @return A new string with all occurrences of the search substring replaced.
 inline std::string string_replace(const std::string &in, const std::string &search, const std::string &replace) {
   std::string s = in;
   size_t pos = 0;
@@ -303,13 +265,11 @@ inline std::string string_replace(const std::string &in, const std::string &sear
   return s;
 }
 
-/*!
- * @brief Compare two strings for equality, with optional case sensitivity.
- * @param str The first string.
- * @param search The second string to compare against.
- * @param case_sensitive Whether the comparison should be case-sensitive.
- * @return True if the strings are equal, false otherwise.
- */
+/// @brief Compare two strings for equality, with optional case sensitivity.
+/// @param str The first string.
+/// @param search The second string to compare against.
+/// @param case_sensitive Whether the comparison should be case-sensitive.
+/// @return True if the strings are equal, false otherwise.
 inline bool compare(const std::string &str, const std::string &search, bool case_sensitive = true) {
   if (case_sensitive) {
     std::string str1(str);
@@ -326,12 +286,10 @@ inline bool compare(const std::string &str, const std::string &search, bool case
   return false;
 }
 
-/*!
- * @brief Split a string into a vector of strings using a delimiter.
- * @param s The input string.
- * @param delim The delimiter to split by.
- * @return A vector of strings split by the delimiter.
- */
+/// @brief Split a string into a vector of strings using a delimiter.
+/// @param s The input string.
+/// @param delim The delimiter to split by.
+/// @return A vector of strings split by the delimiter.
 inline std::vector<std::string> split(const std::string &s, const std::string &delim) {
   std::vector<std::string> elems;
   size_t pos_start = 0, pos_end;
@@ -345,12 +303,10 @@ inline std::vector<std::string> split(const std::string &s, const std::string &d
   elems.push_back(s.substr(pos_start)); // Add the last token after the last delimiter
   return elems;
 }
-/*!
- * @brief Split a string into a vector of strings using a single character delimiter.
- * @param s The input string.
- * @param delim The character delimiter to split by.
- * @return A vector of strings split by the character delimiter.
- */
+/// @brief Split a string into a vector of strings using a single character delimiter.
+/// @param s The input string.
+/// @param delim The character delimiter to split by.
+/// @return A vector of strings split by the character delimiter.
 inline std::vector<std::string> split(const std::string &s, char delim) {
   std::vector<std::string> elems;
   std::stringstream ss(s);
@@ -360,11 +316,9 @@ inline std::vector<std::string> split(const std::string &s, char delim) {
   }
   return elems;
 }
-/*!
- * @brief Escape underscores in a string by replacing them with "\\_".
- * @param in The input string.
- * @return A new string with underscores escaped.
- */
+/// @brief Escape underscores in a string by replacing them with "\\_".
+/// @param in The input string.
+/// @return A new string with underscores escaped.
 inline std::string escape_underscore(const std::string &in) {
   std::string out;
   out.reserve(in.size() + 8); // in most cases we have 4 '_' to be replaced by '\\_'
@@ -381,11 +335,9 @@ inline std::string escape_underscore(const std::string &in) {
   return out;
 }
 
-/*!
- * @brief Convert a bool or integer value to its string representation ("true"/"false" for bool, for int).
- * @param value The input value (bool or integer).
- * @return String representation.
- */
+/// @brief Convert a bool or integer value to its string representation ("true"/"false" for bool, for int).
+/// @param value The input value (bool or integer).
+/// @return String representation.
 template <typename T>
 inline std::string bool_to_string_bool(const T value) {
   if constexpr (std::is_same_v<T, bool>) {
@@ -412,11 +364,9 @@ inline std::string copper_to_string_bool(const T value) {
 
 // *********************  N U M E R I C A L   F U N C T I O N S *********************
 
-/*!
- * @brief mystod converts a string to a double; std::stod does not work in debug mode (March 2024)
- * @param s The input string.
- * @return The converted double value.
- */
+/// @brief mystod converts a string to a double; std::stod does not work in debug mode (March 2024)
+/// @param s The input string.
+/// @return The converted double value.
 inline double mystod(const std::string &s) {
   std::stringstream ss(s);
   double d;
@@ -424,12 +374,10 @@ inline double mystod(const std::string &s) {
   return d;
 }
 
-/*!
- * @brief isdigit_first_char checks if the first character of a string is a digit or a sign followed by a digit.
- * @details checks if the first character is a digit (0-9) or if it is a sign ('+' or '-') followed by a digit.
- * @param str The input string.
- * @return True if the first character is a digit or a sign followed by a digit, false otherwise.
- */
+/// @brief isdigit_first_char checks if the first character of a string is a digit or a sign followed by a digit.
+/// @details checks if the first character is a digit (0-9) or if it is a sign ('+' or '-') followed by a digit.
+/// @param str The input string.
+/// @return True if the first character is a digit or a sign followed by a digit, false otherwise.
 inline bool isdigit_first_char(const std::string &str) {
   if (str.empty())
     return false;
@@ -440,12 +388,10 @@ inline bool isdigit_first_char(const std::string &str) {
 }
 
 template <class T>
-/*!
- * \brief zero_fill_field fills field padded with zeros: 4 -> 0004, -4 -> -004
- * \param num INTEGER type
- * \param width field width
- * \return string with at least width characters, starting with 0 or -0 in case
- */
+/// \brief zero_fill_field fills field padded with zeros: 4 -> 0004, -4 -> -004
+/// \param num INTEGER type
+/// \param width field width
+/// \return string with at least width characters, starting with 0 or -0 in case
 inline std::string zero_fill_field(const T num, const std::size_t width) {
   std::size_t w = width;
   std::ostringstream oss;
@@ -457,12 +403,10 @@ inline std::string zero_fill_field(const T num, const std::size_t width) {
   return oss.str();
 }
 
-/*!
- * @brief Create a vector of stringstreams with right-adjusted integer values.
- * @tparam T Integral type (e.g., int, long)
- * @param vals Input vector of integral values.
- * @return Vector of stringstreams with right-adjusted values.
- */
+/// @brief Create a vector of stringstreams with right-adjusted integer values.
+/// @tparam T Integral type (e.g., int, long)
+/// @param vals Input vector of integral values.
+/// @return Vector of stringstreams with right-adjusted values.
 template <std::integral T>
 std::vector<std::stringstream> field_width_right_adjusted_ints(const std::vector<T> &vals) {
   std::vector<std::stringstream> sss(vals.size());
@@ -485,15 +429,13 @@ std::vector<std::stringstream> field_width_right_adjusted_ints(const std::vector
   return sss;
 }
 
-/*!
- * @brief Create a vector of stringstreams with right-adjusted double values.
- * @tparam T Floating-point type (e.g., float, double)
- * @param vals Input vector of floating-point values.
- * @param low Lower threshold for scientific notation.
- * @param high Upper threshold for scientific notation.
- * @param sci_prec Precision for scientific notation.
- * @return Vector of stringstreams with right-adjusted values.
- */
+/// @brief Create a vector of stringstreams with right-adjusted double values.
+/// @tparam T Floating-point type (e.g., float, double)
+/// @param vals Input vector of floating-point values.
+/// @param low Lower threshold for scientific notation.
+/// @param high Upper threshold for scientific notation.
+/// @param sci_prec Precision for scientific notation.
+/// @return Vector of stringstreams with right-adjusted values.
 template <std::floating_point T>
 std::vector<std::stringstream> field_width_right_adjusted_doubles(const std::vector<T> &vals, const double low = 0.01, const double high = 10000, size_t sci_prec = 4) {
   std::vector<std::stringstream> sss(vals.size());
@@ -531,14 +473,12 @@ std::vector<std::stringstream> field_width_right_adjusted_doubles(const std::vec
   return sss;
 }
 
-/*!
- * @brief Extracts the channel number from a channel file path, like leading/084_ADU-07e_C000_TEx_128Hz.extension
- * @details The channel number is expected to be the first number after '_C' in the filename.
- * If the channel number cannot be found, SIZE_MAX is returned.
- * This function does not throw exceptions; it returns SIZE_MAX in case of errors.
- * @param p The file path.
- * @return The channel number or SIZE_MAX if not found.
- */
+/// @brief Extracts the channel number from a channel file path, like leading/084_ADU-07e_C000_TEx_128Hz.extension
+/// @details The channel number is expected to be the first number after '_C' in the filename.
+/// If the channel number cannot be found, SIZE_MAX is returned.
+/// This function does not throw exceptions; it returns SIZE_MAX in case of errors.
+/// @param p The file path.
+/// @return The channel number or SIZE_MAX if not found.
 inline size_t channel_number_from_channel_file(const std::filesystem::path &p) {
   // leading/084_ADU-07e_C000_TEx_128Hz.extension
   // get the filename without extension
@@ -567,11 +507,9 @@ inline size_t channel_number_from_channel_file(const std::filesystem::path &p) {
 }
 // *********************** F R E Q U E N C Y   A N D   P E R I O D S ***********************/
 
-/*!
- * @brief Creates a vector of stringstreams with right-adjusted frequency and period values. Input must be convertible to int.
- * @param fs Input vector of frequency values.
- * @return Vector of stringstreams with right-adjusted values.
- */
+/// @brief Creates a vector of stringstreams with right-adjusted frequency and period values. Input must be convertible to int.
+/// @param fs Input vector of frequency values.
+/// @return Vector of stringstreams with right-adjusted values.
 inline std::vector<std::stringstream> field_width_right_adjusted_freqs_periods(const std::vector<double> &fs) {
   std::vector<std::stringstream> sss(fs.size());
   size_t i = 0;
@@ -607,24 +545,20 @@ inline std::vector<std::stringstream> field_width_right_adjusted_freqs_periods(c
   }
   return sss;
 }
-/*!
- * \brief run2string
- * \param run like 1, 12, 123
- * \details This function converts a run number to a string formatted as "run_XXX",
- * where XXX is the run number zero-padded to 3 digits.
- * \return run_001 or run_012 and so on
- */
+/// \brief run2string
+/// \param run like 1, 12, 123
+/// \details This function converts a run number to a string formatted as "run_XXX",
+/// where XXX is the run number zero-padded to 3 digits.
+/// \return run_001 or run_012 and so on
 inline std::string run2string(const auto &run, const std::size_t run_digits) {
   std::string srun("run_");
   return srun + mstr::zero_fill_field(run, run_digits);
 }
 
-/*!
- * \brief string2run
- * \param srun run_001 or run_012 and so on
- * \return 1 or 12 or SIZE_MAX if the string is not valid
- * @details This function extracts the run number from a string formatted as "run_XXX",
- */
+/// \brief string2run
+/// \param srun run_001 or run_012 and so on
+/// \return 1 or 12 or SIZE_MAX if the string is not valid
+/// @details This function extracts the run number from a string formatted as "run_XXX",
 inline size_t string2run(const std::string &srun) {
   // split the string at the last '_' and take the rest
   std::string ssrun = srun.substr(srun.find_last_of('_') + 1);
@@ -633,14 +567,12 @@ inline size_t string2run(const std::string &srun) {
   return size_t(std::stoul(ssrun));
 }
 
-/*!
- * \brief sample_rate_to_str converts 256 to 256 and Hz, 0.25 to 4 and s; if numbers results in to fractions and round_f_or_s is true return value is != 0; USE FOR beautiful output
- * \param sample_rate input
- * \param f_or_s sample rate either as Hz or s as ouput, ROUNDING is applied if round_f_or_s is true
- * \param unit either "Hz" or "s"
- * \param round_f_or_s round - 0 in case of flawless conversion; example: 4.00001Hz may be a numerical error, 4Hz wanted
- * \return difference between rounded and not rounded sample rate; should be zero for most cases; if not you must take a decision
- */
+/// \brief sample_rate_to_str converts 256 to 256 and Hz, 0.25 to 4 and s; if numbers results in to fractions and round_f_or_s is true return value is != 0; USE FOR beautiful output
+/// \param sample_rate input
+/// \param f_or_s sample rate either as Hz or s as ouput, ROUNDING is applied if round_f_or_s is true
+/// \param unit either "Hz" or "s"
+/// \param round_f_or_s round - 0 in case of flawless conversion; example: 4.00001Hz may be a numerical error, 4Hz wanted
+/// \return difference between rounded and not rounded sample rate; should be zero for most cases; if not you must take a decision
 inline double sample_rate_to_str(const double &sample_rate, double &f_or_s, std::string &unit, const bool round_f_or_s = false) {
 
   double diff_s;
@@ -663,14 +595,12 @@ inline double sample_rate_to_str(const double &sample_rate, double &f_or_s, std:
   return f_or_s - diff_s; // would be 0.001 for 5.001 input
 }
 
-/*!
- * @brief sample_rate_to_str_simple, similar to f_to_string, but number is rounded to the nearest integer and unit is either "Hz" or "s"
- * @details this is a simple converter making "4Hz", "4 Hz", "4 Hz ",  "4Hz ". Or if f is 0.25 it will return "4s", "4 s", "4 s ", "4s "
- * @param sample_rate frequency in Hz
- * @param add_space
- * @param append_space
- * @return formatted string like "4Hz", "4 Hz", "4 Hz ", "4Hz "
- */
+/// @brief sample_rate_to_str_simple, similar to f_to_string, but number is rounded to the nearest integer and unit is either "Hz" or "s"
+/// @details this is a simple converter making "4Hz", "4 Hz", "4 Hz ",  "4Hz ". Or if f is 0.25 it will return "4s", "4 s", "4 s ", "4s "
+/// @param sample_rate frequency in Hz
+/// @param add_space
+/// @param append_space
+/// @return formatted string like "4Hz", "4 Hz", "4 Hz ", "4Hz "
 inline std::string sample_rate_to_str_simple(const double &sample_rate, const bool add_space = false, const bool append_space = false) {
   double f_or_s = 0;
   std::string unit;
@@ -690,11 +620,9 @@ inline std::string sample_rate_to_str_simple(const double &sample_rate, const bo
   return sval;
 }
 
-/*!
- * @brief Converts a string representation of a sample rate to its numeric value.
- * @param srate The string representation of the sample rate (e.g., "256Hz", "0.25s").
- * @return The numeric value of the sample rate in Hz as double; ref to other functions
- */
+/// @brief Converts a string representation of a sample rate to its numeric value.
+/// @param srate The string representation of the sample rate (e.g., "256Hz", "0.25s").
+/// @return The numeric value of the sample rate in Hz as double; ref to other functions
 inline double str_to_sample_rate(const std::string &srate) {
   std::string snum;
   std::string sunit;
@@ -725,13 +653,11 @@ inline double str_to_sample_rate(const std::string &srate) {
   return rate;
 }
 
-/*!
- * @brief f_to_string a simple converter making "4Hz", "4 Hz", "4 Hz ",  "4Hz ". Or if f is 0.25 it will return "4s", "4 s", "4 s ", "4s "
- * @param f frequency in Hz
- * @param add_space
- * @param append_space
- * @return
- */
+/// @brief f_to_string a simple converter making "4Hz", "4 Hz", "4 Hz ",  "4Hz ". Or if f is 0.25 it will return "4s", "4 s", "4 s ", "4s "
+/// @param f frequency in Hz
+/// @param add_space
+/// @param append_space
+/// @return
 inline std::string f_to_string(const double &f, const bool add_space = false, const bool append_space = false) {
   std::stringstream ss;
 
@@ -755,12 +681,10 @@ inline std::string f_to_string(const double &f, const bool add_space = false, co
 
 // the std::chrono do not work with UTC reliably, so we use a custom utc_clock
 
-/*!
- * @brief Converts a time_t aka int value to a date and time string in UTC; the most common case.
- * @param ti The time_t value. time_t has no fractions.
- * @param date The output date string in "YYYY-MM-DD" format.
- * @param time The output time string in "HH:MM:SS" format.
- */
+/// @brief Converts a time_t aka int value to a date and time string in UTC; the most common case.
+/// @param ti The time_t value. time_t has no fractions.
+/// @param date The output date string in "YYYY-MM-DD" format.
+/// @param time The output time string in "HH:MM:SS" format.
 inline void date_and_time(const time_t &ti, std::string &date, std::string &time) {
   struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0};
   tt = *std::gmtime(&ti);
@@ -774,11 +698,9 @@ inline void date_and_time(const time_t &ti, std::string &date, std::string &time
   time += mstr::zero_fill_field(tt.tm_sec, 2);
 }
 
-/*!
- * @brief Creates a measurement directory name based on the given time_t value.
- * @param ti The time_t value representing the measurement time.
- * @return A string formatted as "meas_YYYY-MM-DD_HH-MM-SS".
- */
+/// @brief Creates a measurement directory name based on the given time_t value.
+/// @param ti The time_t value representing the measurement time.
+/// @return A string formatted as "meas_YYYY-MM-DD_HH-MM-SS".
 inline std::string measdir_time(const time_t &ti) {
   struct tm tt = {0, 0, 0, 0, 0, 0, 0, 0};
   tt = *std::gmtime(&ti);
@@ -792,13 +714,11 @@ inline std::string measdir_time(const time_t &ti) {
   time += mstr::zero_fill_field(tt.tm_sec, 2);
   return date + time;
 }
-/*!
- * @brief Converts a date string in "YYYY-MM-DD" format to individual year, month, and day integers.
- * @param date_str The date string to convert.
- * @param year The output year integer.
- * @param month The output month integer.
- * @param day The output day integer.
- */
+/// @brief Converts a date string in "YYYY-MM-DD" format to individual year, month, and day integers.
+/// @param date_str The date string to convert.
+/// @param year The output year integer.
+/// @param month The output month integer.
+/// @param day The output day integer.
 inline void date_to_numbers(const std::string &date_str, int &year, int &month, int &day) {
   // date_str is expected to be in "YYYY-MM-DD" format
   std::vector<std::string> parts = mstr::split(date_str, '-');
@@ -811,13 +731,11 @@ inline void date_to_numbers(const std::string &date_str, int &year, int &month, 
   day = std::stoi(parts[2]);
 }
 
-/*!
- * @brief Converts a time string in "HH:MM:SS" format to individual hour, minute, and second integers.
- * @param time_str The time string to convert.
- * @param hour The output hour integer.
- * @param minute The output minute integer.
- * @param second The output second integer.
- */
+/// @brief Converts a time string in "HH:MM:SS" format to individual hour, minute, and second integers.
+/// @param time_str The time string to convert.
+/// @param hour The output hour integer.
+/// @param minute The output minute integer.
+/// @param second The output second integer.
 inline void time_to_numbers(const std::string &time_str, int &hour, int &minute, int &second, double &fraction) {
   // time_str is expected to be in "HH:MM:SS" format
   // check for a trailing .123 if present
@@ -840,23 +758,19 @@ inline void time_to_numbers(const std::string &time_str, int &hour, int &minute,
   }
 }
 
-/*!
- * @brief Extracts the date from an ISO 8601 formatted string.
- * @param datetime The ISO 8601 formatted string.
- * @return The extracted date as a string.
- */
+/// @brief Extracts the date from an ISO 8601 formatted string.
+/// @param datetime The ISO 8601 formatted string.
+/// @return The extracted date as a string.
 inline std::string get_date_from_iso8601(const std::string &datetime) {
   auto splits = mstr::split(datetime, 'T');
   if (splits.size() > 1)
     return splits.at(0);
   return std::string();
 }
-/*!
- * @brief Extracts the time from an ISO 8601 formatted string, excluding fractional seconds.
- * @details treat the fractional part later; this function intends to be used to make a time_t, which does not have fractions
- * @param datetime The ISO 8601 formatted string.
- * @return The extracted time as a string, without fractional seconds.
- */
+/// @brief Extracts the time from an ISO 8601 formatted string, excluding fractional seconds.
+/// @details treat the fractional part later; this function intends to be used to make a time_t, which does not have fractions
+/// @param datetime The ISO 8601 formatted string.
+/// @return The extracted time as a string, without fractional seconds.
 inline std::string get_time_from_iso8601(const std::string &datetime) {
   auto splits = mstr::split(datetime, 'T');
   if (splits.size() > 1) {                         // vector has at least 2 parts
@@ -891,16 +805,14 @@ inline time_t iso8601_to_time_t(const std::string &iso_datetime) {
 
   return timegm(&tt);
 }
-/*!
- * @brief take a time_t value and return a string in ISO 8601 format
- * @details The function can return just the date, just the time, or both date and time in ISO 8601 format.
- * @details If fractions are provided, they are added to the time string.
- * @details The function does not throw exceptions, but returns an empty string in case of errors, such as invalid fractions.
- * @param t The time_t value to convert.
- * @param iso_0_date_1_time_2 Specifies whether to return date (0), time (1), or both (2).
- * @param fracs The fractional seconds to include (if any).
- * @return The ISO 8601 formatted string.
- */
+/// @brief take a time_t value and return a string in ISO 8601 format
+/// @details The function can return just the date, just the time, or both date and time in ISO 8601 format.
+/// @details If fractions are provided, they are added to the time string.
+/// @details The function does not throw exceptions, but returns an empty string in case of errors, such as invalid fractions.
+/// @param t The time_t value to convert.
+/// @param iso_0_date_1_time_2 Specifies whether to return date (0), time (1), or both (2).
+/// @param fracs The fractional seconds to include (if any).
+/// @return The ISO 8601 formatted string.
 inline std::string iso8601_time_t(const time_t &t, int iso_0_date_1_time_2 = 0, const double fracs = 0.0) {
   std::string mydate, mytime;
   mstr::date_and_time(t, mydate, mytime); // have both date and time strings
@@ -939,11 +851,9 @@ inline std::string iso8601_time_t(const time_t &t, int iso_0_date_1_time_2 = 0, 
   }
 }
 
-/*!
- * @brief Extracts the fractional seconds from an ISO 8601 formatted string.
- * @param datetime The ISO 8601 formatted string.
- * @return The extracted fractional seconds as a string.
- */
+/// @brief Extracts the fractional seconds from an ISO 8601 formatted string.
+/// @param datetime The ISO 8601 formatted string.
+/// @return The extracted fractional seconds as a string.
 inline std::string get_fractional_seconds_from_iso8601(const std::string &datetime) {
   auto splits = mstr::split(datetime, '.');
   if (splits.size() > 1) { // vector has at least 2 parts, 2020-01-01T12:00:00 "." 123456
@@ -954,17 +864,15 @@ inline std::string get_fractional_seconds_from_iso8601(const std::string &dateti
   return std::string();
 }
 
-/*!
- * \brief concat ISO date and ISO time together with optional fraction of seconds, in case fraction is > 10E-12 secs
- * \param date like 2012-09-14
- * \param time like 14:32:45
- * @details if time is empty, date is interpreted as datetime like 2012-09-14T22:23:45
- * \param fracs positive numberlike 0.012 and greater as zero_frac
- * \return ISO 8601 formatted string like 2012-09-14T14:32:45.012345
- * @details if fracs is 0.0, no fraction is appended, otherwise it
- *          is appended as ".012345" to the time string, so the result is like
- *          2012-09-14T14:32:45.012345
- */
+/// \brief concat ISO date and ISO time together with optional fraction of seconds, in case fraction is > 10E-12 secs
+/// \param date like 2012-09-14
+/// \param time like 14:32:45
+/// @details if time is empty, date is interpreted as datetime like 2012-09-14T22:23:45
+/// \param fracs positive numberlike 0.012 and greater as zero_frac
+/// \return ISO 8601 formatted string like 2012-09-14T14:32:45.012345
+/// @details if fracs is 0.0, no fraction is appended, otherwise it
+///          is appended as ".012345" to the time string, so the result is like
+///          2012-09-14T14:32:45.012345
 inline std::string iso8601_str_date_time(const std::string &date, const std::string &time, const double &fracs = 0.0) {
   if (date.empty())
     return std::string();
@@ -985,60 +893,50 @@ inline std::string iso8601_str_date_time(const std::string &date, const std::str
 }
 
 //// some helper functions for the tm struct
-/*!
- * \@brief tm_to_num_date return simply the date numbers from a std::tm struct
- * \@param date
- * \@param year
- * \@param month
- * \@param day
- */
+/// \@brief tm_to_num_date return simply the date numbers from a std::tm struct
+/// \@param date
+/// \@param year
+/// \@param month
+/// \@param day
 inline void tm_to_num_date(const std::tm *date, int &year, int &month, int &day) {
   year = date->tm_year + 1900;
   month = date->tm_mon + 1;
   day = date->tm_mday;
 }
 
-/*!
- * \@brief tm_to_num_date return simply the time numbers fron a std::tm struct
- * \@param date
- * \@param year
- * \@param month
- * \@param day
- */
+/// \@brief tm_to_num_date return simply the time numbers fron a std::tm struct
+/// \@param date
+/// \@param year
+/// \@param month
+/// \@param day
 inline void tm_to_num_time(const std::tm *date, int &hour, int &min, int &sec) {
   hour = date->tm_hour;
   min = date->tm_min;
   sec = date->tm_sec;
 }
 
-/*!
- * \@brief tm_to_str_date simple conversion to something like 2021-05-19
- * \@param date
- * \@return
- */
+/// \@brief tm_to_str_date simple conversion to something like 2021-05-19
+/// \@param date
+/// \@return
 inline std::string tm_to_str_date(const std::shared_ptr<tm> &date) {
   return std::to_string(date->tm_year + 1900) + "-" + mstr::zero_fill_field(date->tm_mon + 1, 2) + "-" + mstr::zero_fill_field(date->tm_mday, 2);
 }
 
-/*!
- * \@brief tm_to_str_time simple conversion to something like 14:22:50
- * \@param date
- * \@return
- */
+/// \@brief tm_to_str_time simple conversion to something like 14:22:50
+/// \@param date
+/// \@return
 inline std::string tm_to_str_time(const std::tm *date) {
   return mstr::zero_fill_field(date->tm_hour, 2) + ":" + mstr::zero_fill_field(date->tm_min + 1, 2) + ":" + mstr::zero_fill_field(date->tm_sec, 2);
 }
 
-/*!
- * \@brief time_from_ints create a std::tm from numbers
- * \@param YYYY
- * \@param MM
- * \@param DD
- * \@param hh
- * \@param mm
- * \@param ss
- * \@return
- */
+/// \@brief time_from_ints create a std::tm from numbers
+/// \@param YYYY
+/// \@param MM
+/// \@param DD
+/// \@param hh
+/// \@param mm
+/// \@param ss
+/// \@return
 inline std::shared_ptr<tm> time_from_ints(const int YYYY = 0, const int MM = 0, const int DD = 0, const int hh = 0, const int mm = 0, const int ss = 0) {
   std::shared_ptr<tm> dt = std::make_shared<tm>();
   dt->tm_year = YYYY - 1900; // Years from 1900
