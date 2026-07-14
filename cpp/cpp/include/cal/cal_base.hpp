@@ -25,42 +25,36 @@
 #include "tinyxmlwriter.h"
 #include "vector_math.hpp"
 
-/**
- * @class calibration
- * @brief Represents a calibration object for a sensor. The class forces units in mV/nT, Hz, and degrees - not normalized by f!
- * temporarily the class may contain different units after reading from file, but the class will convert a.s.a.p. to mV/nT, Hz, and degrees
- */
+/// @class calibration
+/// @brief Represents a calibration object for a sensor. The class forces units in mV/nT, Hz, and degrees - not normalized by f!
+/// temporarily the class may contain different units after reading from file, but the class will convert a.s.a.p. to mV/nT, Hz, and degrees
 class calibration {
 public:
-  std::string sensor;                         //!< The name of the sensor.
-  uint64_t serial = 0;                        //!< The serial number of the sensor.
-  ChopperStatus chopper = ChopperStatus::off; //!< The status of the chopper. off is same as unknown
-  std::string units_amplitude;                //!< The units of the amplitude.
-  std::string units_frequency;                //!< The units of the frequency.
-  std::string units_phase;                    //!< The units of the phase.
-  std::string datetime;                       //!< The date and time of the calibration.
-  std::string Operator;                       //!< The operator who made the calibration, we us uppercase because operator is a keyword in C++.
-  std::vector<double> f;                      //!< The frequency values in Hz.
-  std::vector<double> a;                      //!< The amplitude values in mV/nT.
-  std::vector<double> p;                      //!< The phase values ind degrees
+  std::string sensor;                         ///< The name of the sensor.
+  uint64_t serial = 0;                        ///< The serial number of the sensor.
+  ChopperStatus chopper = ChopperStatus::off; ///< The status of the chopper. off is same as unknown
+  std::string units_amplitude;                ///< The units of the amplitude.
+  std::string units_frequency;                ///< The units of the frequency.
+  std::string units_phase;                    ///< The units of the phase.
+  std::string datetime;                       ///< The date and time of the calibration.
+  std::string Operator;                       ///< The operator who made the calibration, we us uppercase because operator is a keyword in C++.
+  std::vector<double> f;                      ///< The frequency values in Hz.
+  std::vector<double> a;                      ///< The amplitude values in mV/nT.
+  std::vector<double> p;                      ///< The phase values ind degrees
   // NOT part of the calibration data in JSON files
   // in JSON ist must be ct = CalibrationType::mtx to allow MTH5
-  CalibrationType ct = CalibrationType::nn; //!< The type of calibration.
+  CalibrationType ct = CalibrationType::nn; ///< The type of calibration.
 
-  /**
-   * @brief Default constructor. Creates an empty calibration object.
-   */
+  /// @brief Default constructor. Creates an empty calibration object.
   calibration() {
     this->clear();
   }
 
-  /**
-   * @brief Constructor. Creates a calibration object with the specified sensor, serial number, chopper status, and calibration type.
-   * @param sensor The name of the sensor.
-   * @param serial The serial number of the sensor.
-   * @param chopper The status of the chopper.
-   * @param ct The type of calibration.
-   */
+  /// @brief Constructor. Creates a calibration object with the specified sensor, serial number, chopper status, and calibration type.
+  /// @param sensor The name of the sensor.
+  /// @param serial The serial number of the sensor.
+  /// @param chopper The status of the chopper.
+  /// @param ct The type of calibration.
   calibration(const std::string &sensor, const uint64_t &serial, const ChopperStatus chopper = ChopperStatus::off, const CalibrationType ct = CalibrationType::mtx) :
       sensor(sensor), serial(serial) {
     this->set_format(ct, false);
@@ -158,11 +152,9 @@ public:
     return f.size();
   }
 
-  /*!
-   * @brief get a subrange of the frequency vector
-   * @param range min max
-   * @return new frequency vector
-   */
+  /// @brief get a subrange of the frequency vector
+  /// @param range min max
+  /// @return new frequency vector
   std::vector<double> get_f(std::pair<double, double> &range) const {
     if ((range.first == range.second) && (range.first == 0)) // this is maybe an uninitialized range -> return all
       return this->f;
@@ -181,11 +173,9 @@ public:
     return ret;
   }
 
-  /*!
-   * @brief get a subrange of the amplitude vector
-   * @param range   min max amplitude
-   * @return amplitude vector withing range
-   */
+  /// @brief get a subrange of the amplitude vector
+  /// @param range   min max amplitude
+  /// @return amplitude vector withing range
   std::vector<double> get_a(std::pair<double, double> &range) const {
     if ((range.first == range.second) && (range.first == 0)) // this is maybe an uninitialized range -> return all
       return this->a;
@@ -222,11 +212,9 @@ public:
     return ret;
   }
 
-  /*!
-   * \brief squeeze .. remove all entries which are not in the range
-   * \param f_range min max frequency
-   * \return size of the altered calibration
-   */
+  /// \brief squeeze .. remove all entries which are not in the range
+  /// \param f_range min max frequency
+  /// \return size of the altered calibration
   size_t squeeze(std::pair<double, double> &f_range) {
     if ((f_range.first == f_range.second) && (f_range.first == 0)) // this is maybe an uninitialized range -> return all
       return this->f.size();
@@ -365,10 +353,8 @@ public:
     return fname;
   }
 
-  /*!
-   * @brief copy constructor
-   * @param rhs the calibration object to copy from
-   */
+  /// @brief copy constructor
+  /// @param rhs the calibration object to copy from
   calibration(const std::shared_ptr<calibration> &rhs) {
     if (rhs != nullptr) {
       this->sensor = rhs->sensor;
@@ -395,9 +381,7 @@ public:
     }
   }
 
-  /*!
-   * @brief clear all values
-   */
+  /// @brief clear all values
   void clear() {
     this->sensor.clear();
     this->serial = 0;
@@ -549,10 +533,8 @@ public:
     return CalibrationType::nn;
   }
 
-  /*!
-   * \brief toJson_embedd
-   * \return returns a nlohmann::ordered_json for embedding; do NOT use for files! For files sensor, serial and chopper are part of file name
-   */
+  /// \brief toJson_embedd
+  /// \return returns a nlohmann::ordered_json for embedding; do NOT use for files! For files sensor, serial and chopper are part of file name
   nlohmann::ordered_json toJson_embedd() const {
     nlohmann::ordered_json head; // use ordered because of readability (vectors last)
     // use other.update(head); to join
@@ -572,12 +554,10 @@ public:
     return head;
   }
 
-  /*!
-   * \brief write_file write a json file with sensor, serial and chopper are part of file name; CONTENT hast NOT! these parts
-   * hence that if e.g. sensor would be included inside the file, filename AND content must be altered in case - that is stupid
-   * \param directory_path_only
-   * \return site of calibration frequencies
-   */
+  /// \brief write_file write a json file with sensor, serial and chopper are part of file name; CONTENT hast NOT! these parts
+  /// hence that if e.g. sensor would be included inside the file, filename AND content must be altered in case - that is stupid
+  /// \param directory_path_only
+  /// \return site of calibration frequencies
   size_t write_file(const std::filesystem::path &directory_path_only) const {
 
     std::filesystem::path filepath(std::filesystem::canonical(directory_path_only));
@@ -621,11 +601,9 @@ public:
     return this->f.size();
   }
 
-  /*!
-   * \brief extract_from_filename .. does NOT call clear (again)
-   * \param filepath
-   * \return
-   */
+  /// \brief extract_from_filename .. does NOT call clear (again)
+  /// \param filepath
+  /// \return
   int extract_from_filename(const std::filesystem::path &filepath) {
     std::filesystem::path name(filepath.filename());
     name.replace_extension("");
@@ -692,10 +670,8 @@ public:
     return 0;
   }
 
-  /*!
-   * \brief parse_head .. hence that for electrodes we may have data, serial, only EFP-06 or so
-   * \return
-   */
+  /// \brief parse_head .. hence that for electrodes we may have data, serial, only EFP-06 or so
+  /// \return
   size_t parse_head(const nlohmann::ordered_json &head, const std::filesystem::path &filepath = "") {
 
     int64_t ch = 0;
@@ -760,11 +736,9 @@ public:
     return this->f.size();
   }
 
-  /*!
-   * \brief read_file JSON format
-   * \param filepath from the extracted filename we generate type sensor serial chopper
-   * \return
-   */
+  /// \brief read_file JSON format
+  /// \param filepath from the extracted filename we generate type sensor serial chopper
+  /// \return
   size_t read_file(const std::filesystem::path &filepath, const bool auto_convert = true) {
     this->clear();
     if (!std::filesystem::exists(filepath)) {
@@ -988,11 +962,9 @@ public:
     return ss.str();
   }
 
-  /*!
-   * @brief interpolate the calibration data to a new frequency vector - which is the same as the FFT; do this FIRST!
-   * @param new_f e.g. the frequency vector of the FFT
-   * @return size of the new frequency vector
-   */
+  /// @brief interpolate the calibration data to a new frequency vector - which is the same as the FFT; do this FIRST!
+  /// @param new_f e.g. the frequency vector of the FFT
+  /// @return size of the new frequency vector
   size_t interpolate(const std::vector<double> &new_f) {
 
     if (!new_f.size()) {
@@ -1046,11 +1018,9 @@ public:
     return this->f.size();
   }
 
-  /*!
-   * @brief interpolate the calibration data to a new frequency vector - which is the same as the FFT; do this FIRST!
-   * @param new_f e.g. the frequency vector of the FFT
-   * @return size of the new frequency vector
-   */
+  /// @brief interpolate the calibration data to a new frequency vector - which is the same as the FFT; do this FIRST!
+  /// @param new_f e.g. the frequency vector of the FFT
+  /// @return size of the new frequency vector
   size_t interpolate_master_cal(const std::vector<double> &new_f) {
 
     if (!new_f.size()) {
@@ -1104,12 +1074,10 @@ public:
     return this->f_master.size();
   }
 
-  /*!
-   * @brief generate a calibration for the sensor; always use the mtx format by default; decide to convert at the end!
-   * @param f_in new frequency vector OR the existing one
-   * the result is stored in f_theo, a_theo, p_theo and is ON THE FREQUENCY GRID OF f_in which is same as FFT!
-   *
-   */
+  /// @brief generate a calibration for the sensor; always use the mtx format by default; decide to convert at the end!
+  /// @param f_in new frequency vector OR the existing one
+  /// the result is stored in f_theo, a_theo, p_theo and is ON THE FREQUENCY GRID OF f_in which is same as FFT!
+  ///
   void gen_cal_sensor(const std::vector<double> &f_in) {
 
     if (!f_in.size()) {
@@ -1159,10 +1127,8 @@ public:
     }
   }
 
-  /*!
-   * @brief BOTH f_theo and f must be sorted and BOTH must be on the same frequency grid (FFT); INTERPOLATE the measured FIRST!
-   * @return size of the joined vector
-   */
+  /// @brief BOTH f_theo and f must be sorted and BOTH must be on the same frequency grid (FFT); INTERPOLATE the measured FIRST!
+  /// @return size of the joined vector
   size_t join_lower_theo_and_measured_interpolated() {
     if (!this->f_theo.size()) {
       std::ostringstream err_str(__func__, std::ios_base::ate);
@@ -1296,7 +1262,7 @@ public:
     // by default we can extend to lower frequencies but not to higher frequencies
     if (this->f.size() < min_cal_size)
       return;
-    double lowest = 1.0 / 100000.0; //!< 100,000s for MFS coils chopper on
+    double lowest = 1.0 / 100000.0; ///< 100,000s for MFS coils chopper on
     size_t steps_per_decade = 10;
     if (this->sensor.substr(0, 3) == "FGS") {
       lowest = 1.0 / 100000000.0; // 100,000,000s for FGS unlimited
@@ -1441,9 +1407,7 @@ static bool operator==(const std::shared_ptr<calibration> &lhs, const std::share
   return true;
 }
 
-/*!
-   compare a sensor - ignore the chopper
-*/
+/// compare a sensor - ignore the chopper
 inline auto compare_same_sensor = [](const std::shared_ptr<calibration> &lhs, const std::shared_ptr<calibration> &rhs) -> bool {
   if (lhs->sensor != rhs->sensor)
     return false;
@@ -1469,15 +1433,13 @@ inline auto compare_sensor_and_chopper = [](const std::shared_ptr<calibration> &
   return true;
 };
 
-/**
- * @brief Lambda function to find the other chopper.
- *
- * This lambda function compares two `std::shared_ptr<calibration>` objects and returns true lhs has a different chopper setting.
- *
- * @param lhs The left-hand side `std::shared_ptr<calibration>` object.
- * @param rhs The right-hand side `std::shared_ptr<calibration>` object.
- * @return True if lhs  and rhs have the same sensor and serial number but different chopper settings.
- */
+/// @brief Lambda function to find the other chopper.
+///
+/// This lambda function compares two `std::shared_ptr<calibration>` objects and returns true lhs has a different chopper setting.
+///
+/// @param lhs The left-hand side `std::shared_ptr<calibration>` object.
+/// @param rhs The right-hand side `std::shared_ptr<calibration>` object.
+/// @return True if lhs  and rhs have the same sensor and serial number but different chopper settings.
 inline auto find_other_chopper = [](const std::shared_ptr<calibration> &lhs, const std::shared_ptr<calibration> &rhs) -> bool {
   if (lhs->sensor != rhs->sensor)
     return false;
@@ -1488,11 +1450,9 @@ inline auto find_other_chopper = [](const std::shared_ptr<calibration> &lhs, con
   return false;
 };
 
-/*!
- * @brief pair calibrations with the same sensor and serial number but different chopper settings
- * @param calibrations vector of shared pointers to calibrations
- * @return a paired vector of shared pointers to calibrations, where the first element of the pair has the chopper on and second element has the chopper off
- */
+/// @brief pair calibrations with the same sensor and serial number but different chopper settings
+/// @param calibrations vector of shared pointers to calibrations
+/// @return a paired vector of shared pointers to calibrations, where the first element of the pair has the chopper on and second element has the chopper off
 inline std::vector<std::pair<std::shared_ptr<calibration>, std::shared_ptr<calibration>>> mk_on_off(
     const std::vector<std::shared_ptr<calibration>> &calibrations) {
   std::vector<std::pair<std::shared_ptr<calibration>, std::shared_ptr<calibration>>> result;

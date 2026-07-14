@@ -17,8 +17,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES}  ${HEADERS_INSTALL})
 
 
 target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_INSTALL_PREFIX}/lib )
-# fft not needed to be linked here
-target_link_libraries(${PROJECT_NAME} sqlite3)
+target_link_libraries(${PROJECT_NAME} sqlite3 fftw3)
 
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
