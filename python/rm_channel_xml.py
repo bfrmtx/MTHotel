@@ -117,7 +117,7 @@ def build_parser() -> argparse.ArgumentParser:
 		"-d",
 		"--root-dir",
 		type=Path,
-		default=Path.cwd(),
+		default=None,
 		help="Root directory for recursive XML search (default: current directory)",
 	)
 	return parser
@@ -126,6 +126,10 @@ def main() -> int:
 	parser = build_parser()
 	args = parser.parse_args()
 
+	if args.remove is None and args.root_dir is None:
+		parser.print_usage()
+		return 2
+
 	raw_remove_args = args.remove if args.remove is not None else ["4"]
 
 	try:
@@ -133,7 +137,7 @@ def main() -> int:
 	except ValueError as exc:
 		parser.error(str(exc))
 
-	root_dir: Path = args.root_dir
+	root_dir: Path = args.root_dir if args.root_dir is not None else Path.cwd()
 	if not root_dir.exists() or not root_dir.is_dir():
 		parser.error(f"Root directory not found or not a directory: {root_dir}")
 

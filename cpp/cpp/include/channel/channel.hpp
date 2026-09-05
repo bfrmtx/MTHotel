@@ -48,12 +48,12 @@ struct stats {
   bool cal_on = false;
 };
 
-/// \brief The p_timer class allows date functions with fractions of seconds
+/// \brief The p_timer (precision timer) class allows date functions with fractions of seconds
 /// remind: 12:00:00.0001 is maybe a bad start time! when ever possible, shift your samples so that you get full seconds
 /// @details I HAVE THE CHOICE : START TIME AT FULL SECOND AND COMPATIBLE WITH SECONDS SINCE 1970 or faulty interfaces
 /// I decided to use the full second, so we have no problems with seconds since 1970 with others
 /// I must deep think about FIR filters at long periods, because they are odd.
-
+/// @details The p_timer class is part of the channel class!
 class p_timer {
 
 public:
@@ -61,15 +61,15 @@ public:
   p_timer() = default;
 
   /// \brief p_timer default constructor
-  /// \param datetime
-  /// \param sample_rate
-  /// \param fracs
-  p_timer(const std::string &datetime, const double &sample_rate, double &fracs) {
+  /// \param datetime ISO string like 2009-08-20T13:22:01 full seconds w/o timezone, so not ends with Z
+  /// \param sample_rate in Hz
+  /// \param fracs like 0.0034 fractions of seconds, if not given, it is assumed to be 0.0
+  p_timer(const std::string &datetime, const double &sample_rate, const double &fracs) {
     this->set_datetime_sample_rate_fracs(datetime, sample_rate, fracs);
   }
 
   /// \brief set_datetime_sample_rate_fracs
-  /// \param datetime ISO string like 2009-08-20T13:22:01 NOT 2009-08-20T13:22:01.0034
+  /// \param datetime ISO string like 2009-08-20T13:22:01 full seconds w/o timezone, so not ends with Z
   /// \param sample_rate in Hz
   /// \param fracs like 0.0034
   void set_datetime_sample_rate_fracs(const std::string &datetime, const double &sample_rate, const double &fracs) {
@@ -353,7 +353,7 @@ public:
 
   /// @brief copy constructor
   /// @param rhs is a shared pointer to a channel.
-  channel(const channel &rhs) : filepath_wo_ext(rhs.filepath_wo_ext), pt(rhs.pt), latitude(rhs.latitude), longitude(rhs.longitude), elevation(rhs.elevation), angle(rhs.angle),
+  channel(const channel &rhs) : filepath_wo_ext(rhs.filepath_wo_ext), pt(rhs.pt), latitude(rhs.latitude), longitude(rhs.longitude), elevation(rhs.elevation), azimuth(rhs.azimuth),
                                 tilt(rhs.tilt), resistance(rhs.resistance), filter(rhs.filter), units(rhs.units), id(rhs.id), source(rhs.source), serial(rhs.serial),
                                 system(rhs.system), channel_no(rhs.channel_no), channel_type(rhs.channel_type), board(rhs.board), radio_filter(rhs.radio_filter),
                                 low_pas_filter(rhs.low_pas_filter), high_pas_filter(rhs.high_pas_filter), input_divider(rhs.input_divider), gain_1(rhs.gain_1), gain_2(rhs.gain_2),
@@ -381,7 +381,7 @@ public:
   /// @param rhs
   channel(channel &&rhs) noexcept
       : filepath_wo_ext(std::move(rhs.filepath_wo_ext)), pt(std::move(rhs.pt)), cal(std::move(rhs.cal)), latitude(rhs.latitude), longitude(rhs.longitude),
-        elevation(rhs.elevation), angle(rhs.angle), tilt(rhs.tilt), resistance(rhs.resistance), filter(std::move(rhs.filter)), units(std::move(rhs.units)),
+        elevation(rhs.elevation), azimuth(rhs.azimuth), tilt(rhs.tilt), resistance(rhs.resistance), filter(std::move(rhs.filter)), units(std::move(rhs.units)),
         id(std::move(rhs.id)), source(std::move(rhs.source)), serial(rhs.serial), system(std::move(rhs.system)), channel_no(rhs.channel_no),
         channel_type(std::move(rhs.channel_type)), board(rhs.board), radio_filter(rhs.radio_filter), low_pas_filter(rhs.low_pas_filter),
         high_pas_filter(rhs.high_pas_filter), input_divider(rhs.input_divider), gain_1(rhs.gain_1), gain_2(rhs.gain_2), mode(rhs.mode),
@@ -395,7 +395,7 @@ public:
     rhs.latitude = 0.0;
     rhs.longitude = 0.0;
     rhs.elevation = 0.0;
-    rhs.angle = 0.0;
+    rhs.azimuth = 0.0;
     rhs.tilt = 0.0;
     rhs.resistance = 0.0;
     rhs.serial = 0;
@@ -434,7 +434,7 @@ public:
     this->latitude = rhs.latitude;
     this->longitude = rhs.longitude;
     this->elevation = rhs.elevation;
-    this->angle = rhs.angle;
+    this->azimuth = rhs.azimuth;
     this->tilt = rhs.tilt;
     this->resistance = rhs.resistance;
     this->filter = rhs.filter;
@@ -505,7 +505,7 @@ public:
     this->latitude = rhs.latitude;
     this->longitude = rhs.longitude;
     this->elevation = rhs.elevation;
-    this->angle = rhs.angle;
+    this->azimuth = rhs.azimuth;
     this->tilt = rhs.tilt;
     this->resistance = rhs.resistance;
     this->filter = std::move(rhs.filter);
@@ -555,7 +555,7 @@ public:
     rhs.latitude = 0.0;
     rhs.longitude = 0.0;
     rhs.elevation = 0.0;
-    rhs.angle = 0.0;
+    rhs.azimuth = 0.0;
     rhs.tilt = 0.0;
     rhs.resistance = 0.0;
     rhs.serial = 0;
@@ -619,7 +619,7 @@ public:
       this->latitude = rhs->latitude;
       this->longitude = rhs->longitude;
       this->elevation = rhs->elevation;
-      this->angle = rhs->angle;
+      this->azimuth = rhs->azimuth;
       this->tilt = rhs->tilt;
       this->resistance = rhs->resistance;
       this->units = rhs->units;
@@ -689,8 +689,8 @@ public:
       this->pt.iso8601_to_time_t(head["datetime"]);
       this->filepath_wo_ext = json_file;
       this->filepath_wo_ext.replace_extension("");
-      if (head.contains("angle"))
-        this->angle = head["angle"];
+      if (head.contains("azimuth"))
+        this->azimuth = head["azimuth"];
       if (head.contains("tilt"))
         this->tilt = head["tilt"];
       if (head.contains("resistance"))
@@ -717,7 +717,7 @@ public:
     }
   }
 
-  /// \brief set_filter this can be done ONLY after teh header is read!
+  /// \brief set_filter this can be done ONLY after the header is read!
   void set_filter(const bool apply_corrections = false) {
     // split the filter string into a vector of strings
     std::vector<std::string> filters;
@@ -1325,8 +1325,8 @@ public:
   double latitude = 0.0;    ///< decimal degree such as 52.2443, ISO 6709, +/- 90
   double longitude = 0.0;   ///< decimal degree such as 10.5594, ISO 6709, +/- 180
   double elevation = 0.0;   ///< elevation in meter
-  double angle = 0.0;       ///< orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
-  double tilt = 0.0;        ///< angle positive down 90 = down, 0 = horizontal - in case it had been measured
+  double azimuth = 0.0;     ///< orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
+  double tilt = 0.0;        ///< azimuth positive down 90 = down, 0 = horizontal - in case it had been measured
   double resistance = 0.0;  ///< e.g. contact resistance of the electrodes
   std::string filter;       ///< comma separated string; system board name and filter like ADB-LF_LF-RF-1_LF-LP-4Hz which is the LF board with Radio Filter 1 and 4Hz low pass switched on
   std::string units = "mV"; ///< for ADUs it will be mV H or whatever or scaled E mV/km
@@ -1440,7 +1440,7 @@ public:
     head["latitude"] = this->latitude;
     head["longitude"] = this->longitude;
     head["elevation"] = this->elevation;
-    head["angle"] = this->angle;
+    head["azimuth"] = this->azimuth;
     head["tilt"] = this->tilt;
     head["resistance"] = this->resistance;
     head["units"] = this->units;
@@ -1493,7 +1493,7 @@ public:
     head["latitude"] = this->latitude;
     head["longitude"] = this->longitude;
     head["elevation"] = this->elevation;
-    head["angle"] = this->angle;
+    head["azimuth"] = this->azimuth;
     head["tilt"] = this->tilt;
     head["resistance"] = this->resistance;
     head["units"] = this->units;
@@ -2040,7 +2040,7 @@ public:
     if (std::fabs(elevation - rhs.elevation) > eps) {
       return false;
     }
-    if (std::fabs(angle - rhs.angle) > eps) {
+    if (std::fabs(azimuth - rhs.azimuth) > eps) {
       return false;
     }
     if (std::fabs(tilt - rhs.tilt) > eps) {
@@ -2356,7 +2356,7 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
   if (chan->cal == nullptr)
     chan->cal = std::make_shared<calibration>();
   if (channel_type == "Ex") {
-    chan->angle = 0.0;
+    chan->azimuth = 0.0;
     chan->tilt = 0.0;
     chan->units = "mV/km";
     chan->set_channel_no(0);
@@ -2367,7 +2367,7 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal->units_frequency = "Hz";
     chan->cal->datetime = dt_string;
   } else if (channel_type == "Ey") {
-    chan->angle = 90.0;
+    chan->azimuth = 90.0;
     chan->tilt = 0.0;
     chan->units = "mV/km";
     chan->set_channel_no(1);
@@ -2378,7 +2378,7 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal->units_frequency = "Hz";
     chan->cal->datetime = dt_string;
   } else if (channel_type == "Hx") {
-    chan->angle = 0.0;
+    chan->azimuth = 0.0;
     chan->tilt = 0.0;
     chan->units = "mV";
     chan->set_channel_no(2);
@@ -2393,7 +2393,7 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal->units_frequency = "Hz";
     chan->cal->datetime = dt_string;
   } else if (channel_type == "Hy") {
-    chan->angle = 90.0;
+    chan->azimuth = 90.0;
     chan->tilt = 0.0;
     chan->units = "mV";
     chan->set_channel_no(3);
@@ -2408,7 +2408,7 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal->units_frequency = "Hz";
     chan->cal->datetime = dt_string;
   } else if (channel_type == "Hz") {
-    chan->angle = 0.0;
+    chan->azimuth = 0.0;
     chan->tilt = 90.0;
     chan->units = "mV";
     chan->set_channel_no(4);
@@ -2423,12 +2423,12 @@ static void make_channel(std::shared_ptr<channel> &chan, const double &sample_ra
     chan->cal->units_frequency = "Hz";
     chan->cal->datetime = dt_string;
   } else if (channel_type == "T") {
-    chan->angle = 0.0;
+    chan->azimuth = 0.0;
     chan->tilt = 0.0;
     chan->units = "°C";
     chan->set_channel_no(20);
   } else {
-    chan->angle = 0.0;
+    chan->azimuth = 0.0;
     chan->tilt = 0.0;
     chan->units = "mV";
     chan->set_channel_no(21);

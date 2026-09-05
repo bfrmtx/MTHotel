@@ -36,3 +36,7 @@ format:
     css: _css/hdf5.css
     mermaid:
       theme: default
+
+execute:
+  freeze: auto
+  engine: julia

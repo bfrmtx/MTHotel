@@ -7,8 +7,9 @@
 #include <utility>
 #include <vector>
 
-/// \brief The atmm class represents a selection; sample start and end, like 0 and 1024 for example. to be used as for i = start; i < end; i++
-
+/// \brief The atmm class represents a exclusion; sample start and end, like 1600 and 2000 for example.
+/// \details when sliding over the data, window length is for example 1024; starting at 0, we have 0..1023. Now 1600 to 2000 is excluded, we can't fit another window of 1024 samples before 1600, so we have to continue at 2001. so we have the logic < (smaller than) and > (greater than) for the start and end of the exclusion.
+/// \details contains multiple pairs of start and end samples.
 class atmm {
 public:
   std::vector<std::pair<uint64_t, uint64_t>> atmm_data; ///< atmm data, start sample, end sample

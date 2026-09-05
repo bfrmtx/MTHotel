@@ -30,6 +30,7 @@
 /// @class calibration
 /// @brief Represents a calibration object for a sensor. The class forces units in mV/nT, Hz, and degrees - not normalized by f!
 /// temporarily the class may contain different units after reading from file, but the class will convert a.s.a.p. to mV/nT, Hz, and degrees
+/// @details spectra will be divided by caldata, so: spectra_calibrated = spectra /= caldata
 class calibration {
 public:
   std::string sensor;                         ///< The name of the sensor.

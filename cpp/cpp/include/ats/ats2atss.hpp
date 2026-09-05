@@ -38,7 +38,7 @@ public:
     this->chan->set_system(ats_file->atsheader["SystemType"].get<std::string>());
     this->chan->set_channel_no(ats_file->atsheader["channel_number"].get<size_t>());
     chan->set_lat_lon_elev(ats_file->get_lat(), ats_file->get_lon(), ats_file->get_elev());
-    chan->angle = ats_file->pos2angle();
+    chan->azimuth = ats_file->pos2azimuth();
     chan->tilt = ats_file->pos2tilt();
     chan->resistance = ats_file->atsheader["rho_probe_ohm"]; // contact resistance
     chan->filter = ats_file->get_ats_filter("ADB-");

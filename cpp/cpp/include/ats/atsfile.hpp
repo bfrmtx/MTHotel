@@ -874,9 +874,9 @@ public:
     return diplength;
   }
 
-  /// @brief pos2angle calculate angle for North to East
+  /// @brief pos2azimuth calculate azimuth for North to East
   /// @return
-  double pos2angle() const {
+  double pos2azimuth() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
     }
@@ -915,7 +915,7 @@ public:
     // hmm hmm possible but you normally set the system N S E W
     double ang = atan2(ty, tx) * 180.0 / M_PI;
 
-    // let angle from position snap
+    // let azimuth from position snap
     if ((ang < 90.01) && (ang > 89.99))
       return 90.;
     if ((ang < 0.01) && (ang > 359.99))
@@ -991,8 +991,8 @@ public:
     return false;
   }
 
-  /// @brief pos2tilt calculate tilt angle from position in 3D space
-  /// @return tilt angle; 90 = positive downwards, 0 = horizontal
+  /// @brief pos2tilt calculate tilt azimuth from position in 3D space
+  /// @return tilt azimuth; 90 = positive downwards, 0 = horizontal
   double pos2tilt() const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -1020,7 +1020,7 @@ public:
     return ang;
   }
 
-  /// @brief convert dipole angle and length to position
+  /// @brief convert dipole azimuth and length to position
   /// @param length
   /// @param angle_north_to_east in degrees, 0 = North, 90 = East, 180 = South, 270 = West
   void dip2pos(const double &length, const double &angle_north_to_east) {
@@ -1036,8 +1036,8 @@ public:
     this->atsheader["y2"] = ty;
   }
 
-  /// @brief convert dipole length and tilt angle to z position
-  /// @details tilt angle is the angle from horizontal to vertical, so 90 degrees is vertical downwards
+  /// @brief convert dipole length and tilt azimuth to z position
+  /// @details tilt azimuth is the azimuth from horizontal to vertical, so 90 degrees is vertical downwards
   /// @param length
   /// @param tilt in degrees, 90 = vertical downwards, 0 = horizontal
   void dip2z(const double &length, const double &tilt) {

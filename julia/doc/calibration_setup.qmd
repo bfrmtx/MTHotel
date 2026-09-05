@@ -1,0 +1,56 @@
+# Calibration Setup
+
+## Signal Generator
+
+* Select a function waveform (e.g., sawtooth, that delivers even and odd harmonics)
+* Select the base frequency for the waveform
+* Set the amplitude, less than 1.25 V, e.g. **0.8 V** to be off from the limit
+
+## ADU
+
+* set dipole E~x~ to 1000   (old web -500 (x1) and +500 (x2), others 0)
+* set dipole E~y~ to 1000   (old web -500 (y1) and +500 (y2), others 0)
+* Connect the ADU to the signal generator output
+* Ensure the ADU is powered on and properly configured
+* GPS must be synchronized
+
+* generator base frequencies shall be 64, 128, 256, 512, 1024 Hz
+* make a joblist for all available sampling rates of the ADU, 2 minutes (better 128 seconds) per frequency
+
+## gen_saw_tooth
+
+generates a sawtooth waveform with the specified base frequency and amplitude.
+
+```text
+julia gen_saw_tooth.jl <template_path> <freq> <amplitude>
+julia gen_saw_tooth.jl 003_ADU-11e_C000_TEx_8192Hz 200 800
+julia gen_saw_tooth.jl 003_ADU-11e_C000_TEx_32768Hz 400 800
+```
+Hence that because of an infinitely steep slope at the discontinuity, the spectra look *quite different from a waveform recorded in the "real world"*
+
+## stacked_spectra
+
+just plots the stacked spectra of the time series data. For your control.
+
+## stacked_spectra_plus_theoretical
+
+just plots the stacked spectra of the time series data along with the theoretical spectra for comparison.
+
+## calc_calibration_lowpass
+
+filenames must be like:
+
+```text
+<serial>_<system>_C<channel_no>_T<channel_type>_<rate>_cal.csv
+<serial>_<theo>_C<channel_no>_T<channel_type>_<rate>_cal.csv
+so:
+003_ADU-11e_C000_TEx_16384Hz_cal.csv
+003_theo_C000_TEx_16384Hz_cal.csv
+```
+So for the same channel, you can drag and drop both the measured and theoretical calibration files into the analysis tool. You can drop multiple sets of **FREQUENCIES** of the *same* channel.<br>
+For copy & paste watch the console output.
+
+## load_all_csv_cal
+
+plots an overview of all loaded calibration CSV files, grouped by channel and sampling rate. <br>
+e.g. if you load "theo" and measured calibration, the the measured starts to "drop down" under the theoretical curve at higher frequencies.

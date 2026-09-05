@@ -42,28 +42,37 @@ Different stations can have runs that are isochronous or partly overlapping comp
 Is a container for one or more stations which are at the same geographical area. <br>
 A survey can have multiple stations, but each station is recorded at a different location. <br>
 
+## Channel labelling
+
+As the time of recording you only have Ex, Ey, Hx, Hy, Hz.<br>
+When processing, you may add a suffix _e for EMAP channel or _r for Remote Reference channel. <br>
+
 ## local
 
-As above == station.
-We can later calculate Ex/(Hy * Hyr*) or similar in the spectral domain.
+As above == station. Local is also called "single station", so only data from here is used. <br>
+E.g. Ex, Ey, Hx, Hy, Hz are recorded at this station. <br>
+Position is from the .json file, E channel.<br>
+We calculate Ex * Ex<sup>\*</sup> / (Hy * Hy<sup>\*</sup>) or similar in the spectral domain. <br>
 
 ## EMAP
 
 Electrical local, but maps Magnetic field from a nearby station. <br>
-So at this place, we have e.g. Ex, Ey only or want to use them only.<br>
-We take Hx, Hy, Hz from a nearby station, call them Hxr, Hyr, Hzr. <br>
-We later calculate Ex/(Hy * Hyr*) or similar in the spectral domain. <br>
+So at this place, we have or take e.g. Ex<sub>e</sub>, Ey<sub>e</sub> only or want to use them only.<br>
+We take Hx, Hy, Hz from a nearby station, call them Hx, Hy, Hz. <br>
+We later calculate Ex<sub>e</sub> * Ex<sub>e</sub><sup>\*</sup> / (Hy * Hy<sup>\*</sup>) or similar in the spectral domain. <br>
+We take the position of the EMAP station from the .json file, E<sub>e</sub> channel. <br>
 
 ## Remote Reference (RR)
 Is a station that is far away from the local station. <br>
 We use the RR station to remove noise from the local station. <br>
 We take Ex, Ey, Hx, Hy, Hz from the local station. <br>
-Additionally, we take Hx, Hy, Hz from the RR station, call them Hxr, Hyr, Hzr. <br>
-Instead of using auto-spectra (Hx * Hx*), we use cross-spectra (Hx * Hxr*) to remove noise. <br>
+Additionally, we take Hx, Hy, Hz from the RR station, call them Hx<sub>r</sub>, Hy<sub>r</sub>, Hz<sub>r</sub>. <br>
+Instead of using auto-spectra (Hx * Hx<sup>\*</sup>), we use cross-spectra (Hx * Hx<sub>r</sub><sup>\*</sup>) to remove noise. <br>
 Hx * conjugate(Hx) is a real number, the imaginary part is a numerical artefact. <br>
-Hx * conjugate(Hxr) is a complex number, but maybe we make a double of the real part <br>
+Hx * conjugate(Hx<sub>r</sub>) is a complex number, but maybe we make a double of the real part <br>
 
-We later calculate Ex/(Hy * Hyr*) in the spectral domain. <br>
+We later calculate Ex * Ex<sup>\*</sup> / (Hy * Hy<sub>r</sub><sup>\*</sup>) in the spectral domain. <br>
+We take the position of the local station from the .json file, E channel. <br>
 
 In many cases, the RR station runs much longer than the local station, and is used for many local stations. <br>
 So you record a local station for 8 hours, but the RR station runs for 10 days. <br>
@@ -71,7 +80,9 @@ So you record a local station for 8 hours, but the RR station runs for 10 days. 
 ## EMAP RR
 Electrical local, but maps Magnetic field from a nearby station and additionally from a RR station. <br>
 
-We later calculate Ex/(Hy * Hyr*) or similar in the spectral domain. <br>
+We later calculate Ex<sub>e</sub> * Ex<sub>e</sub><sup>\*</sup> / (Hy * Hy<sub>r</sub><sup>\*</sup>) or similar in the spectral domain. <br>
+
+We take the position of the EMAP station from the .json file, E<sub>e</sub> channel. <br>
 
 ## Hanning / Hann Window / Hamming Window
 Hanning or Hann Window is a sine like window function, applied in the *time domain* to achieve smooth spectra later. <br>

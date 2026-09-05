@@ -32,4 +32,5 @@ qt6/
 doc/mthotel/build/
 doc/mthotel/html
 sync_to_server.zsh
-
+julia/doc/calibration_setup_files/
+/julia/data/
