@@ -77,18 +77,57 @@ function load_channels(paths::Vector{String})
             @warn "failed to read header" path = p exception = e
         end
     end
-    isempty(hdrs) && return hdrs
+    return filter_channels(hdrs)
+end
 
+# keeps only channels matching the first one's sampling rate (req. c) and at most MAX_INPUT_FILES of them
+function filter_channels(hdrs::Vector{Channel})
+    isempty(hdrs) && return hdrs
     rate = hdrs[1].sampling_rate
     same_rate = filter(ch -> ch.sampling_rate == rate, hdrs)
     if length(same_rate) != length(hdrs)
-        @warn "dropped channels with a sampling rate different from the first dropped file" kept_rate = rate
+        @warn "dropped channels with a sampling rate different from the first one" kept_rate = rate
     end
     if length(same_rate) > MAX_INPUT_FILES
         @warn "only the first $MAX_INPUT_FILES channels are kept (max input files reached)"
         same_rate = same_rate[1:MAX_INPUT_FILES]
     end
     return same_rate
+end
+
+# for command-line supplied paths, which typically have no extension (read_header/strip_atss_ext
+# accepts with/without extension, and a trailing "." as shell tab-completion may leave)
+function load_channels_cli(paths::Vector{String})
+    hdrs = Channel[]
+    for p in paths
+        try
+            push!(hdrs, read_header(p))
+        catch e
+            @warn "failed to read header" path = p exception = e
+        end
+    end
+    return filter_channels(hdrs)
+end
+
+# key/value CLI options interleaved with file paths, e.g.:
+#   julia stacked_spectra_plus_theoretical.jl form saw base_freq 68 003_ADU-11e_C000_TEx_8192Hz
+const CLI_OPTION_KEYS = ("mode", "wl", "form", "base_freq", "base_ampl", "lower", "upper")
+
+function parse_cli_args(args::Vector{String})
+    opts = Dict{String,String}()
+    files = String[]
+    i = 1
+    while i <= length(args)
+        a = args[i]
+        if a in CLI_OPTION_KEYS && i < length(args)
+            opts[a] = args[i + 1]
+            i += 2
+        else
+            push!(files, a)
+            i += 1
+        end
+    end
+    return opts, files
 end
 
 function clear_axes!(state::ViewerState)
@@ -325,6 +364,55 @@ function build_viewer()
         idx === nothing || (wl_menu.i_selected[] = idx)
 
         seed_base_amplitude!()
+        refresh!()
+    end
+
+    # pre-loads channels/options passed on the command line (see parse_cli_args), e.g.:
+    #   julia stacked_spectra_plus_theoretical.jl form saw base_freq 68 <file1> [<file2>]
+    if !isempty(ARGS)
+        opts, files = parse_cli_args(ARGS)
+
+        if !isempty(files)
+            chans = load_channels_cli(files)
+            if isempty(chans)
+                info_label.text[] = "no valid channel files found on the command line"
+            else
+                state.channels = chans
+                info_label.text[] = "loaded $(length(chans)) channel(s): " * join(channel_label.(chans), ", ")
+                wl = default_wl(chans[1].sampling_rate)
+                idx = findfirst(==(wl), WL_OPTIONS)
+                idx === nothing || (wl_menu.i_selected[] = idx)
+            end
+        end
+
+        if haskey(opts, "mode")
+            idx = findfirst(==(opts["mode"]), ["single", "multi"])
+            idx === nothing || (mode_menu.i_selected[] = idx)
+        end
+        if haskey(opts, "wl")
+            idx = findfirst(==(opts["wl"]), string.(WL_OPTIONS))
+            idx === nothing || (wl_menu.i_selected[] = idx)
+        end
+        if haskey(opts, "form")
+            idx = findfirst(==(opts["form"]), FORM_OPTIONS)
+            idx === nothing || (form_menu.i_selected[] = idx)
+        end
+        if haskey(opts, "base_freq")
+            f0 = parse(Float64, opts["base_freq"])
+            idx = findfirst(==(f0), BASE_FREQ_OPTIONS)
+            if idx === nothing
+                # not one of the presets: extend the dropdown (sorted) so it can be selected
+                new_options = sort(Float64.(vcat(BASE_FREQ_OPTIONS, f0)))
+                freq_menu.options[] = string.(new_options)
+                idx = findfirst(==(f0), new_options)
+            end
+            freq_menu.i_selected[] = idx
+        end
+        haskey(opts, "lower") && set_textbox!(lower_box, parse(Float64, opts["lower"]))
+        haskey(opts, "upper") && set_textbox!(upper_box, parse(Float64, opts["upper"]))
+
+        seed_base_amplitude!()
+        haskey(opts, "base_ampl") && set_textbox!(ampl_box, parse(Float64, opts["base_ampl"]))
         refresh!()
     end
 

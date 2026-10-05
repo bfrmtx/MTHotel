@@ -175,3 +175,21 @@ function read_data(ch::Channel; start::Integer=0, wl::Integer=0)
     end
     return data
 end
+
+function get_native_sampling_rates(adu10e::Bool=false)
+    if (adu10e)
+        return [512, 1024, 2048, 4096]
+    else
+        return [1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072]
+    end
+end
+
+function get_gains()
+    return [1, 2, 4, 8]
+end
+
+function frequency_fracs(frequency::Real)
+    # do not use 1/2. that is Nyquist frequency already and never used
+    fracs = [1/4, 1/8, 1/16, 1/256, 1/512]
+    return frequency .* fracs
+end
