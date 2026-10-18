@@ -2,7 +2,11 @@
 #include <algorithm>
 #include <set>
 
-// constructor
+///
+/// @brief Construct a new ptspc lib::ptspc lib object
+/// @param pool_in for managing thread pool operations
+/// @details we need calibration info.db, master_calibration.db.
+/// @throws std::runtime_error if the required database files are not found
 ptspc_lib::ptspc_lib(std::shared_ptr<BS::thread_pool<BS::tp::none>> pool_in) {
   this->pool = pool_in;
   // get the executable path
@@ -27,7 +31,12 @@ ptspc_lib::ptspc_lib(std::shared_ptr<BS::thread_pool<BS::tp::none>> pool_in) {
   }
 }
 
-// get the options from the GUI or command line arguments "my arguments == margs"
+/// @brief Get the options from the GUI or command line arguments "my arguments == margs"
+/// @param args The list of command line arguments
+/// @param has_gui Boolean indicating if a GUI is present (to be implemented)
+/// @details -u survey directory containing the stations.
+/// @details -s station names to process within the survey directory. builds the list of stations to be processed.
+/// @details this get_options assumes that the runs are the same for each station within the survey directory. For MT surveys this is not true. There we need a new individual handling for each station's runs.
 void ptspc_lib::get_options(const std::list<std::string> &args, const bool &has_gui) {
   std::list<std::string> margs = args;
   this->has_gui = has_gui;
@@ -102,7 +111,7 @@ void ptspc_lib::get_options(const std::list<std::string> &args, const bool &has_
     } else if (*it == "-s") { // get one or more station names
       it = margs.erase(it);   // erase -s
       station_config config;
-      it = config.create_station_config(it, margs);
+      it = config.create_station_config(it, margs); // create station configuration from the arguments provided after -s. like -r 1 -c 2 3 4 -r 2 -c 2 3 4
       station_configs.emplace_back(std::move(config));
     } else {
       ++it;
@@ -114,6 +123,10 @@ void ptspc_lib::get_options(const std::list<std::string> &args, const bool &has_
   // survey_tmp->ls(true, 3);      // list the survey structure with 3 indentation spaces, call scan first
 }
 
+/// @brief Process the station configurations after they have been set up with get_options
+/// @param verbose Boolean indicating if verbose output should be printed
+/// @throws std::runtime_error if the survey scanner is not initialized or if no station configurations are provided
+/// @details expects -r 1 -c 2 3 4 -r 2 -c 2 3 4 or similar. Each station will have its runs and channels configured accordingly, and we select for usage. Finally we get a long list of ALL channels to use, all channels attached to the selected runs, attached to the selected stations.
 void ptspc_lib::process_station_configs(const bool verbose) {
 
   if (survey_tmp == nullptr) {
@@ -162,6 +175,10 @@ void ptspc_lib::process_station_configs(const bool verbose) {
     }
   }
 }
+
+/// @brief Prepare FFT for all runs and channels in the survey. Initializes FFTW plans and raw spectra.
+/// @param verbose If true, prints detailed information about the FFT preparation process.
+/// @details RUN CHANNELS have the same sample rate, and the FFTW plans / window lengths are exactly the SAME! For MT we need a new function with a more flexible setting to window lengths wl and read lengths rl for each sampling rate individually.
 void ptspc_lib::prepare_fft(const bool verbose) {
   if (survey == nullptr) {
     throw std::runtime_error("Survey is not initialized, use -u survey_name");
@@ -189,6 +206,10 @@ void ptspc_lib::prepare_fft(const bool verbose) {
     }
   }
 }
+
+/// @brief Process the raw spectra for all runs and channels in the survey.
+/// @details This function reads the time series data for each channel, performs FFT processing, and stores the results in the channels as queues of the corresponding run node.
+/// @throws std::runtime_error if the survey is not initialized or if there is an error executing FFTW.
 void ptspc_lib::process_raw_spectra() {
   // finally calls read_all_fftw(false, nullptr) for each channel
   // and pool->detach_task to read in parallel
@@ -214,6 +235,9 @@ void ptspc_lib::process_raw_spectra() {
   pool->wait(); // wait for all tasks to finish, read time series and perform fftw
 }
 
+/// @brief Set the inner and outer frequencies for the spectra preparation.
+/// @details This function configures the frequency ranges for each channel based on the sample rate and magnification settings. Then we generate the calibration functions / data for each channel, data plus theoretical. Then we prepare the raw spectra for further processing (still stored in the channels). The internal queue of each channel is converted to a vector and calibrated as needed.
+/// @throws std::runtime_error if the survey is not initialized.
 void ptspc_lib::set_inner_outer_frequencies_prepare_spectra() {
   if (survey == nullptr) {
     throw std::runtime_error("Survey is not initialized, use -u survey_name");
@@ -295,6 +319,9 @@ void ptspc_lib::set_inner_outer_frequencies_prepare_spectra() {
   pool->wait(); // wait for all tasks to finish, prepare raw spectra inside channels
 }
 
+/// @brief Move the raw spectra from the runs->channels to the runs->raw_spectra.
+/// @details This function iterates over all runs and moves the raw spectra from the channels into the run's raw_spectra object. This is a fast move operation and also initializes the auto cross spectra. This shall enable that we can delete the channels (time domain) and continue in the frequency domain (raw spectra).
+/// @throws std::runtime_error if the survey is not initialized.
 void ptspc_lib::move_raw_spectra() {
   if (survey == nullptr) {
     throw std::runtime_error("Survey is not initialized, use -u survey_name");
@@ -312,6 +339,7 @@ void ptspc_lib::prepare_auto_spectra(const bool verbose) {
   for (auto &run : runs) {
     auto aspc_chans = run->get_raw_spectra()->generate_auto_spectra_channels(verbose);
     for (const auto &name : aspc_chans) {
+      // fill the processing methods with spectra
       run->get_raw_spectra()->sa.prepare_ac_cross_spectra(name);
       run->get_raw_spectra()->sa_prz.prepare_ac_cross_spectra(name);
       run->get_raw_spectra()->sa_avg.prepare_ac_cross_spectra(name);
@@ -323,6 +351,7 @@ void ptspc_lib::stack_spectra() {
   for (auto &run : runs) {
     std::cout << "stacking auto spectra for run " << run->get_name() << std::endl;
     run->get_raw_spectra()->advanced_stack_all(median_limit);
+    run->get_raw_spectra()->parzen_stack_all();
   }
   pool->wait(); // wait for all tasks to finish
   std::cout << "done" << std::endl;
@@ -363,6 +392,7 @@ void ptspc_lib::save(const fs::path &top_dir_, const std::string &sub_dir_) {
   for (const auto &run : runs) {
     fs::path run_dir = survey_dir / "stations" / run->get_parent()->get_name() / run->get_name();
     pool->detach_task([run, run_dir]() { run->get_raw_spectra()->sa.save_ascii(run_dir); });
+    pool->detach_task([run, run_dir]() { run->get_raw_spectra()->sa_prz.save_ascii(run_dir); });
   }
   this->pool->wait(); // wait for all tasks to finish
 }

@@ -8,14 +8,14 @@ set -euo pipefail
 project_dir=${0:A:h}
 
 sync_media_assets() {
-    if [[ ! -e "${project_dir}/media" ]]; then
-        echo "No media directory found at ${project_dir}/media. Skipping media sync."
+    if [[ ! -e "${project_dir}/_media" ]]; then
+        echo "No media directory found at ${project_dir}/_media. Skipping media sync."
         return
     fi
 
-    mkdir -p "${output_dir}/media"
-    echo "Syncing media assets into ${output_dir}/media..."
-    rsync -aL --delete "${project_dir}/media/" "${output_dir}/media/"
+    mkdir -p "${output_dir}/_media"
+    echo "Syncing media assets into ${output_dir}/_media..."
+    rsync -aL --delete "${project_dir}/_media/" "${output_dir}/_media/"
 }
 
 # 2. where the output should be, like /xxx/pages/mobile/doc

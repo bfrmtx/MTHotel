@@ -1,0 +1,3 @@
+project(test_calibration_operators LANGUAGES CXX)
+
+add_executable(test_calibration_operators test_calibration_operators.cpp)

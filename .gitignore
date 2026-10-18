@@ -28,7 +28,12 @@ Thumbs.db
 build/
 CMakeLists.txt.user
 qtcsettings.cmake
-qt6/
+**/qt6/*
+!cpp/qt6/CMakeLists.txt
+!cpp/qt6/pstplotter/
+!cpp/qt6/pstplotter/**
+!cpp/qt6/cal-plot/
+!cpp/qt6/cal-plot/**
 doc/mthotel/build/
 doc/mthotel/html
 sync_to_server.zsh

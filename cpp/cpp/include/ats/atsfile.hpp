@@ -265,7 +265,7 @@ public:
       ++read_count; // increment read count
     }
     if (read_count == 0) {
-      std::cerr << "No samples read from file: " << this->ats_filename << std::endl;
+      std::cerr << "Number of samples read from file: " << this->ats_filename << std::endl;
       return 0; // no samples read
     }
     // if data.size() != ints_doubles.size(), we resize it
@@ -850,6 +850,13 @@ public:
     return this->atsheader_bin.sample_rate;
   }
 
+  double get_orig_sample_rate() const {
+    if (!is_ok) {
+      throw std::runtime_error("ATS header not read successfully.");
+    }
+    return this->atsheader_bin.orig_sample_rate;
+  }
+
   void set_elev(const double &d) {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
@@ -929,34 +936,35 @@ public:
   }
   /// \brief get_filter
   /// \param init like "ADB" - we may other board names in future, use it together with system type
-  /// \return comma separated string,like ADB-LF,LF-RF-2; so the board type and the filters
+  /// \return comma separated board and filter settings; ADU-11e omits the ADB board token
   std::string get_ats_filter(const std::string init) const {
     if (!is_ok) {
       throw std::runtime_error("ATS header not read successfully.");
     }
-    std::string filter(init);
-    filter += this->atsheader["ADB_board_type"];
-    if (this->atsheader["LF_filters"].get<std::string>().size()) {
-      filter += ",";
-      filter += this->atsheader["LF_filters"];
+    std::string filter;
+    const auto append_token = [&filter](const std::string &token) {
+      if (!token.empty()) {
+        if (!filter.empty())
+          filter += ",";
+        filter += token;
+      }
+    };
+    if (this->atsheader["SystemType"].get<std::string>() != "ADU-11e") {
+      append_token(init + this->atsheader["ADB_board_type"].get<std::string>());
     }
-    if (this->atsheader["HF_filters"].get<std::string>().size()) {
-      filter += ",";
-      filter += this->atsheader["HF_filters"];
-    }
+    append_token(this->atsheader["LF_filters"].get<std::string>());
+    append_token(this->atsheader["HF_filters"].get<std::string>());
     // check for
     // append if we have dividers
     if (this->atsheader["InputDivOn"] == 1)
-      filter += ",div_8";
+      append_token("div-8");
     else
-      filter += ",div_1";
+      append_token("div-1");
     // append gain_stage1, this is float, so we make a string gain_1_ + gain as int
-    filter += ",gain_1_";
     // uint8_t fits always and is member of ADU
-    filter += std::to_string(uint8_t(static_cast<int>(this->atsheader["gain_stage1"].get<float>())));
+    append_token("gain_1_" + std::to_string(uint8_t(static_cast<int>(this->atsheader["gain_stage1"].get<float>()))));
     // same for gain_stage2
-    filter += ",gain_2_";
-    filter += std::to_string(uint8_t(static_cast<int>(this->atsheader["gain_stage2"].get<float>())));
+    append_token("gain_2_" + std::to_string(uint8_t(static_cast<int>(this->atsheader["gain_stage2"].get<float>()))));
 
     // finally we check for direct mode
     double tmp_lsb = this->atsheader["lsbval"].get<double>();

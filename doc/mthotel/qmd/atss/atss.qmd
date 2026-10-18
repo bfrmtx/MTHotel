@@ -63,9 +63,12 @@ additional there may appear [atmm](#atmm)  mask files:
 - tilt: positive downwards; 0 = horizontal, 90 positive down
 - resistance: in Ohm, e.g. the contact resistance of the electrodes or internal resistance of the sensor
 - units: text string, e.g. mV/km or mV; the systems scales E to mV/km automatically
-- filter: text string, e.g. like ADB-LF,LF-RF-4 -> filter used during recording
+- filter: text string, e.g. like ADB-LF,LF-RF-4 -> filter used during recording<br> The original (recording) sample rate in Hz is copied from the ATS `orig_sample_rate` field during conversion and stored only as an `osr_<rate>` token (for example, `osr_4096`) in this string, not as a separate JSON entry. Zero means unknown and produces no OSR token. Changing the current sample rate, such as when downsampling, does not change this token. For ADU systems this keeps the ADC filter. However, since at 1/4 the original sample rate the filter is in the bypassed state, it does not affect the downsampled data.
 - id: text string, e.g. "AXB L22 S123", no processing for that, typically set during acquisition
 - source: text string, e.g. empty or CSAMT
+
+During ATS-to-ATSS conversion, ADU-11e data omits the ADB board token (such as `ADB-HF` or `ADB-LF`) from `filter`. Other filter settings, divider, gains, and the OSR token are retained.
+Divider tokens use `div-1` and `div-8`. The C++ filter readers also accept the legacy spellings `div_1` and `div_8`; channel normalization converts them to the hyphenated spelling.
 
 *The default values for MT are[^rot_rec]:*
 * x = North, angle = 0°, tilt = 0° (horizontal)
@@ -122,7 +125,7 @@ If your directory is stations/Sarıçam/run_110 this entry has no effect.
 "tilt": 0.0,
 "resistance": 572.3670043945313,
 "units": "mV/km",
-"filter": "ADB-LF,LF-RF-4",
+"filter": "ADB-LF,LF-RF-4,osr_128",
 "id": "",
 "source": "",
 "sensor_calibration": {

@@ -25,10 +25,10 @@ $P_{1} = i \cdot \frac{1}{4 Hz}, \enspace P_{2} = i \cdot \frac{1}{8192 Hz} \ens
 $P_{3} = i \cdot \frac{1}{0.72 Hz},\enspace P_{4} = i \cdot \frac{1}{28300 Hz}$
 
 #### Chopper on
-$F_{on}(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4} $
+$F_{on}(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4}$
 
 #### Chopper off
-$F_{off}(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3}  \cdot \frac{1}{1+P_4} $
+$F_{off}(f) = \frac{ mV}{nT} = 800 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3}  \cdot \frac{1}{1+P_4}$
 
 
 
@@ -37,7 +37,7 @@ $P_{1} = i \cdot \frac{1}{32 Hz}, \enspace P_{2} = i \cdot \frac{1}{40000 Hz} \e
 $P_{3} = i \cdot \frac{1}{0.72 Hz},\enspace P_{4} = i \cdot \frac{1}{50000 Hz}$
 
 #### Chopper on
-$F_{on}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4} $
+$F_{on}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{1}{1+P_4}$
 
 #### Chopper off
-$F_{off}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3}  \cdot \frac{1}{1+P_4} $
+$F_{off}(f) = \frac{ mV}{nT} = 640 \enspace \frac{mV}{nT} \cdot \frac{P_1}{1+P_1} \cdot \frac{1}{1+P_2} \cdot \frac{P_3}{1+P_3}  \cdot \frac{1}{1+P_4}$

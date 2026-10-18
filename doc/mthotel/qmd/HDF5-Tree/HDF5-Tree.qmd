@@ -12,6 +12,8 @@ this format is well organized.
 
 For distributed data recording and frequent data changes it is *not* made. The [ **atss**](../atss/atss.qmd#atss) and **JSON** files of the metronix data loggers are that way organized that the can be finally pushed into the MTH5 HDF5 format.
 
+We start here *below* the *experiment* node.
+
 ```
 Northern Mining
 ├── config

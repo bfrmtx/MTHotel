@@ -79,15 +79,12 @@ $P_{4} = i \cdot \frac{f}{\frac{0.159}{(R_{sensor} + 200) \cdot 470E^{-12}Hz}}$ 
 
 ### LF Board 10e
 
-$F_{LF - Channel} = G_{1}  \cdot F_{1}   \cdot F_{4}$
+$F_{LF - Channel} = [G_{1}]  \cdot F_{1}   \cdot F_{4}$
 
 
 $G_{1} = 1 \ or\ 4, 8, 16, 32, 64$ <br>
-The $G_{1}$ (inside ADC) is a chopper stabilized gain. The SW shall set 1 as default, for E this means $\pm$ 2.5 V input range .
-
-
-Gains and input divider do not appear in the ats file, they are calibrated into the **LSB**
-
+The $G_{1}$ (inside ADC) is a chopper stabilized gain. The SW shall set 1 as default, for E this means $\pm$ 2.5 V input range.<br>
+Since the gain $G_{1}$ and the input divider are inside the LSB (ATS format) or included in the mV data stream (ATSS) we neglect the gain.
 
 $F_{1} = \frac{1}{1 + P_{1}}$; $P_{1} = i\frac{f}{318 kHz}$
 
@@ -99,12 +96,77 @@ $P_{4} = i \cdot \frac{f}{7.8 kHz}$ if **DIV-8 = on** (default for **coil**, not
 
 
 $F_{4} = \frac{1}{1 + P_{4}}$;
-$P_{4} = i \cdot 2 \pi f \cdot (R_{sensor} + 200) \cdot 6.8E^{-9}Hz $
+$P_{4} = i \cdot 2 \pi f \cdot (R_{sensor} + 200) \cdot 6.8E^{-9}Hz$
 if **DIV-1 = on** (default for electrodes, not used for H) )
 
 (in old manuals the equation was written like $P_{4} = i \cdot \frac{f}{\frac{0.159}{(R_{sensor} + 200) \cdot 6.8E^{-9}Hz}}$ )
 
+**red dotted line 2000 Hz**<br>
+For H up to 2 kHz, the low-pass filter of the board can be considered negligible. The phase becomes almost not negligible.
+
+
+![ADU-10e Low-Pass Filter Response for H](../_media/cal/adu-10_h_channel.png)
+
+For E the low-pass filter of the board has a more significant effect for higher frequencies and *high* resistance surfaces.
+
+![ADU-10e Low-Pass Filter Response for E, amplitude](../_media/cal/adu-10e_e_channel_amplitude.png)
+
+So at 5 k$\Omega$ and 2000 Hz in the spectra, the decay is 0.9.
+
+![ADU-10e Low-Pass Filter Response for E, phase](../_media/cal/adu-10e_e_channel_phase.png)
+
+
 <hr style="height:6px;border-width:0;color:gray;background-color:gray">
+
+## ADU-11e
+
+To correct the low pass character of the ADU-11e[^adc_type], the following transfer functions are used:
+
+### Board
+
+$F_{LF - Channel} = [G_{2}]  \cdot F_{1} \cdot F_{2} = [G_{2}]  \cdot \frac{1}{1 + P_{1}} \cdot \frac{1}{1 + P_{2}}$
+
+$G_{2} = 1 \ or\ 4, 8, 16, 32, 64$ (G<sub>1</sub> was on old boards, not existing here,  G<sub>2</sub> is inside ADC) <br>
+Since the gain $G_{1}$ and the input divider are inside the LSB (ATS format) or included in the mV data stream (ATSS) we neglect the gain.
+
+$F_{1} = \frac{1}{1 + P_{1}}$; $F_{2} = \frac{1}{1 + P_{2}}$
+
+For **H** and **DIV-8 on**, always RF-1 (default for **coil**, not used for E) <br>
+ $P_{1} = i \cdot 2 \pi f \cdot 2200 \cdot 1 \cdot E^{-9}$
+
+ $P_{2} = i \cdot 2 \pi f \cdot 1100 \cdot 1 \cdot E^{-9}$
+
+ For **E** and **DIV-1 on** (default for electrodes, not used for H) <br>
+
+ - RF1 ("weak") $C=1.0 \cdot E^{-10}$ **< 1500 Ohm** contact resistance, default for *buffer* electrodes
+ - RF2 ("strong") $C=1.1 \cdot E^{-9}$ &nbsp; **> 1500 Ohm** contact resistance
+
+$P_{1} = i \cdot 2 \pi f \cdot (R_{sensor} + 2200) \cdot 1 \cdot E^{-9}$ 
+
+$P_{2} = i \cdot 2 \pi f \cdot (\frac{R_{sensor}}{2} + 1100) \cdot C$ depending on RF1 or RF2 selection.
+
+### ADC
+
+Gaussian low-pass filter is applied to the signal:
+$$e^{-\left(\frac{f}{f_c}\right)^{2}}$$
+
+| sampling rate | cut-off frequency |
+|---------------|-----------------|
+| 1024 Hz       | 393 Hz          |
+| 2048 Hz       | 786 Hz          |
+| 4096 Hz       | 1570 Hz         |
+| 8192 Hz       | 3140 Hz         |
+| 16384 Hz      | 6261 Hz         |
+| 32768 Hz      | 12370 Hz        |
+| 65536 Hz      | 23600 Hz        |
+| 131072 Hz     | 41000 Hz        |
+
+In a plot natural logarithm of the normalized signal ln~normalized~ versus f² the 
+Gaussian low-pass filter will appear as a straight line with a slope of $\frac{-1}{f_c²}.$
+
+With f<sub>c</sub> = 0.38 * f<sub>sampling rate</sub> works perfectly up to 32 kHz and even 64 kHz. At 131 kHz the approximation starts to deviate significantly.
+
+![Gaussian Linearization <br> 22.4k label is placed at 22.4k² "real world"](../_media/cal/gaussian_linearization.svg)
 
 ## ADU-07e
 
@@ -274,3 +336,5 @@ $F(f)\,\left[\frac{mV}{nT}\right] = 1.43 \cdot 10^{-4}$
 has almost no influence in the calculation of the transfer function.
 
 [^coil_rev]: MFS-6e :Rev. 1p4, MFS-7e :Rev. 1.2
+
+[^adc_type]:  Analog Devices AD7771 mit SINC5

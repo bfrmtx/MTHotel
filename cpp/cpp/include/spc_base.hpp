@@ -194,8 +194,11 @@ public:
 
   /// @brief get a vector of all possible auto spectra channels, that is all channels self-paired
   /// @details this is most likely a source spectra
-  /// @param verbose
-  /// @return
+  /// @param verbose if true, prints information about the prepared auto spectra channels
+  /// @details we iterate over this map object <channel pair, spectra vector> to find all auto spectra channels, since entry first is a channel pair, we use entry.first.first and entry.first.second to access the individual channels
+  /// @details the object will add a pair <chan_1, chan_1> from <chan_1, nullptr> entries in the map
+  /// @details LATER we add this channel pair with help from the cross spectra generation function to raw_spectra.processing-method, like stackall.prepare_ac_cross_spectra, parzenStack.prepare_ac_cross_spectra and so on
+  /// @return a vector of pairs of shared pointers to channels
   std::vector<std::pair<std::shared_ptr<channel>, std::shared_ptr<channel>>> generate_auto_spectra_channels(const bool verbose = false) const {
     std::shared_lock lock(mutex_);
     // get all unique channels from ch_map and may self-paired

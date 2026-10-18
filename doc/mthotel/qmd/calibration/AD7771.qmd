@@ -1,0 +1,9 @@
+
+- ODR output data rate SPS
+- SPS samples per second
+- SINC5 type digital filter
+- PM is a constant equal to 8 
+- SRC_N is the integer value of the programmed ODR
+- SRC Sampling Rate Converter 
+
+SRC Group Delay = (PM + 2 × SRC_N) / (SRC_N x ODR)

@@ -10,6 +10,7 @@
 #include <list>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -41,12 +42,23 @@ public:
   std::string units_phase;                    ///< The units of the phase.
   std::string datetime;                       ///< The date and time of the calibration.
   std::string Operator;                       ///< The operator who made the calibration, we us uppercase because operator is a keyword in C++.
-  std::vector<double> f;                      ///< The frequency values in Hz.
-  std::vector<double> a;                      ///< The amplitude values in mV/nT.
-  std::vector<double> p;                      ///< The phase values ind degrees
+  std::vector<double> f;                      ///< The frequency values in Hz. That is the driver of this class. ASCENDING ORDER IS REQUIRED.
+  std::vector<double> a;                      ///< The amplitude values in mV/nT. That is the driver of this class.
+  std::vector<double> p;                      ///< The phase values ind degrees. That is the driver of this class.
+  std::string board;                          ///< The name of the ADU board
+  std::string system;                         ///< The name of the ADU system.
+  double R = 0.0;                             ///< The resistance value of the ADU board.
+  double C = 0.0;                             ///< The capacitance value of the ADU board.
+  double sampling_rate = 0.0;                 ///< The sampling rate of the ADU board.
+  std::filesystem::path file_path_in;         ///< The file path of the calibration data. saved after reading from file.
+  std::filesystem::path file_path_out;        ///< The file path where the calibration data will be saved.
   // NOT part of the calibration data in JSON files
   // in JSON ist must be ct = CalibrationType::mtx to allow MTH5
   CalibrationType ct = CalibrationType::nn; ///< The type of calibration.
+  // avoid unnecessary multiplication/division by small numbers
+  double phase_zero = 0.01;              ///< The phase assumed to be zero in degrees.
+  double amplitude_one_deviation = 0.01; ///< The amplitude assumed to be one if it deviates by this amount from 1.
+  double DIV = 1.0;                      ///< The division factor for for input; can be DIV_1 (1) or DIV_8 (8).
 
   /// @brief Default constructor. Creates an empty calibration object.
   calibration() {
@@ -59,16 +71,165 @@ public:
   /// @param chopper The status of the chopper.
   /// @param ct The type of calibration.
   calibration(const std::string &sensor, const uint64_t &serial, const ChopperStatus chopper = ChopperStatus::off, const CalibrationType ct = CalibrationType::mtx) :
-      sensor(sensor), serial(serial) {
+      sensor(mstr::trim(sensor)), serial(serial) {
     this->set_format(ct, false);
     this->chopper = chopper;
+  }
+
+  /// @brief Rounds the calibration values based on phase_zero and amplitude_one_deviation.
+  /// @details If a phase value is smaller than phase_zero, it is set to zero. AVOIDS scaling errors in PLOTS.
+  ///          If an amplitude value deviates from one by less than amplitude_one_deviation, it is set to one.
+  void calibration_rounding() {
+    for (size_t i = 0; i < this->p.size(); ++i) {
+      if (std::abs(this->p[i]) < phase_zero) {
+        this->p[i] = 0.0;
+      }
+    }
+    for (size_t i = 0; i < this->a.size(); ++i) {
+      if (std::abs(this->a[i] - 1.0) < amplitude_one_deviation) {
+        this->a[i] = 1.0;
+      }
+    }
+  }
+
+  void set_div(const int &div) {
+    if (div != 1 && div != 8) {
+      throw std::runtime_error("Invalid division factor. Must be 1 or 8.");
+    }
+    this->DIV = double(div);
+  }
+
+  /// @brief Multiplies amplitudes and adds phases in degrees, without phase wrapping.
+  /// @throws std::runtime_error if frequency vectors differ or amplitude/phase vectors are empty or have inconsistent sizes.
+  /// @details Only a and p are modified; frequencies, metadata, and backup/theoretical/master data are unchanged.
+  calibration &operator*=(const calibration &rhs) {
+    this->validate_arithmetic(rhs, "operator*=");
+    for (size_t i = 0; i < this->f.size(); ++i) {
+      this->a[i] *= rhs.a[i];
+      this->p[i] += rhs.p[i];
+    }
+    return *this;
+  }
+
+  /// @brief Divides amplitudes and subtracts phases in degrees, without phase wrapping.
+  /// @throws std::runtime_error if frequency vectors differ, amplitude/phase vectors are empty or have inconsistent sizes, or a divisor is zero.
+  /// @details Only a and p are modified; validation completes before modifying either vector.
+  calibration &operator/=(const calibration &rhs) {
+    this->validate_arithmetic(rhs, "operator/=");
+    for (size_t i = 0; i < rhs.a.size(); ++i) {
+      if (rhs.a[i] == 0.0) {
+        throw std::runtime_error("operator/=:: divisor amplitude is zero at index " + std::to_string(i));
+      }
+    }
+    for (size_t i = 0; i < this->f.size(); ++i) {
+      this->a[i] /= rhs.a[i];
+      this->p[i] -= rhs.p[i];
+    }
+    return *this;
   }
 
   std::string get_sensor() const {
     return this->sensor;
   }
+  /// @brief Sets the sensor name.
+  /// @param sensor The name of the sensor.
+  void set_sensor(const std::string &sensor) {
+    if (mstr::trim(sensor).empty()) {
+      throw std::runtime_error("Sensor name cannot be empty");
+    }
+    this->sensor = mstr::trim(sensor);
+    this->board.clear();
+    this->system.clear();
+  }
+
+  /// @brief Sets the board name.
+  /// @param board The name of the ADU board.
+  void set_board(const std::string &board) {
+    if (mstr::trim(board).empty()) {
+      throw std::runtime_error("Board name cannot be empty");
+    }
+    if (this->system.empty()) {
+      throw std::runtime_error("Cannot set board name when system name is empty");
+    }
+    this->board = mstr::trim(board);
+  }
+
+  /// @brief Sets the system name.
+  /// @param system The name of the ADU system.
+  void set_system(const std::string &system) {
+    if (mstr::trim(system).empty()) {
+      throw std::runtime_error("System name cannot be empty");
+    }
+    this->system = mstr::trim(system);
+    this->sensor.clear();
+  }
+
+  void set_item(const std::string &item) {
+    auto trimmed_item = mstr::trim(item);
+    if (trimmed_item.contains("ADU"))
+      this->set_system(trimmed_item);
+    else
+      this->set_sensor(trimmed_item);
+  }
+  /// @brief Gets the system name.
+  /// @return The name of the ADU system.
+  std::string get_system() const {
+    return this->system;
+  }
+  /// @brief Gets the board name.
+  /// @return The name of the ADU board.
+  std::string get_board() const {
+    return this->board;
+  }
+
   uint64_t get_serial() const {
     return this->serial;
+  }
+  void set_serial(const uint64_t &serial) {
+    this->serial = serial;
+  }
+
+  /// @brief Sets the sampling rate. Needed for board / system calibration.
+  /// @param sampling_rate The sampling rate in Hz. Must be non-negative.
+  void set_sampling_rate(const double &sampling_rate) {
+    if (sampling_rate < 0.0) {
+      throw std::invalid_argument("Sampling rate cannot be negative");
+    }
+    this->sampling_rate = sampling_rate;
+  }
+
+  /// @brief Gets the sampling rate.
+  /// @return The sampling rate in Hz.
+  double get_sampling_rate() const {
+    return this->sampling_rate;
+  }
+
+  /// @brief Sets the resistance value of the ADU board. For coils does not matter
+  /// @param R The resistance value in ohms. Must be non-negative.
+  void set_resistance(const double &R) {
+    if (R < 0.0) {
+      throw std::invalid_argument("Resistance cannot be negative");
+    }
+    this->R = R;
+  }
+  /// @brief Gets the resistance value of the ADU board. For coils does not matter.
+  /// @return The resistance value in ohms.
+  double get_resistance() const {
+    return this->R;
+  }
+
+  /// @brief Sets the capacitance value of the ADU board. For coils does not matter.
+  /// @param C The capacitance value in farads. Must be non-negative.
+  void set_capacitance(const double &C) {
+    if (C < 0.0) {
+      throw std::invalid_argument("Capacitance cannot be negative");
+    }
+    this->C = C;
+  }
+  /// @brief Gets the capacitance value of the ADU board. For coils does not matter.
+  /// @return The capacitance value in farads.
+  double get_capacitance() const {
+    return this->C;
   }
 
   std::string get_serial_string(const unsigned int FieldWidth = 0) const {
@@ -97,16 +258,110 @@ public:
     }
   }
 
+  /// @brief Checks if the chopper is on.
+  /// @return True if the chopper is on, false otherwise.
+  bool is_chopper_on() const {
+    return this->chopper == ChopperStatus::on;
+  }
+
+  /// @brief Gets the frequency vector of the calibration data.
+  /// @return The frequency vector as a std::vector<double>.
   std::vector<double> get_f() const {
     return this->f;
   }
 
+  /// @brief Gets the amplitude vector of the calibration data.
+  /// @return The amplitude vector as a std::vector<double>.
   std::vector<double> get_a() const {
     return this->a;
   }
 
+  /// @brief Gets the phase vector of the calibration data.
+  /// @return The phase vector as a std::vector<double>.
   std::vector<double> get_p() const {
     return this->p;
+  }
+
+  /// @brief Generates a logarithmically spaced frequency vector for the calibration data. Useful for creating theoretical / synthetic calibration data.
+  /// @param f_start The starting frequency in Hz.
+  /// @param f_stop The stopping frequency in Hz.
+  /// @param num_points_decade The number of points per decade (default is 10).
+  /// @throws std::invalid_argument if the frequency generation parameters are invalid.
+  void gen_freqs(const double f_start, const double f_stop, const size_t num_points_decade = 10) {
+    if (f_start <= 0.0 || f_stop <= 0.0 || num_points_decade < 1) {
+      throw std::invalid_argument("Invalid frequency generation parameters");
+    }
+    const size_t num_points = static_cast<size_t>(std::ceil(std::log10(f_stop / f_start) * num_points_decade)) + 1;
+
+    this->f.resize(num_points);
+    const double log_f_start = std::log10(f_start);
+    const double log_f_stop = std::log10(f_stop);
+    const double delta = (log_f_stop - log_f_start) / (num_points - 1);
+    for (size_t i = 0; i < num_points; ++i) {
+      this->f[i] = std::pow(10.0, log_f_start + i * delta);
+    }
+  }
+
+  /// @brief Converts theoretical calibration data to actual data.
+  /// @details when you ONLY create a theoretical calibration, this function will convert it to actual data.
+  void theo_to_data() {
+    this->f = this->f_theo;
+    this->a = this->a_theo;
+    this->p = this->p_theo;
+  }
+
+  double f_min() const {
+    return this->f.empty() ? 0.0 : this->f.front();
+  }
+
+  double f_max() const {
+    return this->f.empty() ? 0.0 : this->f.back();
+  }
+
+  std::pair<double, double> f_range() const {
+    return this->f.empty() ? std::make_pair(0.0, 0.0) : std::make_pair(this->f.front(), this->f.back());
+  }
+
+  size_t check_duplicates(const std::filesystem::path &source = {}) {
+    if ((this->f.size() != this->a.size()) || (this->f.size() != this->p.size())) {
+      throw std::runtime_error("calibration vectors f, a, and p have different sizes ->" + std::filesystem::absolute(source).string());
+    }
+
+    size_t removed = 0;
+    size_t i = 1;
+    while (i < this->f.size()) {
+      if (this->f[i] < this->f[i - 1]) {
+        throw std::runtime_error("calibration frequencies are not increasing ->" + std::filesystem::absolute(source).string());
+      }
+      if (this->f[i] != this->f[i - 1]) {
+        ++i;
+        continue;
+      }
+      const auto relative_deviation = [](const double lhs, const double rhs) {
+        const double lhs_abs = std::abs(lhs);
+        const double rhs_abs = std::abs(rhs);
+        const double scale = lhs_abs > rhs_abs ? lhs_abs : rhs_abs;
+        return scale == 0.0 ? 0.0 : std::abs(lhs - rhs) / scale;
+      };
+      const double amplitude_deviation = relative_deviation(this->a[i], this->a[i - 1]);
+      const double phase_deviation = relative_deviation(this->p[i], this->p[i - 1]);
+      if ((amplitude_deviation > 0.01) || (phase_deviation > 0.01)) {
+        std::ostringstream error;
+        error << "duplicate calibration frequency " << this->f[i] << " Hz for " << this->get_sensor_and_serial() << " (chopper " << this->get_chopper_status()
+              << ") has conflicting values: (a=" << this->a[i - 1] << ", p=" << this->p[i - 1]
+              << ") and (a=" << this->a[i] << ", p=" << this->p[i] << "), deviations: a=" << amplitude_deviation * 100.0 << "%, p=" << phase_deviation * 100.0
+              << "% ->" << std::filesystem::absolute(source);
+        throw std::runtime_error(error.str());
+      }
+
+      std::cerr << "Warning: removing duplicate calibration entry within 1% at " << this->f[i] << " Hz for " << this->get_sensor_and_serial() << " (chopper " << this->get_chopper_status()
+                << "), deviations: a=" << amplitude_deviation * 100.0 << "%, p=" << phase_deviation * 100.0 << "% ->" << std::filesystem::absolute(source) << std::endl;
+      this->f.erase(this->f.begin() + static_cast<std::ptrdiff_t>(i));
+      this->a.erase(this->a.begin() + static_cast<std::ptrdiff_t>(i));
+      this->p.erase(this->p.begin() + static_cast<std::ptrdiff_t>(i));
+      ++removed;
+    }
+    return removed;
   }
 
   size_t get_cal_data(std::vector<double> &f, std::vector<double> &a, std::vector<double> &p, const CalibrationType ct_type = CalibrationType::mtx) const {
@@ -197,6 +452,9 @@ public:
     return ret;
   }
 
+  /// @brief get a subrange of the phase vector
+  /// @param range   min max phase
+  /// @return phase vector withing range
   std::vector<double> get_p(std::pair<double, double> &range) const {
     if ((range.first == range.second) && (range.first == 0)) // this is maybe an uninitialized range -> return all
       return this->p;
@@ -343,17 +601,25 @@ public:
     return fname;
   }
 
+  /// @brief gets the plot name for the calibration object, like MFS-06e 1234 (on) or (off), or the board/system name if sensor is not set.
+  /// @return The plot name as a string.
   std::string plot_name() const {
-    if (this->sensor.empty())
-      return std::string();
+    if (!this->sensor.empty()) {
 
-    std::string fname(this->sensor);
-    fname += " " + mstr::zero_fill_field(this->serial, 4);
-    if (this->chopper == ChopperStatus::on)
-      fname += " (on)";
-    else if (this->chopper == ChopperStatus::off)
-      fname += " (off)";
-    return fname;
+      std::string fname(this->sensor);
+      fname += " " + mstr::zero_fill_field(this->serial, 4);
+      if (this->chopper == ChopperStatus::on)
+        fname += " (on)";
+      else if (this->chopper == ChopperStatus::off)
+        fname += " (off)";
+      return fname;
+    }
+    if (!board.empty())
+      return board;
+    if (!system.empty())
+      return system;
+
+    return std::string();
   }
 
   /// @brief copy constructor
@@ -381,6 +647,11 @@ public:
       this->f_backup = rhs->f_backup;
       this->a_backup = rhs->a_backup;
       this->p_backup = rhs->p_backup;
+      this->R = rhs->R;
+      this->C = rhs->C;
+      this->sampling_rate = rhs->sampling_rate;
+      this->board = rhs->board;
+      this->system = rhs->system;
     }
   }
 
@@ -407,6 +678,13 @@ public:
     this->f_backup.clear();
     this->a_backup.clear();
     this->p_backup.clear();
+    this->R = 1.0;
+    this->C = 1.0;
+    this->sampling_rate = 0.0;
+    this->board.clear();
+    this->system.clear();
+    this->file_path_in.clear();
+    this->file_path_out.clear();
   }
 
   void set_format(const CalibrationType ct, bool skip_date_time = true) {
@@ -682,7 +960,7 @@ public:
       return 0;
 
     if (head["sensor_calibration"].contains("sensor"))
-      this->sensor = std::string(head["sensor_calibration"]["sensor"]);
+      this->sensor = mstr::trim(std::string(head["sensor_calibration"]["sensor"]));
     if (head["sensor_calibration"].contains("serial"))
       this->serial = uint64_t(head["sensor_calibration"]["serial"]);
     else
@@ -717,6 +995,19 @@ public:
       std::ostringstream err_str(__func__, std::ios_base::ate);
       err_str << ":: calibration vecors f,a, are inconsistent ->" << std::filesystem::absolute(filepath);
       throw std::runtime_error(err_str.str());
+    }
+    if (!this->f.empty()) {
+      for (size_t i = 0; i < this->f.size(); ++i) {
+        if (!std::isfinite(this->f[i]) || !std::isfinite(this->a[i]) || !std::isfinite(this->p[i])) {
+          throw std::runtime_error(std::string(__func__) + ":: calibration contains a non-finite value ->" + std::filesystem::absolute(filepath).string());
+        }
+        if (i > 0 && this->f[i] == this->f[i - 1]) {
+          throw std::runtime_error(std::string(__func__) + ":: duplicate calibration frequency " + std::to_string(this->f[i]) + " Hz ->" + std::filesystem::absolute(filepath).string());
+        }
+        if (i > 0 && this->f[i] < this->f[i - 1]) {
+          throw std::runtime_error(std::string(__func__) + ":: calibration frequencies are not strictly increasing ->" + std::filesystem::absolute(filepath).string());
+        }
+      }
     }
     bool go_mtx_f = false;
     bool go_mtx_p = false;
@@ -1077,11 +1368,11 @@ public:
     return this->f_master.size();
   }
 
-  /// @brief generate a calibration for the sensor; always use the mtx format by default; decide to convert at the end!
+  /// @brief generate a theoretical calibration for the sensor; always use the mtx format by default; decide to convert at the end!
   /// @param f_in new frequency vector OR the existing one
   /// the result is stored in f_theo, a_theo, p_theo and is ON THE FREQUENCY GRID OF f_in which is same as FFT!
   ///
-  void gen_cal_sensor(const std::vector<double> &f_in) {
+  std::vector<std::complex<double>> gen_cal_sensor(const std::vector<double> &f_in, const bool no_error = false) {
 
     if (!f_in.size()) {
       this->f_theo = this->f;
@@ -1093,41 +1384,79 @@ public:
       err_str << ":: sensor is empty";
       throw std::runtime_error(err_str.str());
     }
+    std::vector<std::complex<double>> trf;
     if ((this->sensor == "MFS-06") || (this->sensor == "MFS-06e")) {
-      auto trf = gen_trf_mfs06e(this->f_theo, this->chopper);
+      trf = gen_trf_mfs06e(this->f_theo, this->chopper);
       bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
     } else if ((this->sensor == "MFS-07")) {
-      auto trf = gen_trf_mfs07(this->f_theo, this->chopper);
+      trf = gen_trf_mfs07(this->f_theo, this->chopper);
       bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
     } else if ((this->sensor == "MFS-07e")) {
-      auto trf = gen_trf_mfs07e(this->f_theo, this->chopper);
+      trf = gen_trf_mfs07e(this->f_theo, this->chopper);
       bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
     } else if ((this->sensor == "MFS-12e")) {
-      auto trf = gen_trf_mfs12e(this->f_theo, this->chopper);
+      trf = gen_trf_mfs12e(this->f_theo, this->chopper);
       bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
     } else if ((this->sensor == "FGS-02")) {
-      auto trf = gen_trf_fgs02(this->f_theo);
+      trf = gen_trf_fgs02(this->f_theo);
       bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
     } else if ((this->sensor == "FGS-03e")) {
-      auto trf = gen_trf_fgs03e(this->f_theo);
+      trf = gen_trf_fgs03e(this->f_theo);
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+    } else if ((this->sensor == "FGS-04e")) {
+      trf = gen_trf_fgs04e(this->f_theo);
       bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
     } else if ((this->sensor == "FGS-05e")) {
-      auto trf = gen_trf_fgs05e(this->f_theo);
+      trf = gen_trf_fgs05e(this->f_theo);
       bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
     } else if ((this->sensor == "SHFT-02e") || (this->sensor == "SHFT-02")) {
-      auto trf = gen_trf_shft02e(this->f_theo);
+      trf = gen_trf_shft02e(this->f_theo);
       bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
-    } else if ((this->sensor == "SHFT-03e")) {
-      auto trf = gen_trf_mfs07e(this->f_theo, this->chopper);
-      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
-      // std::ostringstream err_str(__func__, std::ios_base::ate);
-      // err_str << ":: SHFT-03e not implemented ->" << this->sensor;
-      // throw std::runtime_error(err_str.str());
+    } else if (no_error) { // if no_error is true, return an empty transfer function instead of throwing an error, needed for synthetic calibration or nested calls
+      trf.clear();
+      return trf;
     } else {
       std::ostringstream err_str(__func__, std::ios_base::ate);
       err_str << ":: unknown sensor ->" << this->sensor;
       throw std::runtime_error(err_str.str());
     }
+    return trf;
+  }
+
+  // inline std::vector<std::complex<double>> gen_trf_ad_7771_lf(const std::vector<double> &freqs, const double &sampling_rate, const double &resistance, const double &capacity) {
+  std::vector<std::complex<double>> gen_cal_board(const std::vector<double> &f_in) {
+    if (!f_in.size()) {
+      this->f_theo = this->f;
+    } else {
+      this->f_theo = f_in;
+    }
+    std::vector<std::complex<double>> trf;
+    if (this->system == "ADU-11e") {
+      const double capacitance_nF = this->C * 1.0e9;
+      trf = gen_trf_ad_7771_lf(f_theo, this->sampling_rate, this->R, capacitance_nF); // only ADC up to now
+    }
+    return trf;
+  }
+
+  std::vector<std::complex<double>> gen_synthetic_cal(const std::vector<double> &f_in) {
+    if (!f_in.size()) {
+      this->f_theo = this->f;
+    } else {
+      this->f_theo = f_in;
+    }
+    std::vector<std::complex<double>> trf;
+    if (!this->sensor.empty()) {
+      trf = gen_cal_sensor(this->f_theo, true);
+    }
+    if (!this->system.empty()) {
+      trf = gen_cal_board(this->f_theo);
+    }
+    if (trf.empty()) {
+      trf = std::vector<std::complex<double>>(this->f_theo.size(), std::complex<double>(1.0, 0.0));
+    } else {
+      bvec::cplx2ap(trf, this->a_theo, this->p_theo, true);
+    }
+    return trf;
   }
 
   /// @brief BOTH f_theo and f must be sorted and BOTH must be on the same frequency grid (FFT); INTERPOLATE the measured FIRST!
@@ -1360,6 +1689,19 @@ public:
   }
 
 private:
+  void validate_arithmetic(const calibration &rhs, const char *operation) const {
+    if (this->f != rhs.f) {
+      throw std::runtime_error(std::string(operation) + ":: frequency vectors must be identical");
+    }
+    if (this->a.empty() || this->p.empty() || rhs.a.empty() || rhs.p.empty()) {
+      throw std::runtime_error(std::string(operation) + ":: amplitude and phase vectors must be non-empty in both operands");
+    }
+    if (this->a.size() != this->f.size() || this->p.size() != this->f.size() ||
+        rhs.a.size() != rhs.f.size() || rhs.p.size() != rhs.f.size()) {
+      throw std::runtime_error(std::string(operation) + ":: amplitude and phase sizes must match the frequency vector in both operands");
+    }
+  }
+
   // vectors for the theoretical calibration
   std::vector<double> f_theo;
   std::vector<double> a_theo;

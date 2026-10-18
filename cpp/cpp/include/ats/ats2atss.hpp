@@ -43,6 +43,7 @@ public:
     chan->resistance = ats_file->atsheader["rho_probe_ohm"]; // contact resistance
     chan->filter = ats_file->get_ats_filter("ADB-");
     chan->set_filter(true); // check the filter settings in a heuristic way; e.g. 500Hz HP will be added for ADU-08e, HF board
+    chan->set_osr(ats_file->get_orig_sample_rate());
     this->measdocxml = ats_file->get_xmlpath();
   }
   std::shared_ptr<channel> convert_header() {
@@ -67,6 +68,9 @@ public:
       std::cerr << "--> continued" << std::endl;
       cals.clear();
     }
+    for (auto &ncal : cals) {
+      ncal->check_duplicates(ats_file->get_xmlpath());
+    }
     // make sure to have correct sensor names
     for (auto &ncal : cals) {
       ncal->sensor = rcal->get_sensor_name(ncal->sensor);
@@ -76,9 +80,17 @@ public:
       lsb *= 1000. / ats_file->pos2length();
       chan->units = "mV/km";
       chan->tmp_lsb = lsb;
+      // mostly serial numbers are 0 for Ex, Ey
+      if (chan->get_channel_type("Ex") == "Ex" && cal->serial == 0) {
+        cal->serial = 1;
+      }
+      if (chan->get_channel_type("Ey") == "Ey" && cal->serial == 0) {
+        cal->serial = 2;
+      }
     } else {
       chan->tmp_lsb = lsb;
       chan->units = "mV";
+
     } // no scaling
     bool has_cal = false;
     for (auto &ncal : cals) {
@@ -360,29 +372,15 @@ public:
 
   void scan() {
     std::shared_lock lock(mutex_);
-    for (const auto &entry : std::filesystem::directory_iterator(basePath)) {
-      if (entry.is_directory()) {
-        // enter the directory and look for *xml files; a run is described by a measdoc.xml file
-        std::vector<std::filesystem::path> xml_files;
-        for (const auto &file : std::filesystem::directory_iterator(entry.path())) {
-          if (file.is_regular_file() && file.path().extension() == ".xml") {
-            xml_files.push_back(file.path());
-          }
-        }
-        if (xml_files.empty()) {
-          //  std::cerr << "No measdoc.xml found in " << entry.path() << std::endl;
-          continue; // no measdoc.xml, no run
-        }
-        // we have one or more measdoc.xml files, so we can create run objects
-        // std::cout << "Found xml files in " << entry.path() << std::endl;
-        for (const auto &xml_file : xml_files) {
-          auto run = std::make_shared<ats_run_ats>(xml_file);
-          runs[xml_file] = run; // store the run in the map
-          run->scan();          // scan the run for channels
-        }
-        std::cout << "Found " << xml_files.size() << " measdoc.xml files in " << entry.path() << std::endl;
+    runs.clear();
+    for (const auto &entry : std::filesystem::recursive_directory_iterator(basePath)) {
+      if (entry.is_regular_file() && entry.path().extension() == ".xml") {
+        auto run = std::make_shared<ats_run_ats>(entry.path());
+        runs[entry.path()] = run;
+        run->scan();
       }
     }
+    std::cout << "Found " << runs.size() << " measdoc.xml files in " << basePath << std::endl;
   }
 
   void ls() const {

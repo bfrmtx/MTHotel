@@ -276,7 +276,6 @@ public:
       err_str << ":: rhs is nullptr";
       throw std::runtime_error(err_str.str());
     }
-    // *this = fftw_freqs(rhs->sample_rate, rhs->wl, rhs->rl);
 
     this->wl = rhs->wl;
     this->rl = rhs->rl;
@@ -658,7 +657,8 @@ public:
   }
 
   /// @brief trim_fftw_result
-  /// \return vector according to the selected frequencies
+  /// @details This function trims the FFTW result to include only the frequencies within the selected range. so it cuts out the result from a complete FFTW output based on the previously set lower and upper frequency bounds. so if 0.05 and 0.4 was set earlier, the orginal FFTW result will be trimmed to include only the frequencies between 0.05 and 0.4.
+  /// @return vector according to the selected frequencies
   std::vector<std::complex<double>> trim_fftw_result(const std::vector<std::complex<double>> &in_fftresult) const {
     std::vector<std::complex<double>> fftresult;
     fftresult.reserve(this->idx_range.second - this->idx_range.first);

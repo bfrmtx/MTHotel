@@ -38,7 +38,7 @@ public:
   /// \return
   std::vector<std::shared_ptr<calibration>> read_std_xml(const fs::path &filename, std::string &messages);
 
-  /// \brief read_std_xml_single same as above - but for a XML calibration contain no channels - but calibration only and returns a vector of calibration objects in new format (mV/nT)
+  /// \brief read_std_xml_single same as above - but for a XML calibration contain no channels - but calibration only and returns a vector of calibration objects in new format (mV/nT); this is a CALIBRATION FILE ONLY, not a measdoc with multiple channels.
   /// \param filename
   /// \return
   std::vector<std::shared_ptr<calibration>> read_std_xml_single(const std::filesystem::path &filename);

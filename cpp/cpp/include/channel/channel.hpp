@@ -9,6 +9,7 @@
 #include "strings_etc.hpp"
 ////
 #include <bitset>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <complex>
@@ -354,7 +355,7 @@ public:
   /// @brief copy constructor
   /// @param rhs is a shared pointer to a channel.
   channel(const channel &rhs) : filepath_wo_ext(rhs.filepath_wo_ext), pt(rhs.pt), latitude(rhs.latitude), longitude(rhs.longitude), elevation(rhs.elevation), azimuth(rhs.azimuth),
-                                tilt(rhs.tilt), resistance(rhs.resistance), filter(rhs.filter), units(rhs.units), id(rhs.id), source(rhs.source), serial(rhs.serial),
+                                tilt(rhs.tilt), resistance(rhs.resistance), osr(rhs.osr), filter(rhs.filter), units(rhs.units), id(rhs.id), source(rhs.source), serial(rhs.serial),
                                 system(rhs.system), channel_no(rhs.channel_no), channel_type(rhs.channel_type), board(rhs.board), radio_filter(rhs.radio_filter),
                                 low_pas_filter(rhs.low_pas_filter), high_pas_filter(rhs.high_pas_filter), input_divider(rhs.input_divider), gain_1(rhs.gain_1), gain_2(rhs.gain_2),
                                 mode(rhs.mode), tmp_station(rhs.tmp_station), tmp_lsb(rhs.tmp_lsb), tmp_origin(rhs.tmp_origin), tmp_xml(rhs.tmp_xml), ts_slice(rhs.ts_slice),
@@ -381,7 +382,7 @@ public:
   /// @param rhs
   channel(channel &&rhs) noexcept
       : filepath_wo_ext(std::move(rhs.filepath_wo_ext)), pt(std::move(rhs.pt)), cal(std::move(rhs.cal)), latitude(rhs.latitude), longitude(rhs.longitude),
-        elevation(rhs.elevation), azimuth(rhs.azimuth), tilt(rhs.tilt), resistance(rhs.resistance), filter(std::move(rhs.filter)), units(std::move(rhs.units)),
+        elevation(rhs.elevation), azimuth(rhs.azimuth), tilt(rhs.tilt), resistance(rhs.resistance), osr(rhs.osr), filter(std::move(rhs.filter)), units(std::move(rhs.units)),
         id(std::move(rhs.id)), source(std::move(rhs.source)), serial(rhs.serial), system(std::move(rhs.system)), channel_no(rhs.channel_no),
         channel_type(std::move(rhs.channel_type)), board(rhs.board), radio_filter(rhs.radio_filter), low_pas_filter(rhs.low_pas_filter),
         high_pas_filter(rhs.high_pas_filter), input_divider(rhs.input_divider), gain_1(rhs.gain_1), gain_2(rhs.gain_2), mode(rhs.mode),
@@ -398,6 +399,7 @@ public:
     rhs.azimuth = 0.0;
     rhs.tilt = 0.0;
     rhs.resistance = 0.0;
+    rhs.osr = 0.0;
     rhs.serial = 0;
     rhs.channel_no = 0;
     rhs.board = ADU::off;
@@ -437,6 +439,7 @@ public:
     this->azimuth = rhs.azimuth;
     this->tilt = rhs.tilt;
     this->resistance = rhs.resistance;
+    this->osr = rhs.osr;
     this->filter = rhs.filter;
     this->units = rhs.units;
     this->id = rhs.id;
@@ -508,6 +511,7 @@ public:
     this->azimuth = rhs.azimuth;
     this->tilt = rhs.tilt;
     this->resistance = rhs.resistance;
+    this->osr = rhs.osr;
     this->filter = std::move(rhs.filter);
     this->units = std::move(rhs.units);
     this->id = std::move(rhs.id);
@@ -558,6 +562,7 @@ public:
     rhs.azimuth = 0.0;
     rhs.tilt = 0.0;
     rhs.resistance = 0.0;
+    rhs.osr = 0.0;
     rhs.serial = 0;
     rhs.channel_no = 0;
     rhs.board = ADU::off;
@@ -622,6 +627,7 @@ public:
       this->azimuth = rhs->azimuth;
       this->tilt = rhs->tilt;
       this->resistance = rhs->resistance;
+      this->osr = rhs->osr;
       this->units = rhs->units;
       this->id = rhs->id;
       this->filter = rhs->filter;
@@ -735,6 +741,18 @@ public:
     }
     if (s.size())
       filters.push_back(s);
+    double original_sample_rate = this->get_osr();
+    for (const auto &sfilter : filters) {
+      if (sfilter.starts_with("osr_")) {
+        const std::string_view rate(sfilter.data() + 4, sfilter.size() - 4);
+        double value = 0.0;
+        const auto result = std::from_chars(rate.data(), rate.data() + rate.size(), value);
+        if (result.ec != std::errc{} || result.ptr != rate.data() + rate.size() || !std::isfinite(value) || value < 0.0) {
+          throw std::runtime_error("channel::set_filter :: invalid original sample rate: " + sfilter);
+        }
+        original_sample_rate = value;
+      }
+    }
     // if the filter contains "_RF_" , we set radio_filter
 
     // set the board type to HF or LF
@@ -791,14 +809,13 @@ public:
         new_filters.push_back("HF-HP-500Hz");
       }
     }
-    // if the filter contains "_div_" , we set input_divider
     for (const auto &sfilter : filters) {
-      if (mstr::contains(sfilter, "div_1")) {
+      if (sfilter == "div-1" || sfilter == "div_1") {
         this->input_divider = ADU::div_1;
         new_filters.push_back("div-1");
-      } else if (mstr::contains(sfilter, "div_8")) {
+      } else if (sfilter == "div-8" || sfilter == "div_8") {
         this->input_divider = ADU::div_8;
-        new_filters.push_back("div_8");
+        new_filters.push_back("div-8");
       }
     }
     // if the filter contains "_gain_" , we set gain_1 and gain_2
@@ -875,7 +892,9 @@ public:
       this->filter += sfilter;
       this->filter += ",";
     }
-    this->filter.pop_back(); // remove the last comma
+    if (!this->filter.empty())
+      this->filter.pop_back(); // remove the last comma
+    this->set_osr(original_sample_rate);
   }
 
   /// @brief set_high_pas_filter need some overwrite for airborne systems
@@ -895,6 +914,7 @@ public:
     this->board = ADU::off;
     this->mode = ADU::off;
     this->filter.clear();
+    this->set_osr(this->get_osr());
   }
 
   /// @brief Set the date and time
@@ -1182,6 +1202,45 @@ public:
     return this->pt.sample_rate;
   }
 
+  double set_osr(const double &original_sample_rate) {
+    if (!std::isfinite(original_sample_rate) || original_sample_rate < 0.0) {
+      throw std::runtime_error("channel::set_osr :: original sample rate must be finite and non-negative");
+    }
+
+    std::string osr_token;
+    if (original_sample_rate > 0.0) {
+      char buffer[64];
+      const auto result = std::to_chars(buffer, buffer + sizeof(buffer), original_sample_rate);
+      if (result.ec != std::errc{}) {
+        throw std::runtime_error("channel::set_osr :: can not format original sample rate");
+      }
+      osr_token = "osr_" + std::string(buffer, result.ptr);
+    }
+
+    std::istringstream filters(this->filter);
+    std::string token;
+    std::string normalized_filter;
+    while (std::getline(filters, token, ',')) {
+      if (!token.empty() && !token.starts_with("osr_")) {
+        if (!normalized_filter.empty())
+          normalized_filter += ",";
+        normalized_filter += token;
+      }
+    }
+    if (!osr_token.empty()) {
+      if (!normalized_filter.empty())
+        normalized_filter += ",";
+      normalized_filter += osr_token;
+    }
+    this->filter = std::move(normalized_filter);
+    this->osr = original_sample_rate;
+    return this->osr;
+  }
+
+  double get_osr() const {
+    return this->osr;
+  }
+
   std::string get_sample_rate_str(const bool add_space = false, const bool append_space = false) const {
     return mstr::sample_rate_to_str_simple(this->pt.sample_rate, add_space, append_space);
   }
@@ -1328,6 +1387,7 @@ public:
   double azimuth = 0.0;     ///< orientation from North to East (90 = East, -90 or 270 = West, 180 South, 0 North)
   double tilt = 0.0;        ///< azimuth positive down 90 = down, 0 = horizontal - in case it had been measured
   double resistance = 0.0;  ///< e.g. contact resistance of the electrodes
+  double osr = 0.0;         ///< original recording sample rate in Hz; 0 means unknown
   std::string filter;       ///< comma separated string; system board name and filter like ADB-LF_LF-RF-1_LF-LP-4Hz which is the LF board with Radio Filter 1 and 4Hz low pass switched on
   std::string units = "mV"; ///< for ADUs it will be mV H or whatever or scaled E mV/km
   std::string id = "";      ///< optional id for the channel or station, like "deposit L1 S22"
@@ -1876,31 +1936,84 @@ public:
     }
   }
 
-  /// \brief ats_simple_stack_all
+  /// \brief atss_simple_stack_all
   /// \return non calibrated stacked complex spectra
-  std::vector<std::complex<double>> ats_simple_stack_all(const std::shared_ptr<fftw_freqs> &fft_freqs, const bool bwincal = true) {
-    std::vector<std::complex<double>> sa;
-    sa.resize(this->qspc.front().size());
-    double dn = 0;
-    while (!this->qspc.empty()) {
-      std::vector<std::complex<double>> &v = this->qspc.front();
-      size_t i = 0;
-      for (auto &val : v) {
-        sa[i++] += val;
-      }
-      this->qspc.pop();
-      dn++;
+  std::vector<std::complex<double>> atss_simple_stack_all(const std::shared_ptr<fftw_freqs> &fft_freqs, const bool bwincal = true) {
+    if (fft_freqs == nullptr) {
+      throw std::runtime_error(std::string(__func__) + " :: fft_freqs is nullptr");
     }
-    for (auto &val : sa)
-      val /= dn;
-    if (bwincal)
-      fft_freqs->scale(sa);
-    return sa;
+    if (this->qspc.empty()) {
+      throw std::runtime_error(std::string(__func__) + " :: no spectra available for stacking");
+    }
+
+    const auto frequencies = fft_freqs->get_frequencies();
+    std::vector<std::complex<double>> stacked(frequencies.size(), 0.0);
+    const size_t stacks = this->qspc.size();
+    while (!this->qspc.empty()) {
+      auto spectrum = fft_freqs->trim_fftw_result(this->qspc.front());
+      this->qspc.pop();
+      if (bwincal) {
+        fft_freqs->scale(spectrum);
+      }
+      for (size_t i = 0; i < spectrum.size(); ++i) {
+        stacked[i] += spectrum[i];
+      }
+    }
+    for (auto &value : stacked) {
+      value /= static_cast<double>(stacks);
+    }
+    fft_freqs->set_raw_stacks(stacks);
+    return stacked;
   }
 
-  /// \brief prepare_raw_spc converts the local queue to a vector spc AND scales with the window wincal and CALIBRATES!
-  /// \param fft_freqs where the fft settings are stored; YOU MUST interpolate / extend the calibration to the same length as the FFT in ADVANCE
-  /// \param bcal
+  /// \brief Stack calibrated amplitudes from every queued FFT window.
+  /// \details The calibration must already be interpolated to fft_freqs->get_frequencies().
+  std::vector<double> atss_simple_stack_all_calibrated(const std::shared_ptr<fftw_freqs> &fft_freqs, const bool bwincal = true) {
+    if (fft_freqs == nullptr) {
+      throw std::runtime_error(std::string(__func__) + " :: fft_freqs is nullptr");
+    }
+    if (this->qspc.empty()) {
+      throw std::runtime_error(std::string(__func__) + " :: no spectra available for stacking");
+    }
+    if (this->cal == nullptr || this->cal->is_empty()) {
+      throw std::runtime_error(std::string(__func__) + " :: no calibration data available");
+    }
+
+    std::vector<double> calibration_frequencies;
+    std::vector<std::complex<double>> calibration_data;
+    this->cal->get_cplx_cal(calibration_frequencies, calibration_data);
+    const auto frequencies = fft_freqs->get_frequencies();
+    if (calibration_frequencies != frequencies || calibration_data.size() != frequencies.size()) {
+      throw std::runtime_error(std::string(__func__) + " :: calibration does not match FFT frequencies");
+    }
+    if (std::any_of(calibration_data.cbegin(), calibration_data.cend(), [](const auto &value) { return std::abs(value) == 0.0; })) {
+      throw std::runtime_error(std::string(__func__) + " :: calibration contains a zero value");
+    }
+
+    std::vector<double> stacked(frequencies.size(), 0.0);
+    const size_t stacks = this->qspc.size();
+    while (!this->qspc.empty()) {
+      auto spectrum = fft_freqs->trim_fftw_result(this->qspc.front());
+      this->qspc.pop();
+      if (bwincal) {
+        fft_freqs->scale(spectrum);
+      }
+      for (size_t i = 0; i < spectrum.size(); ++i) {
+        stacked[i] += std::abs(spectrum[i] / calibration_data[i]);
+      }
+    }
+    for (auto &value : stacked) {
+      value /= static_cast<double>(stacks);
+    }
+    fft_freqs->set_raw_stacks(stacks);
+    return stacked;
+  }
+
+  /// @brief prepare_raw_spc converts the local queue to a vector spc AND scales with the window wincal and CALIBRATES!
+  /// @details fft_freqs where the fft settings are stored; YOU MUST interpolate / extend the calibration to the same length as the FFT in ADVANCE. The queue data will be shortened to match the calibration size. Then we apply the caibration to the trimmed spectra.
+  /// @param bcal whether to apply the calibration
+  /// @param syscal whether to apply the system calibration
+  /// @param bwincal whether to apply the window calibration
   void prepare_raw_spc(const bool bcal = true, const bool syscal = true, const bool bwincal = true) {
     this->spc.reserve(this->qspc.size());
     size_t j = 0;
@@ -2027,6 +2140,9 @@ public:
 
     double eps = 1E-10; // tight tolerance for sampling rate
     if (std::fabs(get_sample_rate() - rhs.get_sample_rate()) > eps) {
+      return false;
+    }
+    if (std::fabs(get_osr() - rhs.get_osr()) > eps) {
       return false;
     }
 

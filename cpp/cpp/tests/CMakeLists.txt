@@ -4,5 +4,9 @@ add_subdirectory(test_utc_time)
 add_subdirectory(test_survey_create)
 add_subdirectory(test_ptspc)
 add_subdirectory(test_prz_sum)
-
-
+add_subdirectory(test_pst_spectra)
+add_subdirectory(test_channel_osr)
+add_subdirectory(test_calibration_operators)
+if(TARGET cal-plot)
+    add_subdirectory(test_cal_plotter)
+endif()

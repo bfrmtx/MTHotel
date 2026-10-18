@@ -375,8 +375,8 @@ enum class ADU : std::uint8_t {
   HF_HP_500Hz = 2, ///< 0x02 ADU08   HF-HP-500Hz 500Hz filter enable for HF board
   HH_HP_off = 0,
 
-  div_1 = 1, ///< default for E
-  div_8 = 8, ///< default for H and +/- 10V
+  div_1 = 1, ///< default for E and +/- 2.5 V
+  div_8 = 8, ///< default for H and +/- 10 V
 
   off = 0,
 
@@ -431,9 +431,9 @@ inline void xset_filter(const std::string &system, const std::string &board_and_
         hp_filter = ADU::HF_HP_1Hz;
       else if (filter == "HF-HP-500Hz")
         hp_filter = ADU::HF_HP_500Hz;
-      else if (filter == "div-1")
+      else if (filter == "div-1" || filter == "div_1")
         input_div = ADU::div_1;
-      else if (filter == "div-8")
+      else if (filter == "div-8" || filter == "div_8")
         input_div = ADU::div_8;
     }
   } else if (system == "ADU-07") {
@@ -454,9 +454,9 @@ inline void xset_filter(const std::string &system, const std::string &board_and_
         radio_filter = ADU::MF_RF_2;
       else if (filter == "HF-HP-1Hz")
         hp_filter = ADU::HF_HP_1Hz;
-      else if (filter == "div-1")
+      else if (filter == "div-1" || filter == "div_1")
         input_div = ADU::div_1;
-      else if (filter == "div-8")
+      else if (filter == "div-8" || filter == "div_8")
         input_div = ADU::div_8;
     }
   }

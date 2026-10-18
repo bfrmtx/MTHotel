@@ -2,7 +2,7 @@ project:
   type: website
   output-dir: ../html
   resources:
-    - media/**
+    - _media/**
 website:
   title: "MTHotel / MTH5"
   favicon: logo/favicon.ico

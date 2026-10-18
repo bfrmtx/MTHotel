@@ -1,7 +1,14 @@
 
 #=
+Create Calibration from a measured data; several measurements, sine (multi tone if you like to say)
+You measure like 32 kHz, ... 256 Hz
+You know the amplitude of the calibration sine tones (here additionally normalized)
+at for example 256 Hz, you should have no decay in amplitude
+at for example 16384 Hz, you might expect some decay in amplitude (low pass behavior)
 1. we loop over a tree, here 132k, which indicates the sampling rate container.
- command line: data/cal_sine/132k
+
+ command line: data/cal_sine/132k or /home/bfr/devel/ats_data/adu-11e_master_cal/cal_sine/32k/
+
 
 ├── 132k
 │   ├── 16384

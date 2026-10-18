@@ -125,7 +125,12 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
   std::cout << "Scanning ATS survey directory: " << survey_path_ats << std::endl;
-  ats_survey->scan(); // Scan the ATS survey directory to populate the stations
+  try {
+    ats_survey->scan(); // Scan the ATS survey directory to populate the stations
+  } catch (const std::exception &e) {
+    std::cerr << "Error scanning ATS survey: " << e.what() << std::endl;
+    return EXIT_FAILURE;
+  }
   if (verbose) {
     ats_survey->ls(); // List the stations in the survey
   }

@@ -2,6 +2,7 @@
 #define survey_tree_d_HPP
 
 #include <filesystem>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -413,6 +414,8 @@ public:
     }
     throw std::runtime_error("No valid channel found to get stop datetime");
   }
+  /// @brief we store the raw spectra inside the run node.
+  /// @details when the channels (producer) are finished with their FFT processing, all is consumed and stored in the raw spectra of the run node.
   void init_raw_spectra() {
     std::unique_lock lock(mutex_);
     if (!raw_spc) {
@@ -955,6 +958,7 @@ public:
       }
       throw std::runtime_error(" directory does not exist: " + dir_path.string());
     }
+    std::vector<std::future<size_t>> channel_scans;
     for (const auto &entry : fs::directory_iterator(dir_path)) {
       if (entry.is_directory()) {
         std::string station_name_run = entry.path().filename().string();
@@ -974,13 +978,14 @@ public:
         // at run level, we can scan the run_d instance for channels
         if (b_channels && (node->type == NodeType::run) && (node->run_data != nullptr)) {
           // scan channels in parallel using the thread pool
-          this->pool->detach_task([node]() {
-            node->run_data->scan();
-          });
+          channel_scans.emplace_back(this->pool->submit_task([node]() { return node->run_data->scan(); }));
         }
       }
     }
     pool->wait();
+    for (auto &channel_scan : channel_scans) {
+      channel_scan.get();
+    }
     return;
   }
 
